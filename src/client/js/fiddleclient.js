@@ -1,0 +1,1 @@
+FiddleClient = require("./app/FiddleClient");

@@ -29,6 +29,18 @@ module.exports = function(grunt) {
 						dest: 'www/php'
 					},
 					{
+						expand: true, 
+						cwd: 'src/client/php/',
+						src: ['.htaccess'], 
+						dest: 'www/php'
+					},
+					{
+						expand: true, 
+						cwd: 'src/client/css/',
+						src: ['*'], 
+						dest: 'www'
+					},
+					{
 						expand: true,
 						cwd: 'src/client/',
 						src: ['*'],

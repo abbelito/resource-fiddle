@@ -12,3 +12,7 @@ IFrame.prototype.init = function(targetContainer, targetURL) {
 };
 
 module.exports = IFrame;
+
+IFrame.prototype.reload = function() {
+	this.htmlElement.contentWindow.location.reload();
+};

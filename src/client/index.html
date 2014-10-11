@@ -1,6 +1,7 @@
 <html>
 	<head>
 		<link rel="stylesheet" type="text/css" href="client.bundle.css">
+		<link rel="stylesheet" type="text/css" href="main.css">
 		<script type="text/javascript" src="fiddleclient.bundle.js"></script>
 
 		
@@ -30,6 +31,10 @@
 
 				var editor = document.getElementById("editor");
 				var target = document.getElementById("target");
+
+				if(!params['url'] || (params['url'] == '')) {
+					params['url'] = "target.html";
+				}
 
 				var client = new FiddleClient();
 				client.init(params['url'], editor, target);

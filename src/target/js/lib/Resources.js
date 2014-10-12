@@ -2,6 +2,7 @@
 
 var PIXI = require("pixi.js");
 var DefaultSkin = require("./DefaultSkin");
+var EventDispatcher = require("../utils/EventDispatcher");
 
 /**
  * Client resources
@@ -10,7 +11,7 @@ var DefaultSkin = require("./DefaultSkin");
 function Resources() {
 	var i;
 
-	this.defaultSkin = DefaultSkin;
+	this.defaultSkin = null;
 	this.skin = null;
 
 
@@ -22,7 +23,45 @@ function Resources() {
 
 	 this.textures = {};
 
+	 this.loadCount = 0;
+
 }
+EventDispatcher.init(Resources);
+
+Resources.prototype.addSource = function(object) {
+	console.log("Resources.prototype.addSource  (typeof object) = ", (typeof object));
+	if(typeof object == "string") {
+		var loader = new PIXI.JsonLoader(object);
+		loader.onLoaded = this.onLoaded.bind(this, loader);
+		loader.load();
+		this.loadCount++;
+	}
+	else {
+		if(this.defaultSkin == null) {
+			this.defaultSkin = object;		
+		}
+		else {
+			this.skin = object;			
+		}
+	}
+};
+
+Resources.prototype.onLoaded = function(loader) {
+	console.log("Resources.prototype.onLoaded this.loadCount = ", this.loadCount);
+	this.loadCount--;
+		this.defaultSkin = loader.json;	
+		this.skin = loader.json;	
+		/*
+	if(this.defaultSkin == null) {
+		this.defaultSkin = loader.json;		
+	}
+	else {
+		this.skin = loader.json;			
+	}
+	*/
+	if(this.loadCount <= 0)
+		this.trigger("loaded");
+};
 
 /**
  * Get value from either loaded skin or default skin.
@@ -50,10 +89,10 @@ Resources.prototype.getValue = function(key) {
 Resources.prototype.getPoint = function(key) {
 	var value = null;
 
-	if((this.skin != null) && (this.skin[key] != null))
-		value = new PIXI.Point(this.skin[key][0], this.skin[key][1]);
+	if((this.skin != null) && (this.skin.positions[key] != null))
+		value = new PIXI.Point(this.skin.positions[key][0], this.skin.positions[key][1]);
 	else
-		value = new PIXI.Point(this.defaultSkin[key][0], this.defaultSkin[key][1]);
+		value = new PIXI.Point(this.defaultSkin.positions[key][0], this.defaultSkin.positions[key][1]);
 
 	if(value == null) {
 		throw new Error("Invalid skin key: " + key);
@@ -71,10 +110,10 @@ Resources.prototype.getPoints = function(key) {
 
 	var points = new Array();
 
-	if((this.skin != null) && (this.skin[key] != null))
-		values = this.skin[key];
+	if((this.skin != null) && (this.skin.positions[key] != null))
+		values = this.skin.positions[key];
 	else
-		values = this.defaultSkin[key];
+		values = this.defaultSkin.positions[key];
 
 	for(var i = 0; i < values.length; i++) {
 		points.push(new PIXI.Point(values[i][0], values[i][1]));
@@ -98,11 +137,11 @@ Resources.prototype.getTexture = function(key, index) {
 	var frame = null;
 
 
-	if((this.skin != null) && (this.skin[key] != null)) {
-		value = this.skin[key];
+	if((this.skin != null) && (this.skin.graphics[key] != null)) {
+		value = this.skin.graphics[key];
 	}
 	else {
-		value = this.defaultSkin[key];
+		value = this.defaultSkin.graphics[key];
 		isDefault = true;
 	}
 //	console.log("value = " + value + ", key = " +key);
@@ -244,17 +283,17 @@ Resources.prototype.getTextureFromSkin = function(textureid) {
 
 	var textureObject = null;
 
-	if((this.skin != null) && (this.skin.textures != null)) {
-		for(var i = 0; i < this.skin.textures.length; i++) {
-			if(this.skin.textures[i].id == textureid) {
-				textureObject = this.skin.textures[i];
+	if((this.skin != null) && (this.skin.graphics.textures != null)) {
+		for(var i = 0; i < this.skin.graphics.textures.length; i++) {
+			if(this.skin.graphics.textures[i].id == textureid) {
+				textureObject = this.skin.graphics.textures[i];
 			}
 		}
 	}
 	if(textureObject == null) {
-		for(var i = 0; i < this.defaultSkin.textures.length; i++) {
-			if(this.defaultSkin.textures[i].id == textureid) {
-				textureObject = this.defaultSkin.textures[i];
+		for(var i = 0; i < this.defaultSkin.graphics.textures.length; i++) {
+			if(this.defaultSkin.graphics.textures[i].id == textureid) {
+				textureObject = this.defaultSkin.graphics.textures[i];
 			}
 		}
 	}

@@ -7,7 +7,9 @@ function FiddleClient() {
 	this.iframe = new IFrame();
 	this.imageEditor = new ImageEditor();
 
+
 	this.editor.on("saved", this.onSaved, this);
+	this.editor.on("loaded", this.onTexture, this);
 	this.imageEditor.on("uploaded", this.onUploaded, this);
 };
 
@@ -18,6 +20,18 @@ FiddleClient.prototype.init = function(targetURL, editorContainer, targetContain
 	this.iframe.init(targetContainer, targetURL);
 	this.imageEditor.init(editorContainer);
 
+};
+
+FiddleClient.prototype.onTexture = function() {
+	this.imageEditor.clearTextures();
+	var json = this.editor.getJson();
+	if(json.graphics && json.graphics.textures) {
+		for(var i = 0; i < json.graphics.textures.length; i++) {
+			this.imageEditor.addTexture(json.graphics.textures[i]);
+		}
+	}
+	this.iframe.setResourceURL("http://127.0.0.1:8080/php/textureFiles/bajs/texture.json");
+	//this.iframe.reload();
 };
 
 FiddleClient.prototype.onSaved = function() {

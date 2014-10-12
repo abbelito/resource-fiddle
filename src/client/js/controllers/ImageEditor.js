@@ -23,10 +23,28 @@ ImageEditor.prototype.init = function(container) {
 	this.container.appendChild(this.uploadButton);
 
 	this.imageContainer = document.createElement("div");
-	this.imageContainer.style.width = "100%";
+	//this.imageContainer.style.width = "100%";
+	this.imageContainer.style.background = "#FFFFFF";
+	this.imageContainer.style.width = "512px";
 	this.container.appendChild(this.imageContainer);
 
-	this.loadImages();
+	//this.loadImages();
+};
+
+ImageEditor.prototype.clearTextures = function(texture) {
+	this.imageContainer.innerHTML = "";
+}
+
+ImageEditor.prototype.addTexture = function(texture) {
+	this.imageContainer.innerHTML = "";
+	var div = document.createElement("div");
+	div.innerHTML = "textureId: " + texture.id;
+	this.imageContainer.appendChild(div);
+	var img = document.createElement("img");
+	img.style.width = "512px";
+	img.style.height = "512px";
+	img.setAttribute("src", texture.file);
+	this.imageContainer.appendChild(img);
 };
 
 ImageEditor.prototype.loadImages = function() {
@@ -68,7 +86,7 @@ ImageEditor.prototype.onUploaded = function(data) {
 	var json = data.json;
 	console.log("json = ", JSON.stringify(json));
 
-	this.loadImages();
+	//this.loadImages();
 	this.trigger("uploaded", json);
 };
 

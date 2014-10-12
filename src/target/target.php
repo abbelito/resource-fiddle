@@ -25,9 +25,11 @@
 
 			function run() {
 				var params = getQueryStringParams();
-
-				var resourceApp = new ResourceApp();
-				resourceApp.loadTextures(params['textures']);
+				var resourceURL = params["resources"];
+				console.log("resourceURL = ", resourceURL);
+				console.log("params = ", params);
+				var resourceApp = new ResourceApp(resourceURL);
+			//	resourceApp.loadTextures(params['textures']);
 			};
 			
 

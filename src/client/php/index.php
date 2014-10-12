@@ -29,8 +29,9 @@ function sortOnSize($a, $b) {
 	return 0;
 }
 
+
 function mergeIntoTexture($textureFilename, $imageFolder) {
-	$json = "{\"textures\":[{\"id\": \"texture\",\"file\": \"$textureFilename\"}]";
+	$json = "{\"textures\":[{\"id\": \"texture\",\"file\": \"" . /*explode("index.php", $_SERVER['PATH_INFO'])[0] .*/ "$textureFilename\"}]";
 
 	$folder = "$imageFolder/";
 	$filetype = '*.png';
@@ -51,8 +52,8 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 
 	usort($images, sortOnSize);
 
-	$textureWidth = 2048;
-	$textureHeight = 2048;
+	$textureWidth = 1024;
+	$textureHeight = 1024;
 	$texture  = imagecreatetruecolor($textureWidth, $textureHeight);
 	imagealphablending($texture, false);
 	$col = imagecolorallocatealpha($texture, 255, 255, 255, 125);
@@ -65,6 +66,16 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 	$margin = 2;
 	
 	$originalImages = array();
+
+
+	/**
+	 * New positionimg
+	 */
+	// while(count($images) > 0)
+	// 
+	/**
+	 * End of new positioning
+	 */
 
 	while(count($images) > 0) {
 		for($i = 0; $i < count($images); $i++) {
@@ -101,33 +112,7 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 			$y = $nextY + $margin;
 		}
 	}
-	/*
-	for($i = 0; $i < count($images); $i++) {
-		$image = $images[$i];
-		
-		if(($x + $image->width) > $textureWidth) {
-			$x = 0;
-			$y = $nextY;
-		}
-		
-		$image->x = $x;
-		$image->y = $y;
-
-		$background = imagecolorallocate($image->image, 255, 255, 255);
-		// removing the black from the placeholder
-		imagecolortransparent($image->image, $background);
-
-		imagealphablending($image->image, true);
-
-		imagecopyresampled($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, $image->width, $image->height);
-		//imagecopymerge($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, 100);
-
-		if(($image->y + $image->height) > $nextY) {
-			$nextY = $image->y + $image->height;
-		}
-		$x += $image->width;
-	}
-	*/
+	
 	
 
 	imagealphablending($texture, false);
@@ -139,11 +124,13 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 	for($i = 0; $i < count($originalImages); $i++) {
 		$image = $originalImages[$i];
 		$json .= ",\"" . implode('', explode(".png", implode('', explode("$imageFolder/", $image->filename)))) . "\":";
-		$json .= "[";
-		
+		$json .= "{";
+		$json .= "\"texture\": \"texture\",";
+		$json .= "\"coords\": [";
 		$json .= $image->x . "," . $image->y . "," . $image->width . "," . $image->height;
 
 		$json .= "]";
+		$json .= "}";
 	}
 
 	$json .= "}";
@@ -273,7 +260,7 @@ function getTexture() {
 	$filetype = "texture.json";
 
 	if (!file_exists($folder.$filetype)) {
-		echo "{\"graphics\":{}, \"points\":{}}";
+		echo "{\"graphics\":{}, \"positions\":{}}";
 		return;
 	}
 	$file = fopen($folder.$filetype, 'r');

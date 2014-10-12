@@ -40,16 +40,35 @@ JsonEditor.prototype.init = function(container) {
 
 JsonEditor.prototype.setTextureJson = function(texturejson) {
 	this.json = JSON.parse(this.htmlElement.value);
+	console.log("document.location = " + document.location);
+	for(var i = 0; i < texturejson.textures.length; i++) {
+		texturejson.textures[i].file = document.location + "php/" + texturejson.textures[i].file;
+	}
 	this.json.graphics = texturejson;
 	this.htmlElement.value = this.beautify(this.json);
 	this.onSave();
 };
 
-JsonEditor.prototype.onSave = function() {
+JsonEditor.prototype.getJson = function() {
+	try {
+		this.json = JSON.parse(this.htmlElement.value);
+	}
+	catch(error) {
+		console.warn("failed to parse json in JsonEditor.prototype.getJson. Error: ", error);
+	}
+	return this.json;
+};
 
-	var connection = new APIConnection();
-	connection.on("loaded", this.onSaved, this);
-	connection.load("save", {session:"bajs", json: this.htmlElement.value});
+JsonEditor.prototype.onSave = function() {
+	try {
+		var json = JSON.parse(this.htmlElement.value);
+		var connection = new APIConnection();
+		connection.on("loaded", this.onSaved, this);
+		connection.load("save", {session:"bajs", json: this.htmlElement.value});
+	}
+	catch(error) {
+		alert("Invalid json");
+	}
 };
 
 JsonEditor.prototype.onTexture = function(data) {
@@ -61,6 +80,8 @@ JsonEditor.prototype.onTexture = function(data) {
 
 	this.htmlElement.value = this.beautify(this.json);
 	console.log("onTexture, json = ", this.json);
+
+	this.trigger("loaded");
 };
 
 JsonEditor.prototype.onSaved = function(data) {
@@ -68,6 +89,7 @@ JsonEditor.prototype.onSaved = function(data) {
 	var json = data.json;
 	connection.off("loaded", this.onSaved, this);
 	console.log("onSaved, json = ", json);
+	this.trigger("saved");
 };
 
 JsonEditor.prototype.onKeyUp = function(event) {
@@ -82,8 +104,6 @@ JsonEditor.prototype.onKeyUp = function(event) {
 };
 
 JsonEditor.prototype.onKeyDown = function(event) {
-	// body...
-	console.log("event.keyCode = " + event.keyCode);
 	switch(event.keyCode) {
 		case 9: {
 			this.insertAtCursor("\t");
@@ -142,7 +162,7 @@ JsonEditor.prototype.insertTabs = function(num) {
 
 JsonEditor.prototype.beautify = function(json) {
 	var jsonString = JSON.stringify(json);
-	console.log("JsonEditor.prototype.beautify before: ", jsonString);
+	//console.log("JsonEditor.prototype.beautify before: ", jsonString);
 	var numTabs = 0;
 	for(var i = 0; i < jsonString.length; i++) {
 		switch(jsonString[i]) {
@@ -173,12 +193,12 @@ JsonEditor.prototype.beautify = function(json) {
 				break;
 			}
 			case ":": {
-				jsonString = jsonString.splice(i+1, 0, " ");
+				//jsonString = jsonString.splice(i+1, 0, " ");
 				break;
 			}
 		}
 	}
-	console.log("JsonEditor.prototype.beautify after: ", jsonString);
+	//console.log("JsonEditor.prototype.beautify after: ", jsonString);
 
 	return jsonString;
 };

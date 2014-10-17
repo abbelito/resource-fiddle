@@ -3,11 +3,10 @@ module.exports = function(grunt) {
 	// Project configuration.
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
-		browserify: { /*
-			src: 'src/js/FiddleClient.js',
-			dest: 'www/FiddleClient.bundle.js'*/
+		browserify: { 
       		'www/fiddleclient.bundle.js': ['src/client/js/fiddleclient.js'],
-      		'www/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
+      		'www/resourceapp.bundle.js': ['src/target/js/resourceapp.js'],
+      		'bin/resources.js': ['src/target/js/lib/Resources.js']
 		},
 		php: {
 			dist: {

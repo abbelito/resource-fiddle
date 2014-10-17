@@ -19,6 +19,11 @@ ResourceApp.prototype.onResources = function() {
 
 	var image2 = new PIXI.Sprite(this.resources.getTexture("seatPlate"));
 	this.appStage.addChild(image2);
+	image2.position = this.resources.getPoint("seatPlatePosition");
+
+	var image3 = new PIXI.Sprite(this.resources.getTexture("suitSymbol1"));
+	this.appStage.addChild(image3);
+	image3.position = this.resources.getPoint("suitSymbol1Position");
 };
 
 ResourceApp.prototype.onAnimationFrame = function(time) {

@@ -1,5 +1,6 @@
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
+var ImageItem = require("../views/ImageItem");
 
 
 function ImageEditor() {
@@ -13,8 +14,8 @@ function ImageEditor() {
 ImageEditor.prototype.constructor = ImageEditor;
 EventDispatcher.init(ImageEditor);
 
-ImageEditor.prototype.init = function(container) {
-	this.container = container;
+ImageEditor.prototype.init = function(resource) {
+	for(var i = 0; i < resource.)
 
 	this.uploadButton = document.createElement("input");
 	this.uploadButton.setAttribute("type", "file");
@@ -43,7 +44,7 @@ ImageEditor.prototype.addTexture = function(texture) {
 	var img = document.createElement("img");
 	img.style.width = "512px";
 	img.style.height = "512px";
-	img.setAttribute("src", texture.file);
+	img.setAttribute("src", texture.file + "?__timestamp___=" + Date.now());
 	this.imageContainer.appendChild(img);
 };
 

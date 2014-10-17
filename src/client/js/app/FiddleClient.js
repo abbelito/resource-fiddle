@@ -15,7 +15,7 @@ function FiddleClient() {
 
 FiddleClient.prototype.constructor = FiddleClient;
 
-FiddleClient.prototype.init = function(targetURL, editorContainer, targetContainer) {
+FiddleClient.prototype.init = function(targetURL, resources, editorContainer, targetContainer) {
 	this.editor.init(editorContainer);
 	this.iframe.init(targetContainer, targetURL);
 	this.imageEditor.init(editorContainer);

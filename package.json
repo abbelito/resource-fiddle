@@ -10,9 +10,11 @@
     "grunt-php": "^1.1.0",
     "pixi.js": "^1.6.1"
   },
-  "main": "src/target/js/lib/Resources.js",
+  "main": "bin/Resources.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/abbelito/resource-fiddle.git"
-  }
+  },
+  "_id": "resources.js@0.1.0",
+  "_from": "Resources.js@git+https://github.com/abbelito/resource-fiddle"
 }

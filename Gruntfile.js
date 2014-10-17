@@ -46,6 +46,13 @@ module.exports = function(grunt) {
 						src: ['*'],
 						dest: 'www',
 						filter: 'isFile'
+					},
+					{
+						expand: true,
+						cwd: 'src/target/js/lib/',
+						src: ['*'],
+						dest: 'bin',
+						filter: 'isFile'
 					}
 				]
 			},

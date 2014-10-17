@@ -15,7 +15,7 @@ ImageEditor.prototype.constructor = ImageEditor;
 EventDispatcher.init(ImageEditor);
 
 ImageEditor.prototype.init = function(resource) {
-	for(var i = 0; i < resource.)
+	
 
 	this.uploadButton = document.createElement("input");
 	this.uploadButton.setAttribute("type", "file");

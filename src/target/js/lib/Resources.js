@@ -1,4 +1,4 @@
-"use strict";
+
 
 var PIXI = require("pixi.js");
 var EventDispatcher = require("../utils/EventDispatcher");

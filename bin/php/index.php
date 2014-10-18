@@ -52,8 +52,8 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 
 	usort($images, sortOnSize);
 
-	$textureWidth = 1024;
-	$textureHeight = 1024;
+	$textureWidth = 2048;
+	$textureHeight = 2048;
 	$texture  = imagecreatetruecolor($textureWidth, $textureHeight);
 	imagealphablending($texture, false);
 	$col = imagecolorallocatealpha($texture, 255, 255, 255, 125);
@@ -179,7 +179,7 @@ function saveJson() {
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
 	$jsonString = isset($_POST['json']) ? $_POST['json'] : $_GET['json'];
 
-	$path = "textureFiles/$session";
+	$path = "../textureFiles/$session";
 
 	if (!file_exists($path)) {
 		mkdir($path, 0777, true);
@@ -194,9 +194,9 @@ function saveJson() {
 
 function uploadImage() {
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
-	$filename = isset($_POST['filename']) ? $_POST['filename'] : $_GET['filename'];
+	$filename = isset($_POST['Filename']) ? $_POST['Filename'] : $_GET['Filename'];
 
-	$path = "textureFiles/$session";
+	$path = "../textureFiles/$session";
 	$fullpath = "$path/tmp";
 	if (!file_exists($fullpath)) {
 		mkdir($fullpath, 0777, true);
@@ -230,7 +230,9 @@ function uploadImage() {
 	    jsonResponse('File with that name already exists.');
 	}
 */
-	$filepath = "$fullpath/" . $_FILES["SelectedFile"]["name"];
+	$ext = pathinfo($_FILES["SelectedFile"]["name"], PATHINFO_EXTENSION);
+
+	$filepath = "$fullpath/" . $filename . "." . $ext;//$_FILES["SelectedFile"]["name"];
 	// Upload file
 	if(!move_uploaded_file($_FILES['SelectedFile']['tmp_name'], $filepath)) {
 	    jsonResponse('Error uploading file - check destination is writeable.');
@@ -244,7 +246,7 @@ function uploadImage() {
 function getImages() {
 
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
-	$path = "textureFiles/$session";
+	$path = "../textureFiles/$session";
 	$folder = "$path/tmp/";
 	$filetype = "*.png";
 	$images = glob($folder . $filetype);
@@ -255,7 +257,7 @@ function getImages() {
 function getTexture() {
 
 	$session = $_POST['session'];
-	$path = "textureFiles/$session";
+	$path = "../textureFiles/$session";
 	$folder = "$path/";
 	$filetype = "texture.json";
 
@@ -277,7 +279,7 @@ function merge() {
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
 	$filename = isset($_POST['filename']) ? $_POST['filename'] : $_GET['filename'];
 
-	$path = "textureFiles/$session";
+	$path = "../textureFiles/$session";
 	$fullpath = "$path/tmp";
 	
 

@@ -48,7 +48,7 @@ ResourceApp.prototype.onResources = function() {
 		this.appStage.addChild(image3);
 		image3.position = this.resources.getPoint("suitSymbol2Position");
 	}
-	else if(this.testcase == "test3") {
+	else if(this.testcase == "test4") {
 
 		var image2 = new PIXI.Sprite(this.resources.getTexture("dealerButton"));
 		this.appStage.addChild(image2);

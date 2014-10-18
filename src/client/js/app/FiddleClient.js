@@ -1,47 +1,57 @@
 var JsonEditor = require("../controllers/JsonEditor");
 var IFrame = require("../controllers/IFrame");
-var ImageEditor = require("../controllers/ImageEditor");
+var RootView = require("../views/RootView");
+var View = require("../views/View");
+var EditorView = require("../views/EditorView");
+var EditorController = require("../controllers/EditorController");
+var TargetController = require("../controllers/TargetController");
 
-function FiddleClient() {
-	this.editor = new JsonEditor();
+function FiddleClient(domContainer) {
+	//this.editor = new JsonEditor();
 	this.iframe = new IFrame();
-	this.imageEditor = new ImageEditor();
 
+	this.root = new RootView(domContainer);
 
-	this.editor.on("saved", this.onSaved, this);
-	this.editor.on("loaded", this.onTexture, this);
-	this.imageEditor.on("uploaded", this.onUploaded, this);
+	this.editorView = new EditorView();
+	this.root.addChild(this.editorView);
+	this.editor = new EditorController(this.editorView);
+	this.editor.on(EditorController.Refresh, this.onRefresh, this);
+
+	this.targetView = new View();
+	this.root.addChild(this.targetView);
+	this.targetView.x = 500;
+	this.target = new TargetController(this.targetView);
 };
 
 FiddleClient.prototype.constructor = FiddleClient;
 
-FiddleClient.prototype.init = function(targetURL, resources, editorContainer, targetContainer) {
-	this.editor.init(editorContainer);
-	this.iframe.init(targetContainer, targetURL);
-	this.imageEditor.init(editorContainer);
+FiddleClient.prototype.init = function(resources) {
+	//this.editor.init(editorContainer);
+	this.resources = resources;
 
-};
-
-FiddleClient.prototype.onTexture = function() {
-	this.imageEditor.clearTextures();
-	var json = this.editor.getJson();
-	if(json.graphics && json.graphics.textures) {
-		for(var i = 0; i < json.graphics.textures.length; i++) {
-			this.imageEditor.addTexture(json.graphics.textures[i]);
-		}
+	if(resources.isLoading()) {
+		console.log("resources is loading");
+		resources.on(Resources.Loaded, this.doInit, this);
 	}
-	this.iframe.setResourceURL("http://127.0.0.1:8080/php/textureFiles/bajs/texture.json");
-	//this.iframe.reload();
+	else {
+		this.doInit();
+	}
 };
 
-FiddleClient.prototype.onSaved = function() {
-	console.log("FiddleClient.prototype.onSaved");
-	this.iframe.reload();
+FiddleClient.prototype.addTestcase = function(id, name, url) {
+	this.target.addTestcase(id, name, url);
 };
 
-FiddleClient.prototype.onUploaded = function(textureJson) {
-	this.editor.setTextureJson(textureJson);
-	this.iframe.reload();
+FiddleClient.prototype.doInit = function() {
+	console.log("FiddleClient.prototype.doInit graphics: ", this.resources.getResourceObject().graphics);
+	this.target.init();
+	this.editor.init(this.resources);
+
 };
+
+FiddleClient.prototype.onRefresh = function() {
+	this.target.reload();
+};
+
 
 module.exports = FiddleClient;

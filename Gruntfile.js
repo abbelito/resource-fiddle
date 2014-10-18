@@ -4,8 +4,10 @@ module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 		browserify: { 
-      		'www/fiddleclient.bundle.js': ['src/client/js/fiddleclient.js'],
-      		'www/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
+			
+      		'www/js/fiddleclient.bundle.js': ['src/client/js/fiddleclient.js'],
+      		'www/js/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
+		
 		},
 		php: {
 			dist: {
@@ -33,23 +35,17 @@ module.exports = function(grunt) {
 						dest: 'www/php'
 					},
 					{
-						expand: true, 
-						cwd: 'src/client/css/',
-						src: ['*'], 
-						dest: 'www'
-					},
-					{
 						expand: true,
-						cwd: 'src/client/',
+						cwd: 'src/client/test/',
 						src: ['*'],
 						dest: 'www',
 						filter: 'isFile'
 					},
 					{
 						expand: true,
-						cwd: 'src/target/js/lib/',
+						cwd: 'res/',
 						src: ['*'],
-						dest: 'bin',
+						dest: 'www/img',
 						filter: 'isFile'
 					}
 				]
@@ -70,25 +66,72 @@ module.exports = function(grunt) {
 						filter: 'isFile'
 					}
 				]
+			},
+			release: {
+				files: [
+					{
+						expand: true,
+						cwd: 'src/client/php/',
+						src: ['**'],
+						dest: 'bin/php'
+					},
+					{
+						expand: true, 
+						cwd: 'src/client/php/',
+						src: ['.htaccess'], 
+						dest: 'bin/php'
+					},
+					{
+						expand: true,
+						cwd: 'src/client/release/',
+						src: ['*'],
+						dest: 'bin',
+						filter: 'isFile'
+					},
+					{
+						expand: true,
+						cwd: 'res/',
+						src: ['*'],
+						dest: 'bin/img',
+						filter: 'isFile'
+					}
+				]
 			}
 		},
 		concat_css: {
-			options: {
-			// Task-specific options go here.
+			build: {
+				options: {
+				// Task-specific options go here.
+				},
+			    files: {
+			      "www/css/client.bundle.css": ["src/client/css/**/*.css"]
+			    }
 			},
-		    files: {
-		      "www/client.bundle.css": ["src/client/css/**/*.css"]
-		    }
+			release: {
+				options: {
+				// Task-specific options go here.
+				},
+			    files: {
+			      "www/css/client.bundle.css": ["src/client/css/**/*.css"]
+			    }
+			}
 		},
 		cssmin: {
 			client: {
 				files: {
-					'www/client.min.css': ['www/client.bundle.css']
+					'www/css/client.min.css': ['www/css/client.bundle.css']
 				}
 			},
-			target: {
+			release: {
 				files: {
-					'www/target.min.css': ['www/target.bundle.css']
+					'bin/css/client.min.css': ['www/css/client.bundle.css']
+				}
+			}
+		},
+		uglify: {
+			release: {
+				files: {
+					'bin/js/resource-fiddle.min.js': ['www/js/fiddleclient.bundle.js']
 				}
 			}
 		}
@@ -99,9 +142,11 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-concat-css');
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
+	grunt.loadNpmTasks('grunt-contrib-uglify');
 
 	//grunt.registerTask('precommit', ['phplint:all', 'phpunit:unit']);
-	grunt.registerTask('default', ['copy:target', 'copy:client', 'browserify', 'concat_css', 'cssmin:client', 'cssmin:target']);
+	grunt.registerTask('default', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client']);
+	grunt.registerTask('release', ['copy:release', 'browserify', 'concat_css:release', 'cssmin:release', 'uglify:release']);
 	//grunt.registerTask('browserify', ['browserify']);
 	grunt.registerTask('server', ['php']);
 

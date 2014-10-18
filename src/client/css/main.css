@@ -17,6 +17,8 @@ time, mark, audio, video {
 	font-size: 100%;
 	font: inherit;
 	vertical-align: baseline;
+	display:inline-block;
+	clear:both;
 }
 /* HTML5 display-role reset for older browsers */
 article, aside, details, figcaption, figure, 
@@ -48,12 +50,6 @@ html, body {
 	background: #FF00BB;
 }
 
-#editor {
-	width: 50%;
-	float: left;
-}
-
-#target {
-	width: 50%;
-	float: left;
+.MenuItem {
+	cursor: pointer;
 }

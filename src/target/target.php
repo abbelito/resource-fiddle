@@ -1,7 +1,7 @@
 <html>
 	<head>
-		<link rel="stylesheet" type="text/css" href="target.bundle.css">
-		<script type="text/javascript" src="resourceapp.bundle.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/target.bundle.css">
+		<script type="text/javascript" src="js/resourceapp.bundle.js"></script>
 
 		<script type="text/javascript">
 			function getQueryStringParams() {
@@ -26,9 +26,10 @@
 			function run() {
 				var params = getQueryStringParams();
 				var resourceURL = params["resources"];
+				var testcase = params["testcase"];
 				console.log("resourceURL = ", resourceURL);
 				console.log("params = ", params);
-				var resourceApp = new ResourceApp(resourceURL);
+				var resourceApp = new ResourceApp(resourceURL, testcase);
 			//	resourceApp.loadTextures(params['textures']);
 			};
 			

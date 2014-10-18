@@ -5,8 +5,7 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON('package.json'),
 		browserify: { 
       		'www/fiddleclient.bundle.js': ['src/client/js/fiddleclient.js'],
-      		'www/resourceapp.bundle.js': ['src/target/js/resourceapp.js'],
-      		'bin/resources.js': ['src/target/js/lib/Resources.js']
+      		'www/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
 		},
 		php: {
 			dist: {

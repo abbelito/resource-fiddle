@@ -34,7 +34,8 @@ EventDispatcher.init(ColorItem);
 ColorItem.Changed = "Changed";
 
 ColorItem.prototype.updateLayout = function(width, height) {
-	console.log("ColorItem.prototype.updateLayout");
+	ListItem.prototype.updateLayout.call(this, width, height);
+	
 	this.colorView.width = width * 0.5;
 	this.colorView.height = height - this.header.height;
 

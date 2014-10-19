@@ -26,6 +26,9 @@ EventDispatcher.init(ImageItem);
 
 ImageItem.Selected = "Selected";
 
+ImageItem.prototype.setTexture = function(texture) {
+	this.image.setTexture(texture);
+};
 
 ImageItem.prototype.updateLayout = function(width, height) {
 	ListItem.prototype.updateLayout.call(this, width, height);
@@ -39,8 +42,13 @@ ImageItem.prototype.updateLayout = function(width, height) {
 
 
 ImageItem.prototype.onFilesSelected = function(files) {
+	this.files = files;
 	
-	this.trigger(ImageItem.Selected, {files: files, name: this.name})
+	this.trigger(ImageItem.Selected, this);
+};
+
+ImageItem.prototype.getValues = function() {
+	return this.files;
 };
 
 

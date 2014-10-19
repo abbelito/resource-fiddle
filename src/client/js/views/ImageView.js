@@ -19,8 +19,16 @@ function ImageView(obj) {
 };
 ClassUtils.extends(ImageView, View);
 
-ImageView.prototype.updateLayout = function(width, height) {
+ImageView.prototype.setTexture = function(texture) {
+	this.getElement().removeChild(this.imageObject);
+	this.imageObject = texture;
+	this.getElement().appendChild(texture);
+	this.updateLayout(this.w, this.h);
+};
 
+ImageView.prototype.updateLayout = function(width, height) {
+	this.w = width;
+	this.h = height;
 	var w = this.imageObject.clientWidth == 0 ? this.imageObject.width : this.imageObject.clientWidth;
 	var h = this.imageObject.clientHeight == 0 ? this.imageObject.height : this.imageObject.clientHeight;
 	if((w == 0) || (h == 0)) {

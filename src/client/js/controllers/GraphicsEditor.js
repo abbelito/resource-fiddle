@@ -10,7 +10,7 @@ var Resources = require("../../../lib/Resources");
 function GraphicsEditor(view) {
 	Editor.call(this, view);
 
-
+	this.currentItem = null;
 };
 ClassUtils.extends(GraphicsEditor, Editor);
 
@@ -32,19 +32,19 @@ GraphicsEditor.prototype.init = function(resources) {
 	}
 };
 
-GraphicsEditor.prototype.onUpload = function(e) {
+GraphicsEditor.prototype.onUpload = function(item) {
 	
-	if(e.files.length > 0) {
+	if(item.getValues().length > 0) {
 		var data = new FormData();
-		data.append('SelectedFile', e.files[0]);
-		data.append("Filename", e.name);
-
+		data.append('SelectedFile', item.getValues()[0]);
+		data.append("Filename", item.name);
+		this.currentItem = item;
 		var connection = new APIConnection();
 		connection.on("loaded", this.onUploaded, this);
 		connection.upload("upload", data);
 	}
 	else {
-		console.warn("No files selected: event:", e);
+		console.warn("No files selected: event:", item);
 	}
 };
 
@@ -55,7 +55,7 @@ GraphicsEditor.prototype.onUploaded = function(data) {
 
 	this.resources.addSource({graphics: json});
 	this.save();
-
+	this.currentItem.setTexture(this.resources.getDOMTexture(this.currentItem.name));
 	//this.loadImages();
 	this.trigger("uploaded", json);
 };

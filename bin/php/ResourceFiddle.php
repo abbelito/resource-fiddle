@@ -102,7 +102,7 @@
 						
 						function run() {
 
-							var resources = Resources.getInstance();
+							var resources = new Resources();
 							resources.addSource({
 								graphics: {
 									<?php 

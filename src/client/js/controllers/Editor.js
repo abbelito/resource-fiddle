@@ -16,6 +16,17 @@ Editor.prototype.init = function() {
 	
 };
 
+
+Editor.prototype.show = function() {
+	this.view.show();
+};
+
+
+Editor.prototype.hide = function() {
+	this.view.hide();
+};
+
+
 Editor.prototype.save = function() {
 	try {
 		var connection = new APIConnection();

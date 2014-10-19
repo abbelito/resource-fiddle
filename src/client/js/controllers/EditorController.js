@@ -2,12 +2,17 @@ var EventDispatcher = require("../utils/EventDispatcher");
 var EditorView = require("../views/EditorView");
 var Editor = require("../controllers/Editor");
 var GraphicsEditor = require("../controllers/GraphicsEditor");
+var PositionsEditor = require("../controllers/PositionsEditor");
+var StringsEditor = require("../controllers/StringsEditor");
+var ColorsEditor = require("../controllers/ColorsEditor");
 var Menu = require("../controllers/Menu");
 var MenuItem = require("../views/MenuItem");
 var MenuView = require("../views/MenuView");
 
 function EditorController(view) {
 	this.view = view;
+
+	this.view.show();
 	
 	this.menuView = new MenuView();
 	this.view.addChild(this.menuView);
@@ -29,11 +34,32 @@ function EditorController(view) {
 	editorView.y = this.menuView.height;
 	this.graphicsEditor = new GraphicsEditor(editorView);
 
+	var editorView = new EditorView();
+	this.view.addChild(editorView);
+	editorView.y = this.menuView.height;
+	this.positionsEditor = new PositionsEditor(editorView);
+
+	var editorView = new EditorView();
+	this.view.addChild(editorView);
+	editorView.y = this.menuView.height;
+	this.colorsEditor = new ColorsEditor(editorView);
+
+	var editorView = new EditorView();
+	this.view.addChild(editorView);
+	editorView.y = this.menuView.height;
+	this.stringsEditor = new StringsEditor(editorView);
+
+	this.currentEditor = this.graphicsEditor;
+	this.currentEditor.show();
 
 	//this.editor.on("saved", this.onSaved, this);
 	//this.editor.on("loaded", this.onTexture, this);
 	this.graphicsEditor.on("uploaded", this.onUploaded, this);
+
 	this.graphicsEditor.on(Editor.Saved, this.onSaved, this);
+	this.positionsEditor.on(Editor.Saved, this.onSaved, this);
+	this.colorsEditor.on(Editor.Saved, this.onSaved, this);
+	this.stringsEditor.on(Editor.Saved, this.onSaved, this);
 };
 EditorController.prototype.constructor = EditorController;
 EventDispatcher.init(EditorController);
@@ -42,18 +68,37 @@ EditorController.Refresh = "refresh";
 
 EditorController.prototype.init = function(resources) {
 	this.resources = resources;
+	
+	//this.positionsEditor.init(resources);
 	this.graphicsEditor.init(resources);
+	//this.stringsEditor.init(resources);
+	this.colorsEditor.init(resources);
+
 	this.graphicsEditor.save();
 };
 
 
 EditorController.prototype.onChangeView = function(item) {
+	this.currentEditor.hide();
 	switch(item.id) {
 		case "image": {
-
+			this.currentEditor = this.graphicsEditor;
+			break;
+		}
+		case "position": {
+			this.currentEditor = this.positionsEditor;
+			break;
+		}
+		case "color": {
+			this.currentEditor = this.colorsEditor;
+			break;
+		}
+		case "string": {
+			this.currentEditor = this.stringsEditor;
 			break;
 		}
 	}
+	this.currentEditor.show();
 };
 
 

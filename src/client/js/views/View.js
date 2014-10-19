@@ -66,6 +66,14 @@ View.prototype.removeChild = function(childView) {
 	}
 };
 
+View.prototype.show = function() {
+	this._domElement.style.display = "inline-block";
+};
+
+View.prototype.hide = function() {
+	this._domElement.style.display = "none";
+};
+
 /**
  * Setter and Getter for x position
  * @property x 

@@ -37,32 +37,6 @@ GraphicsEditor.prototype.init = function(resources) {
 		imageItem.on(ImageItem.Selected, this.onUpload, this);
 		y += imageItem.height;
 	}
-
-	//this.loadImages();
-};
-
-GraphicsEditor.prototype.clearTextures = function(texture) {
-//	this.imageContainer.innerHTML = "";
-}
-
-GraphicsEditor.prototype.addTexture = function(texture) {
-/*	this.imageContainer.innerHTML = "";
-	var div = document.createElement("div");
-	div.innerHTML = "textureId: " + texture.id;
-	this.imageContainer.appendChild(div);
-	var img = document.createElement("img");
-	img.style.width = "512px";
-	img.style.height = "512px";
-	img.setAttribute("src", texture.file + "?__timestamp___=" + Date.now());
-	this.imageContainer.appendChild(img);
-	*/
-};
-
-GraphicsEditor.prototype.loadImages = function() {
-	/*var connection = new APIConnection();
-	connection.on("loaded", this.onImages, this);
-	connection.load("getImages", {session:"bajs"});
-	*/
 };
 
 GraphicsEditor.prototype.onUpload = function(e) {
@@ -79,21 +53,6 @@ GraphicsEditor.prototype.onUpload = function(e) {
 	else {
 		console.warn("No files selected: event:", e);
 	}
-};
-
-GraphicsEditor.prototype.onImages = function(object) {
-	/*
-	object.connection.off("loaded", this.onImages, this);
-	this.images = object.json.data;
-	this.imageContainer.innerHTML = "";
-	for(var i = 0; i < this.images.length; i++) {
-		var li = document.createElement("li");
-		var img = document.createElement("img");
-		img.setAttribute("src", "php/" + this.images[i]);
-		li.appendChild(img);
-		this.imageContainer.appendChild(li);
-	}
-	*/
 };
 
 GraphicsEditor.prototype.onUploaded = function(data) {

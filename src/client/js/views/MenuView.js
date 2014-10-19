@@ -30,13 +30,12 @@ MenuView.prototype.addItem = function(item) {
 	this.items.push(item);
 };
 
-
-MenuView.prototype.addedToStage = function() {
-	View.prototype.addedToStage.call(this);
+MenuView.prototype.updateLayout = function(width, height) {
 	var x = 0;
 	for(var i = 0; i < this.items.length; i++) {
 		var item = this.items[i];
 		item.x = x;
+		item.updateLayout(width / this.items.length, height);
 		x += item.width;
 	}
 };

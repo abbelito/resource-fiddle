@@ -15,7 +15,7 @@ function EditorController(view) {
 	this.view.show();
 	
 	this.menuView = new MenuView();
-	this.view.addChild(this.menuView);
+	this.view.setMenuView(this.menuView);
 
 	var items = [
 		new MenuItem("image", "Graphics"),
@@ -30,23 +30,22 @@ function EditorController(view) {
 	this.menu.on(Menu.ItemClicked, this.onChangeView, this);
 
 	var editorView = new EditorView();
-	this.view.addChild(editorView);
+	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
 	this.graphicsEditor = new GraphicsEditor(editorView);
 
 	var editorView = new EditorView();
-	this.view.addChild(editorView);
+	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
 	this.positionsEditor = new PositionsEditor(editorView);
 
 	var editorView = new EditorView();
-	this.view.addChild(editorView);
+	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
 	this.colorsEditor = new ColorsEditor(editorView);
 
 	var editorView = new EditorView();
-	this.view.addChild(editorView);
-	editorView.y = this.menuView.height;
+	this.view.addEditor(editorView);
 	this.stringsEditor = new StringsEditor(editorView);
 
 	this.currentEditor = this.graphicsEditor;

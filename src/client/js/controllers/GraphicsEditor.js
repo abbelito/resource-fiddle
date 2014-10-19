@@ -24,14 +24,11 @@ GraphicsEditor.prototype.init = function(resources) {
 
 	console.log("graphics: ", graphics);
 
-	var y = 0;
 	for(var key in graphics) {
 		console.log("create ImageItem: ", key, graphics[key]);
 		var imageItem = new ImageItem(key, this.resources.getDOMTexture(key));
-		imageItem.y = y;
-		this.view.addChild(imageItem);
+		this.view.addItem(imageItem);
 		imageItem.on(ImageItem.Selected, this.onUpload, this);
-		y += imageItem.height;
 	}
 };
 

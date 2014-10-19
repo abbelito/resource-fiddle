@@ -26,4 +26,9 @@ InputView.prototype.onBlur = function() {
 	this.trigger(InputView.Changed, this);
 };
 
+InputView.prototype.updateLayout = function(width, height) {
+	this.width = width;
+	this.height = height;
+};
+
 module.exports = InputView;

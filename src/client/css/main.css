@@ -48,8 +48,17 @@ html, body {
 	width: 100%;
 	height: 100%;
 	background: #FF00BB;
+	overflow: hidden;
 }
 
 .MenuItem {
 	cursor: pointer;
 }
+
+.EditorView {
+	overflow: auto;
+}
+
+.Text {
+	vertical-align: center;
+};

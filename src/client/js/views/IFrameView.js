@@ -10,27 +10,23 @@ function IFrameView() {
 };
 ClassUtils.extends(IFrameView, View);
 
-IFrameView.prototype.init = function() {	
-	//this.url = targetURL;
-
-	//this.getElement().setAttribute("src", this.url);
+IFrameView.prototype.init = function() {
 };
 
 IFrameView.prototype.setUrl = function(targetURL) {
 	this.url = targetURL;
 	this.reload();
-	// body...
 };
 
 
 IFrameView.prototype.reload = function() {
 	this.getElement().setAttribute("src", this.url + "&____timestamp="+Date.now());
-	/*
-	console.log("IFrame.prototype.reload");
-	var u = this.url + "?resources="+this.resourceURL+"&____timestamp="+Date.now();
-	this.htmlElement.setAttribute("src", u);
-	//this.htmlElement.contentWindow.location.reload();
-	*/
+};
+
+IFrameView.prototype.updateLayout = function(width, height) {
+	
+	this.width = width;
+	this.height = height;
 };
 
 module.exports = IFrameView;

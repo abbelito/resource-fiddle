@@ -33,16 +33,16 @@ EventDispatcher.init(ColorItem);
 
 ColorItem.Changed = "Changed";
 
-ColorItem.prototype.addedToStage = function() {
-	this.colorView.width = 100;
-	this.colorView.height = 100;
-	ListItem.prototype.addedToStage.call(this);
+ColorItem.prototype.updateLayout = function(width, height) {
+	this.colorView.width = width * 0.5;
+	this.colorView.height = height;
 
-	this.input.width = 200;
-	this.input.height = 20;
+	this.input.updateLayout(width * 0.5, height);
 
-	this.input.x = this.colorView.width;
-	this.input.y = this.colorView.y + (this.colorView.height - this.input.height)*0.5;
+	this.input.x = width * 0.5;
+	this.input.y = this.header.height;
+	
+	this.colorView.y = this.header.height;
 };
 
 ColorItem.prototype.onChanged = function() {

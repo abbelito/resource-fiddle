@@ -15,15 +15,11 @@ ColorsEditor.prototype.init = function(resources) {
 
 	var colors = this.resources.getResourceObject().colors;
 
-	var y = 0;
 	for(var key in colors) {
 		console.log("create ColorItem: ", key, colors[key]);
 		var item = new ColorItem(key, colors[key]);
-		console.log("after create");
-		item.y = y;
-		this.view.addChild(item);
+		this.view.addItem(item);
 		item.on(ColorItem.Changed, this.onChanged, this);
-		y += item.height;
 	}
 };
 

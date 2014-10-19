@@ -37,4 +37,8 @@ MenuItem.prototype.setSelected = function(selected) {
 	}
 };
 
+MenuItem.prototype.updateLayout = function(width, height) {
+	this.text.updateLayout(width, height);
+};
+
 module.exports = MenuItem;

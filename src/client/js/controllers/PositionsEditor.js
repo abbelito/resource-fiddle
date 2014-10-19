@@ -17,14 +17,11 @@ PositionsEditor.prototype.init = function(resources) {
 
 	console.log("positions: ", positions);
 
-	var y = 0;
 	for(var key in positions) {
 		console.log("create PositionItem: ", key, positions[key]);
 		var item = new PositionItem(key, positions[key]);
-		item.y = y;
-		this.view.addChild(item);
+		this.view.addItem(item);
 		item.on(PositionItem.Changed, this.onChanged, this);
-		y += item.height;
 	}
 };
 

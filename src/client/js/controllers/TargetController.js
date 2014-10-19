@@ -9,7 +9,7 @@ function TargetController(view) {
 	this.view = view;
 
 	this.menuView = new MenuView();
-	this.view.addChild(this.menuView);
+	this.view.setMenuView(this.menuView);
 
 	var items = [];
 	this.testcases = new Array();
@@ -20,7 +20,7 @@ function TargetController(view) {
 	this.menu.on(Menu.ItemClicked, this.onChangeView, this);
 
 	this.iframeView = new IFrameView();
-	this.view.addChild(this.iframeView);
+	this.view.setTargetView(this.iframeView);
 	this.iframeView.y = this.menuView.height;
 	this.iframeView.width = 500;
 	this.iframeView.height = 500;

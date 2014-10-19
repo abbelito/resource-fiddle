@@ -10,4 +10,11 @@ function Text(text) {
 };
 ClassUtils.extends(Text, View);
 
+
+Text.prototype.updateLayout = function(width, height) {
+	this.width = width;
+	this.height = height;
+};
+
+
 module.exports = Text;

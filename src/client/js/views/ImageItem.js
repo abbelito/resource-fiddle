@@ -12,8 +12,6 @@ function ImageItem(name, texture) {
 
 	this.image = new ImageView(texture);
 	this.addChild(this.image);
-	this.image.width = 100;
-	this.image.height = 100;
 
 	this.image.y = this.header.height;
 
@@ -28,13 +26,15 @@ EventDispatcher.init(ImageItem);
 
 ImageItem.Selected = "Selected";
 
-ImageItem.prototype.addedToStage = function() {
-	this.image.width = 100;
-	this.image.height = 100;
-	ListItem.prototype.addedToStage.call(this);
 
-	this.button.y = this.image.y + (this.image.height - this.button.height)*0.5;
-	this.button.x = this.image.x + this.image.width;
+ImageItem.prototype.updateLayout = function(width, height) {
+	ListItem.prototype.updateLayout.call(this, width, height);
+
+	this.image.updateLayout(width * 0.5, height - this.header.height);
+	this.image.y = this.header.height;
+	
+	this.button.y = this.header.height + ((height - this.header.height) - this.button.height)*0.5;
+	this.button.x = width * 0.5;
 };
 
 

@@ -40,9 +40,17 @@ EventDispatcher.init(StringItem);
 
 StringItem.Changed = "Changed";
 
-StringItem.prototype.addedToStage = function() {
-	ListItem.prototype.addedToStage.call(this);
+StringItem.prototype.updateLayout = function(width, height) {
+	ListItem.prototype.updateLayout.call(this, width, height);
 
+	this.text.updateLayout(width*0.5, height - this.header.height);
+	this.input.updateLayout(width*0.5, height - this.header.height);
+
+	this.text.x = 0; 
+	this.input.x = width*0.5;
+
+	this.text.y = this.header.height;
+	this.input.y = this.header.height;
 };
 
 

@@ -31,18 +31,18 @@ EventDispatcher.init(PositionItem);
 
 PositionItem.Changed = "Changed";
 
-PositionItem.prototype.addedToStage = function() {
-	this.inputX.width = 100;
-	this.inputY.width = 100;
-	this.inputX.height = 20;
-	this.inputY.height = 20;
-	
-	ListItem.prototype.addedToStage.call(this);
+PositionItem.prototype.updateLayout = function(width, height) {
+	ListItem.prototype.updateLayout.call(this, width, height);
+	this.textX.updateLayout(width*0.25, height - this.header.height);
+	this.textY.updateLayout(width*0.25, height - this.header.height);
+	this.inputX.updateLayout(width*0.25, height - this.header.height);
+	this.inputY.updateLayout(width*0.25, height - this.header.height);
 
-	this.textX.x = 30; 
-	this.inputX.x = 50;
-	this.textY.x = 30 + this.inputX.x + this.inputX.width;
-	this.inputY.x = this.textY.x + 20;
+	this.textX.x = 0; 
+	this.inputX.x = width*0.25;
+
+	this.textY.x = width*0.5;
+	this.inputY.x = width*0.75;
 
 	this.textX.y = this.header.height;
 	this.textY.y = this.header.height;

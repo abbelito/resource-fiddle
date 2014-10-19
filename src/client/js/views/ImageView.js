@@ -11,47 +11,43 @@ function ImageView(obj) {
 		this.imageObject = obj;
 	}
 	else {
-		this.noImage = new Image();
-		this.noImage.src = "img/no_image.jpeg";
-		this.getElement().appendChild(this.noImage);
+		this.imageObject = new Image();
+		this.imageObject.src = "img/no_image.jpeg";
+		this.getElement().appendChild(this.imageObject);
 		//this.imageObject = img;
 	}
 };
 ClassUtils.extends(ImageView, View);
 
-ImageView.prototype.addedToStage = function() {
-	View.prototype.addedToStage.call(this);
+ImageView.prototype.updateLayout = function(width, height) {
 
-	this.width = this.width;
-	this.height = this.height;
-
-	if(this.imageObject == null) {
-		if(this.noImage != null) {
-			this.noImage.style.width = this.width;
-			this.noImage.style.height = this.height;
-		}
-		return;
+	var w = this.imageObject.clientWidth == 0 ? this.imageObject.width : this.imageObject.clientWidth;
+	var h = this.imageObject.clientHeight == 0 ? this.imageObject.height : this.imageObject.clientHeight;
+	if((w == 0) || (h == 0)) {
+		w = width;
+		h = height;
+		this.imageObject.onload = this.updateLayout.bind(this, width, height);
 	}
 
 	var wdiff = 0;
 	var hdiff = 0;
-	if(this.width < this.imageObject.clientWidth) {
-		wdiff = Math.abs(this.width - this.imageObject.clientWidth);
+	if(width < w) {
+		wdiff = Math.abs(width - w);
 	}
-	if(this.height < this.imageObject.clientHeight) {
-		hdiff = Math.abs(this.height - this.imageObject.clientHeight);
+	if(height < h) {
+		hdiff = Math.abs(height - h);
 	}
 	var scale = 1;
 	if(hdiff > wdiff) {
-		scale = this.height / this.imageObject.clientHeight;
+		scale = height / h;
 	}
 	else if(hdiff < wdiff) {
-		scale = this.width / this.imageObject.clientWidth;
+		scale = width / w;
 	}
 	else {
 		this.imageObject.style.position = "absolute";
-		this.imageObject.style.left = (this.width - this.imageObject.clientWidth)*0.5 + "px";
-		this.imageObject.style.top = (this.height - this.imageObject.clientHeight)*0.5 + "px";
+		this.imageObject.style.left = (width - w)*0.5 + "px";
+		this.imageObject.style.top = (height - h)*0.5 + "px";
 		return;
 	}
 	this.imageObject.style.msTransform = "scale("+scale+")";
@@ -59,8 +55,11 @@ ImageView.prototype.addedToStage = function() {
 	this.imageObject.style.webkitTransform = "scale("+scale+")";
 
 	this.imageObject.style.position = "absolute";
-	this.imageObject.style.left = (this.width - this.imageObject.clientWidth)*0.5 + "px";
-	this.imageObject.style.top = (this.height - this.imageObject.clientHeight)*0.5 + "px";
+	this.imageObject.style.left = (width - w)*0.5 + "px";
+	this.imageObject.style.top = (height - h)*0.5 + "px";
+
+	this.width = width;
+	this.height = height;
 };
 
 

@@ -13,13 +13,10 @@ StringsEditor.prototype.init = function(resources) {
 
 	var strings = this.resources.getResourceObject().strings;
 
-	var y = 0;
 	for(var key in strings) {
 		var item = new StringItem(key, strings[key]);
-		item.y = y;
-		this.view.addChild(item);
+		this.view.addItem(item);
 		item.on(StringItem.Changed, this.onChanged, this);
-		y += imageItem.height;
 	}
 };
 

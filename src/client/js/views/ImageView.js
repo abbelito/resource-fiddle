@@ -31,7 +31,7 @@ ImageView.prototype.updateLayout = function(width, height) {
 	this.h = height;
 	var w = this.imageObject.clientWidth == 0 ? this.imageObject.width : this.imageObject.clientWidth;
 	var h = this.imageObject.clientHeight == 0 ? this.imageObject.height : this.imageObject.clientHeight;
-	if((w == 0) || (h == 0)) {
+	if((w == 0) || (h == 0)) {
 		w = width;
 		h = height;
 		this.imageObject.onload = this.updateLayout.bind(this, width, height);

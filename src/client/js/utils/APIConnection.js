@@ -17,7 +17,7 @@ APIConnection.prototype.load = function(route, paramObject) {
 
 	xmlhttp.onreadystatechange = this.onReadyStateChange.bind(this, xmlhttp);
 
-	var url = this.url + route + "&session=" + this.session;//"getImages";
+	var url = this.url + route;//"getImages";
 	var params = "";
 	var first = true;
 	for(var o in paramObject) {
@@ -29,6 +29,7 @@ APIConnection.prototype.load = function(route, paramObject) {
 		}
 		params += o + "=" + paramObject[o];
 	}
+	params += "&session=" + this.session;
 	params += "&___timestamp____=" + Date.now();
 
 	xmlhttp.open("POST", url, true);

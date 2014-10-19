@@ -26,7 +26,9 @@ EditorControllerView.prototype.updateLayout = function(width, height) {
 	for(var i = 0; i < this.editors.length; i++) {
 		this.editors[i].x = 0;
 		this.editors[i].y = this.menuView.height;
-		this.editors[i].updateLayout(width, height - this.menuView.height);
+		if(this.editors[i].isVisible()) {
+			this.editors[i].updateLayout(width, height - this.menuView.height);
+		}
 	}
 	this.width = width;
 	this.height = height;

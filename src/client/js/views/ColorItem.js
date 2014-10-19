@@ -34,10 +34,11 @@ EventDispatcher.init(ColorItem);
 ColorItem.Changed = "Changed";
 
 ColorItem.prototype.updateLayout = function(width, height) {
+	console.log("ColorItem.prototype.updateLayout");
 	this.colorView.width = width * 0.5;
-	this.colorView.height = height;
+	this.colorView.height = height - this.header.height;
 
-	this.input.updateLayout(width * 0.5, height);
+	this.input.updateLayout(width * 0.5, height - this.header.height);
 
 	this.input.x = width * 0.5;
 	this.input.y = this.header.height;

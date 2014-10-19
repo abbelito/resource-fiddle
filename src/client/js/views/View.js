@@ -74,6 +74,10 @@ View.prototype.hide = function() {
 	this._domElement.style.display = "none";
 };
 
+View.prototype.isVisible = function() {
+	return this._domElement.style.display != "none";
+};
+
 View.prototype.updateLayout = function(width, height) {
 	throw new Error("updateLayout not implemented!");
 };

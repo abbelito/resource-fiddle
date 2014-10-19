@@ -11,6 +11,8 @@ include_once("Controllers/Routes.php");
 include_once("Models/Image.php");
 
 
+$textureFiles = "./textureFiles/";
+
 function sortOnSize($a, $b) {
 	$aSize = $a->width * $a->height;
 	$bSize = $b->width * $b->height;
@@ -31,7 +33,7 @@ function sortOnSize($a, $b) {
 
 
 function mergeIntoTexture($textureFilename, $imageFolder) {
-	$json = "{\"textures\":[{\"id\": \"texture\",\"file\": \"" . /*explode("index.php", $_SERVER['PATH_INFO'])[0] .*/ "$textureFilename\"}]";
+	$json = "{\"textures\":[{\"id\": \"texture\",\"file\": \"$textureFilename\"}]";
 
 	$folder = "$imageFolder/";
 	$filetype = '*.png';
@@ -52,8 +54,8 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 
 	usort($images, sortOnSize);
 
-	$textureWidth = 2048;
-	$textureHeight = 2048;
+	$textureWidth = 1024;
+	$textureHeight = 1024;
 	$texture  = imagecreatetruecolor($textureWidth, $textureHeight);
 	imagealphablending($texture, false);
 	$col = imagecolorallocatealpha($texture, 255, 255, 255, 125);
@@ -117,7 +119,7 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 
 	imagealphablending($texture, false);
 	imagesavealpha($texture, true);
-	imagepng($texture, $textureFilename);
+	imagepng($texture, "../$textureFilename");
 	imagedestroy($texture);
 
 
@@ -186,7 +188,7 @@ function saveJson() {
 	}
 	$fileid = fopen("$path/texture.json", "w") or die("{'success':false, 'errors': 'Unable to open file!'}");
 	
-	fwrite($fileid, $jsonString);
+	fwrite($fileid, stripcslashes($jsonString));
 	fclose($fileid);
 	
 	echo jsonResponse(true);
@@ -196,8 +198,8 @@ function uploadImage() {
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
 	$filename = isset($_POST['Filename']) ? $_POST['Filename'] : $_GET['Filename'];
 
-	$path = "../textureFiles/$session";
-	$fullpath = "$path/tmp";
+	$path = "textureFiles/$session";
+	$fullpath = "../$path/tmp";
 	if (!file_exists($fullpath)) {
 		mkdir($fullpath, 0777, true);
 	}

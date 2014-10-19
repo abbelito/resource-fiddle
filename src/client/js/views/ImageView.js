@@ -32,9 +32,8 @@ ImageView.prototype.updateLayout = function(width, height) {
 	var w = this.imageObject.clientWidth == 0 ? this.imageObject.width : this.imageObject.clientWidth;
 	var h = this.imageObject.clientHeight == 0 ? this.imageObject.height : this.imageObject.clientHeight;
 	if((w == 0) || (h == 0)) {
-		w = width;
-		h = height;
 		this.imageObject.onload = this.updateLayout.bind(this, width, height);
+		return;
 	}
 
 	var wdiff = 0;
@@ -45,18 +44,18 @@ ImageView.prototype.updateLayout = function(width, height) {
 	if(height < h) {
 		hdiff = Math.abs(height - h);
 	}
-	var scale = 1;
-	if(hdiff > wdiff) {
-		scale = height / h;
-	}
-	else if(hdiff < wdiff) {
-		scale = width / w;
-	}
-	else {
+	if((hdiff == 0) && (wdiff == 0)) {
 		this.imageObject.style.position = "absolute";
 		this.imageObject.style.left = (width - w)*0.5 + "px";
 		this.imageObject.style.top = (height - h)*0.5 + "px";
 		return;
+	}
+
+	var scale = 1;
+
+	scale = height / h;
+	if(scale*w > width) {
+		scale = width / w;
 	}
 	this.imageObject.style.msTransform = "scale("+scale+")";
 	this.imageObject.style.transform = "scale("+scale+")";

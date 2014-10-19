@@ -25,10 +25,12 @@ GraphicsEditor.prototype.init = function(resources) {
 	console.log("graphics: ", graphics);
 
 	for(var key in graphics) {
-		console.log("create ImageItem: ", key, graphics[key]);
-		var imageItem = new ImageItem(key, this.resources.getDOMTexture(key));
-		this.view.addItem(imageItem);
-		imageItem.on(ImageItem.Selected, this.onUpload, this);
+		if(key != "textures") {
+			console.log("create ImageItem: ", key, graphics[key]);
+			var imageItem = new ImageItem(key, this.resources.getDOMTexture(key));
+			this.view.addItem(imageItem);
+			imageItem.on(ImageItem.Selected, this.onUpload, this);
+		}
 	}
 };
 

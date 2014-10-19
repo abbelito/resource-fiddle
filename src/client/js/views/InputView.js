@@ -18,6 +18,10 @@ InputView.prototype.getValue = function() {
 	return this.getElement().value;
 };
 
+InputView.prototype.setValue = function(value) {
+	this.getElement().value = value;
+};
+
 InputView.prototype.onBlur = function() {
 	this.trigger(InputView.Changed, this);
 };

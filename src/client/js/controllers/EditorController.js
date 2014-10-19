@@ -69,7 +69,7 @@ EditorController.Refresh = "refresh";
 EditorController.prototype.init = function(resources) {
 	this.resources = resources;
 	
-	//this.positionsEditor.init(resources);
+	this.positionsEditor.init(resources);
 	this.graphicsEditor.init(resources);
 	//this.stringsEditor.init(resources);
 	this.colorsEditor.init(resources);

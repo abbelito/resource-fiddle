@@ -10,10 +10,6 @@ var Resources = require("../../../lib/Resources");
 function GraphicsEditor(view) {
 	Editor.call(this, view);
 
-	this.images = new Array();
-	this.imageContainer = null;
-	this.uploadButton = null;
-	this.container = null;
 
 };
 ClassUtils.extends(GraphicsEditor, Editor);
@@ -31,7 +27,7 @@ GraphicsEditor.prototype.init = function(resources) {
 	var y = 0;
 	for(var key in graphics) {
 		console.log("create ImageItem: ", key, graphics[key]);
-		var imageItem = new ImageItem(key, graphics[key]);
+		var imageItem = new ImageItem(key, this.resources.getDOMTexture(key));
 		imageItem.y = y;
 		this.view.addChild(imageItem);
 		imageItem.on(ImageItem.Selected, this.onUpload, this);
@@ -60,7 +56,7 @@ GraphicsEditor.prototype.onUploaded = function(data) {
 	var json = data.json;
 	console.log("GraphicsEditor.prototype.onUploaded: json = ", JSON.stringify(json));
 
-	Resources.getInstance().addSource({graphics: json});
+	this.resources.addSource({graphics: json});
 	this.save();
 
 	//this.loadImages();

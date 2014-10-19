@@ -1,5 +1,3 @@
-var JsonEditor = require("../controllers/JsonEditor");
-var IFrame = require("../controllers/IFrame");
 var RootView = require("../views/RootView");
 var View = require("../views/View");
 var EditorView = require("../views/EditorView");
@@ -7,8 +5,6 @@ var EditorController = require("../controllers/EditorController");
 var TargetController = require("../controllers/TargetController");
 
 function FiddleClient(domContainer) {
-	//this.editor = new JsonEditor();
-	this.iframe = new IFrame();
 
 	this.root = new RootView(domContainer);
 

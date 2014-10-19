@@ -1,4 +1,3 @@
-var Resources = require("../../../lib/Resources");
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
 
@@ -6,6 +5,7 @@ function Editor(view) {
 	this.view = view;
 	this.items = new Array();
 	this.container = null;
+	this.resources = null;
 };
 Editor.prototype.constructor = Editor;
 EventDispatcher.init(Editor);
@@ -31,7 +31,7 @@ Editor.prototype.save = function() {
 	try {
 		var connection = new APIConnection();
 		connection.on("loaded", this.onSaved, this);
-		connection.load("save", {session:"bajs", json: JSON.stringify(Resources.getInstance().getResourceObject())});
+		connection.load("save", {session:"bajs", json: JSON.stringify(this.resources.getResourceObject())});
 	}
 	catch(error) {
 		console.log("Failed to save: ", error);

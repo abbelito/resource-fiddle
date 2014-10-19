@@ -324,15 +324,4 @@ Resources.prototype.getTextureFromSkin = function(textureid) {
 }
 
 
-/**
- * Get singleton instance.
- * @method getInstance
- */
-Resources.getInstance = function() {
-	if (!Resources.instance)
-		Resources.instance = new Resources();
-
-	return Resources.instance;
-}
-
 module.exports = Resources;

@@ -22,10 +22,12 @@ function ListItem(name) {
 ClassUtils.extends(ListItem, View);
 
 ListItem.prototype.addedToStage = function() {
+	this.text.width = this.header.width;
+	this.text.height = this.header.height;
 	View.prototype.addedToStage.call(this);
-	
-	this.text.x = (this.header.width - this.text.width)*0.5;
-	this.text.y = (this.header.height - this.text.height)*0.5;
+	console.log("this.text.width = " , this.text.width);
+	/*this.text.x = (this.header.width - this.text.width)*0.5;
+	this.text.y = (this.header.height - this.text.height)*0.5;*/
 };
 
 module.exports = ListItem;

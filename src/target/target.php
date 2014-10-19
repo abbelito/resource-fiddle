@@ -1,6 +1,5 @@
 <html>
 	<head>
-		<link rel="stylesheet" type="text/css" href="css/target.bundle.css">
 		<script type="text/javascript" src="js/resourceapp.bundle.js"></script>
 
 		<script type="text/javascript">

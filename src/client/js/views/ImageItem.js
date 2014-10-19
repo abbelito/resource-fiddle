@@ -5,16 +5,12 @@ var SelectButton = require("./SelectButton");
 var ImageView = require("./ImageView");
 var Resources = require("../../../lib/Resources");
 
-function ImageItem(name, value) {
+function ImageItem(name, texture) {
 	ListItem.call(this, name);
-
-	if(value && (value != '')) {
-		console.log("Image item frame seems to exist");
-	}
 
 	this.name = name;
 
-	this.image = new ImageView(Resources.getInstance().getDOMTexture(name));
+	this.image = new ImageView(texture);
 	this.addChild(this.image);
 	this.image.width = 100;
 	this.image.height = 100;

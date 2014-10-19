@@ -20,6 +20,8 @@ function ColorItem(id, value) {
 	this.input = new InputView();
 	this.addChild(this.input);
 
+	this.input.setValue(value ? value : "#000000");
+
 	this.input.x = this.colorView.width;
 	this.input.y = this.colorView.y + (this.colorView.height - this.input.height)*0.5;
 

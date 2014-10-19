@@ -11,9 +11,9 @@ EventDispatcher.init(ColorsEditor);
 
 ColorsEditor.prototype.init = function(resources) {
 	Editor.prototype.init.call(this);
-	this.resources = resources.getResourceObject();
+	this.resources = resources;
 
-	var colors = this.resources.colors;
+	var colors = this.resources.getResourceObject().colors;
 
 	var y = 0;
 	for(var key in colors) {
@@ -28,7 +28,7 @@ ColorsEditor.prototype.init = function(resources) {
 };
 
 ColorsEditor.prototype.onChanged = function(item) {
-	this.resources.colors[item.id] = item.getValue();
+	this.resources.getResourceObject().colors[item.id] = item.getValue();
 	this.save();
 };
 

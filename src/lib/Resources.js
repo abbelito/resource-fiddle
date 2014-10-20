@@ -66,7 +66,7 @@ Resources.prototype.addSource = function(object) {
 		}
 
 		try {
-			var loader = new PIXI.JsonLoader(object);
+			var loader = new PIXI.JsonLoader(object, true);
 			loader.onLoaded = this.onLoaded.bind(this, loader, this.loadIndex);
 			var loadIndex = parseInt(this.loadIndex + 0);
 			loader.onError = this.onError.bind(this, loader, loadIndex);

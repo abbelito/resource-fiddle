@@ -194,7 +194,7 @@
 								}
 							});
 
-							var jsonUrl = "textureFiles/<?= $this->session; ?>/texture.json";
+							var jsonUrl = document.location + "textureFiles/<?= $this->session; ?>/texture.json";
 							
 							resources.addSource(jsonUrl);
 

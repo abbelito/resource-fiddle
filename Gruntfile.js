@@ -42,6 +42,12 @@ module.exports = function(grunt) {
 						filter: 'isFile'
 					},
 					{
+						expand: true, 
+						cwd: 'src/client/test/',
+						src: ['.htaccess'], 
+						dest: 'www'
+					},
+					{
 						expand: true,
 						cwd: 'res/',
 						src: ['*'],

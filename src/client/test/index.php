@@ -4,8 +4,9 @@ include_once("./php/ResourceFiddle.php");
 
 $resourceFiddle = new ResourceFiddle();
 
-$resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "table");
+$resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "background");
 
+/*
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "timerBackground");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "seatPlate");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "cardFrame");
@@ -85,11 +86,13 @@ $resourceFiddle->addResource(ResourceFiddle::$COLORS, "chipsColor4");
 $resourceFiddle->addTestcase("test1", "First test", "testcase=test1");
 $resourceFiddle->addTestcase("test2", "Second test", "testcase=test2");
 $resourceFiddle->addTestcase("test3", "Third test", "testcase=test3");
-$resourceFiddle->addTestcase("test4", "Fourth test", "testcase=test4");
+*/
+$resourceFiddle->addTestcase("test4", "Fourth test", "viewcase=action_test");
 
 $resourceFiddle->setSession("bajs");
 
-$resourceFiddle->setTarget("target.php");
+$resourceFiddle->setTarget("http://localhost:8888/cryptoscratch/test/view/ticket.html");
+
 
 $resourceFiddle->dispatch();
 

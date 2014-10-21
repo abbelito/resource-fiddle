@@ -97,8 +97,12 @@ EditorController.prototype.onChangeView = function(item) {
 			break;
 		}
 	}
-	this.currentEditor.view.updateLayout(this.view.width, this.view.height);
 	this.currentEditor.show();
+	this.currentEditor.view.updateLayout(this.view.width, this.view.height);
+
+	setTimeout(function () {
+		this.view.updateLayout(document.body.clientWidth*.5, document.body.clientHeight);
+	}.bind(this),0);
 };
 
 

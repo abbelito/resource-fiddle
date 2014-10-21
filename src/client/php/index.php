@@ -32,24 +32,27 @@ function sortOnSize($a, $b) {
 }
 
 
-function mergeIntoTexture($textureFilename, $imageFolder) {
-	$json = "{\"textures\":[{\"id\": \"texture\",\"file\": \"$textureFilename\"}]";
+function mergeIntoTexture($textureFilename, $imageFolder, $url) {
+	$json = "{\"textures\":[{\"id\": \"texture\",\"file\": \"$url$textureFilename\"}]";
 
 	$folder = "$imageFolder/";
-	$filetype = '*.png';
+	$filetype = '*';
 	$files = glob($folder . $filetype);
 	$count = count($files);
 
 	$images = array();
 
-	//echo "$folder: count = $count <br />";
 	for($i = 0; $i < $count; $i++) {
-	//	echo "imagecreatefrompng(".$files[$i].") <br />";
-		$imageResource = @imagecreatefrompng($files[$i]);
-		//if($imageResource) {
-			$image = new Image($files[$i], $imageResource);
-			array_push($images, $image);
-		//}
+
+		$ext = pathinfo($files[$i], PATHINFO_EXTENSION);
+		if($ext == "png") {
+			$imageResource = @imagecreatefrompng($files[$i]);
+		}
+		else if(($ext == "jpg") || ($ext == "jpeg")) {
+			$imageResource = @imagecreatefromjpeg($files[$i]);
+		}
+		$image = new Image($files[$i], $imageResource);
+		array_push($images, $image);
 	}
 
 	usort($images, sortOnSize);
@@ -87,12 +90,14 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 				$image->x = $x;
 				$image->y = $y;
 
-				$background = imagecolorallocate($image->image, 255, 255, 255);
-				// removing the black from the placeholder
-				imagecolortransparent($image->image, $background);
+				$ext = pathinfo($files[$i], PATHINFO_EXTENSION);
+				if($ext == "png") {
+					$background = imagecolorallocate($image->image, 255, 255, 255);
+					// removing the black from the placeholder
+					imagecolortransparent($image->image, $background);
 
-				imagealphablending($image->image, true);
-
+					imagealphablending($image->image, true);
+				}
 				imagecopyresampled($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, $image->width, $image->height);
 				//imagecopymerge($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, 100);
 
@@ -125,7 +130,7 @@ function mergeIntoTexture($textureFilename, $imageFolder) {
 
 	for($i = 0; $i < count($originalImages); $i++) {
 		$image = $originalImages[$i];
-		$json .= ",\"" . implode('', explode(".png", implode('', explode("$imageFolder/", $image->filename)))) . "\":";
+		$json .= ",\"" . preg_replace('/.[^.]*$/', '', implode('', explode("$imageFolder/", $image->filename)))  . "\":";
 		$json .= "{";
 		$json .= "\"texture\": \"texture\",";
 		$json .= "\"coords\": [";
@@ -197,6 +202,7 @@ function saveJson() {
 function uploadImage() {
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
 	$filename = isset($_POST['Filename']) ? $_POST['Filename'] : $_GET['Filename'];
+	$url = isset($_POST['url']) ? $_POST['url'] : $_GET['url'];
 
 	$path = "textureFiles/$session";
 	$fullpath = "../$path/tmp";
@@ -216,7 +222,7 @@ function uploadImage() {
 	}
 
 	// Check filetype
-	if($_FILES['SelectedFile']['type'] != 'image/png'){
+	if(($_FILES['SelectedFile']['type'] != 'image/png') && ($_FILES['SelectedFile']['type'] != 'image/jpeg')) {
 	    echo jsonResponse('Unsupported filetype uploaded.');
 	    return;
 	}
@@ -226,6 +232,7 @@ function uploadImage() {
 	    echo jsonResponse('File uploaded exceeds maximum upload size.');
 	    return;
 	}
+
 /*
 	// Check if the file exists
 	if(file_exists('upload/' . $_FILES['SelectedFile']['name'])){
@@ -241,7 +248,7 @@ function uploadImage() {
 	}
 
 
-	echo mergeIntoTexture("$path/texture.png", $fullpath);
+	echo mergeIntoTexture("$path/texture.png", $fullpath, $url);
 }
 
 
@@ -250,7 +257,7 @@ function getImages() {
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
 	$path = "../textureFiles/$session";
 	$folder = "$path/tmp/";
-	$filetype = "*.png";
+	$filetype = "*";
 	$images = glob($folder . $filetype);
 
 	echo jsonResponse($images);

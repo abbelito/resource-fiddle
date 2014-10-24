@@ -32,8 +32,8 @@ function sortOnSize($a, $b) {
 }
 
 
-function mergeIntoTexture($textureFilename, $imageFolder, $url) {
-	$json = "{\"textures\":[{\"id\": \"texture\",\"file\": \"$url$textureFilename\"}]";
+function mergeIntoTexture($textureFolder, $imageFolder, $url) {
+	$json = "{\"textures\":["; 
 
 	$folder = "$imageFolder/";
 	$filetype = '*';
@@ -57,88 +57,117 @@ function mergeIntoTexture($textureFilename, $imageFolder, $url) {
 
 	usort($images, sortOnSize);
 
-	$textureWidth = 1024;
-	$textureHeight = 1024;
-	$texture  = imagecreatetruecolor($textureWidth, $textureHeight);
-	imagealphablending($texture, false);
-	$col = imagecolorallocatealpha($texture, 255, 255, 255, 125);
-	imagefilledrectangle($texture, 0, 0, $textureWidth, $textureHeight, $col);
-	imagealphablending($texture, true);
-
-	$x = 0;
-	$y = 0;
-	$nextY = 0;
-	$margin = 2;
-	
 	$originalImages = array();
+	$first = true;
+	$index = 0;
+
+	$framesjson = "";
+
+	while(count($images) > 0)
+	{
+
+		if($first == true) {
+			$first = false;
+		}
+		else {
+			$json .= ",";
+		}
+		$textureName = "texture$index";
 
 
-	/**
-	 * New positionimg
-	 */
-	// while(count($images) > 0)
-	// 
-	/**
-	 * End of new positioning
-	 */
+		$json .= "{\"id\": \"$textureName\",\"file\": \"$url$textureFolder/$textureName.png\"}";
+		$textureWidth = 1024;
+		$textureHeight = 1024;
+		$texture  = imagecreatetruecolor($textureWidth, $textureHeight);
+		imagealphablending($texture, false);
+		$col = imagecolorallocatealpha($texture, 255, 255, 255, 125);
+		imagefilledrectangle($texture, 0, 0, $textureWidth, $textureHeight, $col);
+		imagealphablending($texture, true);
 
-	while(count($images) > 0) {
-		for($i = 0; $i < count($images); $i++) {
-			$image = $images[$i];
-			
-			if(($x + $image->width) <= $textureWidth) {
-				$image->x = $x;
-				$image->y = $y;
+		$x = 0;
+		$y = 0;
+		$nextY = 0;
+		$margin = 2;
+		
 
-				$ext = pathinfo($files[$i], PATHINFO_EXTENSION);
-				if($ext == "png") {
-					$background = imagecolorallocate($image->image, 255, 255, 255);
-					// removing the black from the placeholder
-					imagecolortransparent($image->image, $background);
+		$fits = true;
+		$prevCount = count($images);
+		while((count($images) > 0) && ($fits)) {
+			for($i = 0; $i < count($images); $i++) {
+				$image = $images[$i];
+				
+				if((($x + $image->width) <= $textureWidth) && (($y + $image->height) <= $textureHeight)) {
+					$image->x = $x;
+					$image->y = $y;
 
-					imagealphablending($image->image, true);
+					$ext = pathinfo($files[$i], PATHINFO_EXTENSION);
+					if($ext == "png") {
+						$background = imagecolorallocate($image->image, 255, 255, 255);
+						// removing the black from the placeholder
+						imagecolortransparent($image->image, $background);
+
+						imagealphablending($image->image, true);
+					}
+					imagecopyresampled($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, $image->width, $image->height);
+					//imagecopymerge($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, 100);
+
+					if(($image->y + $image->height) > $nextY) {
+						$nextY = $image->y + $image->height;
+					}
+					$x += $image->width + $margin;
+
+					
+					array_push($originalImages, $image);
+					array_splice($images, $i, 1);
+					$i--;
+				
 				}
-				imagecopyresampled($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, $image->width, $image->height);
-				//imagecopymerge($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, 100);
-
-				if(($image->y + $image->height) > $nextY) {
-					$nextY = $image->y + $image->height;
-				}
-				$x += $image->width + $margin;
-
-				array_push($originalImages, $image);
-				array_splice($images, $i, 1);
-				$i--;
+				
+				
 			}
-			
-			
+
+			if(($x + $image->width) > $textureWidth) {
+				$x = 0;
+				$y = $nextY + $margin;
+			}
+
+			if($prevCount == count($images)) {
+				$fits = false;
+			}
+			$prevCount = count($images);
+		}
+		
+		
+
+		imagealphablending($texture, false);
+		imagesavealpha($texture, true);
+		imagepng($texture, "../$textureFolder/$textureName.png");
+		imagedestroy($texture);
+
+
+		while(count($originalImages) > 0) {
+			$image = $originalImages[0];
+			array_shift($originalImages);
+			$framesjson .= ",\"" . preg_replace('/.[^.]*$/', '', implode('', explode("$imageFolder/", $image->filename)))  . "\":";
+			$framesjson .= "{";
+			$framesjson .= "\"texture\": \"$textureName\",";
+			$framesjson .= "\"coords\": [";
+			$framesjson .= $image->x . "," . $image->y . "," . $image->width . "," . $image->height;
+
+			$framesjson .= "]";
+			$framesjson .= "}";
 		}
 
-		if(($x + $image->width) > $textureWidth) {
-			$x = 0;
-			$y = $nextY + $margin;
-		}
+		$index++;
 	}
+
+	$json .= "]";
+
+	$json .= $framesjson;
 	
-	
-
-	imagealphablending($texture, false);
-	imagesavealpha($texture, true);
-	imagepng($texture, "../$textureFilename");
-	imagedestroy($texture);
 
 
-	for($i = 0; $i < count($originalImages); $i++) {
-		$image = $originalImages[$i];
-		$json .= ",\"" . preg_replace('/.[^.]*$/', '', implode('', explode("$imageFolder/", $image->filename)))  . "\":";
-		$json .= "{";
-		$json .= "\"texture\": \"texture\",";
-		$json .= "\"coords\": [";
-		$json .= $image->x . "," . $image->y . "," . $image->width . "," . $image->height;
 
-		$json .= "]";
-		$json .= "}";
-	}
 
 	$json .= "}";
 
@@ -248,7 +277,7 @@ function uploadImage() {
 	}
 
 
-	echo mergeIntoTexture("$path/texture.png", $fullpath, $url);
+	echo mergeIntoTexture("$path", $fullpath, $url);
 }
 
 
@@ -287,12 +316,13 @@ function getTexture() {
 function merge() {
 	$session = isset($_POST['session']) ? $_POST['session'] : $_GET['session'];
 	$filename = isset($_POST['filename']) ? $_POST['filename'] : $_GET['filename'];
+	$url = isset($_POST['url']) ? $_POST['url'] : $_GET['url'];
 
 	$path = "../textureFiles/$session";
 	$fullpath = "$path/tmp";
 	
 
-	echo mergeIntoTexture("$path/texture.png", $fullpath);
+	echo mergeIntoTexture("textureFiles/$session", $fullpath, $url);
 }
 
 $routes = new Routes("__route__");

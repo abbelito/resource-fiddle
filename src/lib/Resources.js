@@ -3,6 +3,8 @@
 var PIXI = require("pixi.js");
 var EventDispatcher = require("../client/js/utils/EventDispatcher");
 
+
+
 /**
  * Client resources
  * @class Resources.
@@ -29,7 +31,8 @@ function Resources() {
 
 	 this.loadCount = 0;
 	 this.loadIndex = 0;
-
+	 this.texturesLoaded = 0;
+	 this.textureCount = 0;
 }
 EventDispatcher.init(Resources);
 
@@ -112,6 +115,19 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 				}
 			}
 		}
+		this.textureCount = this.resources.graphics.textures.length;
+
+		for(var i = 0; i < this.resources.graphics.textures.length; i++) {
+			var textureObject = this.resources.graphics.textures[i];
+			this.textures[textureObject.id] = new PIXI.Texture.fromImage(textureObject.file);
+			if(this.textures[textureObject.id].baseTexture.hasLoaded) {
+				this.onTextureLoaded();
+			}
+			else {
+				this.textures[textureObject.id].baseTexture.addEventListener("loaded", this.onTextureLoaded.bind(this));
+				this.textures[textureObject.id].baseTexture.addEventListener("error", this.onTextureError.bind(this));
+			}
+		}
 
 		this.trigger(Resources.Loaded);
 	}
@@ -129,6 +145,19 @@ Resources.prototype.onError = function(loader, loadIndex) {
 			}
 		}
 
+	}
+};
+
+Resources.prototype.onTextureLoaded = function() {
+	this.texturesLoaded ++;
+	if(this.texturesLoaded >= this.textureCount) {
+		this.trigger(Resources.Loaded);
+	}
+};
+
+Resources.prototype.onTextureError = function() {
+	this.texturesLoaded ++;
+	if(this.texturesLoaded >= this.textureCount) {
 		this.trigger(Resources.Loaded);
 	}
 };

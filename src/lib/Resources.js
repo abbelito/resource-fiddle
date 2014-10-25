@@ -129,7 +129,7 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 			}
 		}
 
-		this.trigger(Resources.Loaded);
+		//this.trigger(Resources.Loaded);
 	}
 };
 
@@ -149,6 +149,7 @@ Resources.prototype.onError = function(loader, loadIndex) {
 };
 
 Resources.prototype.onTextureLoaded = function() {
+	console.warn("Resources.prototype.onTextureLoaded");
 	this.texturesLoaded ++;
 	if(this.texturesLoaded >= this.textureCount) {
 		this.trigger(Resources.Loaded);
@@ -156,6 +157,7 @@ Resources.prototype.onTextureLoaded = function() {
 };
 
 Resources.prototype.onTextureError = function() {
+	console.warn("Resources.prototype.onTextureError");
 	this.texturesLoaded ++;
 	if(this.texturesLoaded >= this.textureCount) {
 		this.trigger(Resources.Loaded);

@@ -3,7 +3,6 @@
 include_once("./php/ResourceFiddle.php");
 
 $resourceFiddle = new ResourceFiddle();
-/*
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "table");
 
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "timerBackground");
@@ -90,8 +89,8 @@ $resourceFiddle->addTestcase("test4", "Fourth test", "testcase=test4");
 $resourceFiddle->setSession("bajs");
 
 $resourceFiddle->setTarget("target.php");
-*/
 
+/*
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "background");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "scratchSurface");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "buyButton");
@@ -100,12 +99,13 @@ $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "logo");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "result");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "scratchItem");
 
-$resourceFiddle->addTestcase("test4", "Fourth test", "viewcase=action_test");
+$resourceFiddle->addTestcase("test4", "Fourth test", "viewcase=loose_ticket_test");
 
 $resourceFiddle->setSession("bajs");
 
 $resourceFiddle->setTarget("http://localhost:8888/cryptoscratch/test/view/ticket.html");
 
+*/
 
 $resourceFiddle->dispatch();
 

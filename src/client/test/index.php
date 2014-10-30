@@ -86,10 +86,10 @@ $resourceFiddle->addTestcase("test2", "Second test", "testcase=test2");
 $resourceFiddle->addTestcase("test3", "Third test", "testcase=test3");
 $resourceFiddle->addTestcase("test4", "Fourth test", "testcase=test4");
 
+
 $resourceFiddle->setSession("bajs");
 
 $resourceFiddle->setTarget("target.php");
-
 /*
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "background");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "scratchSurface");
@@ -98,8 +98,10 @@ $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "checkButton");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "logo");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "result");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "scratchItem");
+$resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "scratchMarking");
 
 $resourceFiddle->addTestcase("test4", "Fourth test", "viewcase=loose_ticket_test");
+
 
 $resourceFiddle->setSession("bajs");
 

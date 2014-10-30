@@ -17,6 +17,7 @@ function Resources() {
 		positions: {},
 		colors: {},
 		strings: {},
+		values: {}
 	};
 
 	this.sources = new Array();
@@ -169,7 +170,25 @@ Resources.prototype.onTextureError = function() {
  * @method getValue
  */
 Resources.prototype.getValue = function(key) {
-	var value = this.resources[key];
+	var value = this.resources.values[key];
+
+	if(value == null) {
+		throw new Error("Invalid skin key: " + key);
+	} 
+
+	return value;
+}
+
+/**
+ * Get color from either loaded skin or default skin.
+ * @method getColor
+ */
+Resources.prototype.getColor = function(key) {
+	var value = null;
+	
+	if((this.resources != null) && (this.resources.colors[key] != null)) {
+		value = this.resources.colors[key];
+	}
 
 	if(value == null) {
 		throw new Error("Invalid skin key: " + key);

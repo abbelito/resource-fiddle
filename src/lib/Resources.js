@@ -42,7 +42,7 @@ Resources.Loaded = "loaded";
 
 
 Resources.prototype.isLoading = function() {
-	return this.loadCount > 0;
+	return this.loadCount > 0 || this.texturesLoaded < this.textureCount;
 };
 
 Resources.prototype.addSource = function(object) {
@@ -87,9 +87,12 @@ Resources.prototype.addSource = function(object) {
 		if(this.loadCount <= 0) {
 			for(var p in object) {
 				for(var o in object[p]) {
-					this.resources[p][o] = object[p][o];
+					this.sources[p][o] = object[p][o];
 				}
 			}
+			this.loadCount++;
+			this.onLoaded(null, this.loadIndex);
+			this.loadIndex++;
 		}
 		else {
 			this.sources.push(object);
@@ -104,8 +107,10 @@ Resources.prototype.getResourceObject = function() {
 
 Resources.prototype.onLoaded = function(loader, loadIndex) {
 	this.loadCount--;
-
-	this.sources[loadIndex] = loader.json;
+	
+	if(loader != null) {
+		this.sources[loadIndex] = loader.json;
+	}
 
 	if(this.loadCount <= 0) {
 

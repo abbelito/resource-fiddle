@@ -92,7 +92,7 @@ Resources.prototype.addSource = function(object) {
 				}
 			}*/
 			this.loadCount++;
-			this.onLoaded({json: object}}, this.loadIndex);
+			this.onLoaded({json: object}, this.loadIndex);
 			this.loadIndex++;
 		}
 		else {

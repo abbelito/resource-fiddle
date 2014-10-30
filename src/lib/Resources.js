@@ -85,13 +85,14 @@ Resources.prototype.addSource = function(object) {
 	}
 	else {
 		if(this.loadCount <= 0) {
+			/*
 			for(var p in object) {
 				for(var o in object[p]) {
 					this.sources[p][o] = object[p][o];
 				}
-			}
+			}*/
 			this.loadCount++;
-			this.onLoaded(null, this.loadIndex);
+			this.onLoaded({json: object}}, this.loadIndex);
 			this.loadIndex++;
 		}
 		else {

@@ -88,6 +88,12 @@ module.exports = function(grunt) {
 						dest: 'bin/php'
 					},
 					{
+						expand: true, 
+						cwd: 'src/client/test/',
+						src: ['.htaccess'], 
+						dest: 'bin'
+					},
+					{
 						expand: true,
 						cwd: 'src/client/release/',
 						src: ['*'],

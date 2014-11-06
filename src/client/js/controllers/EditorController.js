@@ -9,7 +9,7 @@ var Menu = require("../controllers/Menu");
 var MenuItem = require("../views/MenuItem");
 var MenuView = require("../views/MenuView");
 
-function EditorController(view) {
+function EditorController(session, view) {
 	this.view = view;
 
 	this.view.show();
@@ -32,21 +32,21 @@ function EditorController(view) {
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
-	this.graphicsEditor = new GraphicsEditor(editorView);
+	this.graphicsEditor = new GraphicsEditor(session, editorView);
 
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
-	this.positionsEditor = new PositionsEditor(editorView);
+	this.positionsEditor = new PositionsEditor(session, editorView);
 
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
-	this.colorsEditor = new ColorsEditor(editorView);
+	this.colorsEditor = new ColorsEditor(session, editorView);
 
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
-	this.stringsEditor = new StringsEditor(editorView);
+	this.stringsEditor = new StringsEditor(session, editorView);
 
 	this.currentEditor = this.graphicsEditor;
 	this.currentEditor.show();

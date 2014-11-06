@@ -136,6 +136,9 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 				}
 			}
 		}
+		else {
+			this.trigger(Resources.Loaded);
+		}
 
 		//this.trigger(Resources.Loaded);
 	}
@@ -151,6 +154,23 @@ Resources.prototype.onError = function(loader, loadIndex) {
 			for(var p in this.sources[i]) {
 				this.resources[p] = this.sources[i][p];
 			}
+		}
+		if(this.resources.graphics.textures) {
+			this.textureCount = this.resources.graphics.textures.length;
+			for(var i = 0; i < this.resources.graphics.textures.length; i++) {
+				var textureObject = this.resources.graphics.textures[i];
+				this.textures[textureObject.id] = new PIXI.Texture.fromImage(textureObject.file);
+				if(this.textures[textureObject.id].baseTexture.hasLoaded) {
+					this.onTextureLoaded();
+				}
+				else {
+					this.textures[textureObject.id].baseTexture.addEventListener("loaded", this.onTextureLoaded.bind(this));
+					this.textures[textureObject.id].baseTexture.addEventListener("error", this.onTextureError.bind(this));
+				}
+			}
+		}
+		else {
+			this.trigger(Resources.Loaded);
 		}
 
 	}

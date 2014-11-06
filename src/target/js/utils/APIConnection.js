@@ -1,8 +1,8 @@
 var EventDispatcher = require("./EventDispatcher");
 
-function APIConnection() {
+function APIConnection(session) {
 	this.url = "php/?__route__=/";
-	this.session = "bajs";
+	this.session = session;
 };
 EventDispatcher.init(APIConnection);
 

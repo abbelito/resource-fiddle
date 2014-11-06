@@ -200,7 +200,7 @@
 
 							var domContainer = document.getElementById("container");
 
-							var client = new FiddleClient(domContainer);
+							var client = new FiddleClient(domContainer, "<?= $this->session; ?>");
 							<?php 
 							$count = count($this->testcases);
 							for($i = 0; $i < $count; $i++) {

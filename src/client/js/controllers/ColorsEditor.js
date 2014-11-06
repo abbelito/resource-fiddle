@@ -3,8 +3,8 @@ var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
 var ColorItem = require("../views/ColorItem");
 
-function ColorsEditor(view) {
-	Editor.call(this, view);
+function ColorsEditor(session, view) {
+	Editor.call(this, session, view);
 };
 ClassUtils.extends(ColorsEditor, Editor);
 EventDispatcher.init(ColorsEditor);

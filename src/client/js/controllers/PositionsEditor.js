@@ -3,8 +3,8 @@ var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
 var PositionItem = require("../views/PositionItem");
 
-function PositionsEditor(view) {
-	Editor.call(this, view);
+function PositionsEditor(session, view) {
+	Editor.call(this, session, view);
 };
 ClassUtils.extends(PositionsEditor, Editor);
 EventDispatcher.init(PositionsEditor);

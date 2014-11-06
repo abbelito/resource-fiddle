@@ -2,8 +2,8 @@ var ClassUtils = require("../utils/ClassUtils");
 var Editor = require("./Editor");
 var StringItem = require("../views/StringItem");
 
-function StringsEditor(view) {
-	Editor.call(this, view);
+function StringsEditor(session, view) {
+	Editor.call(this, session, view);
 };
 ClassUtils.extends(StringsEditor, Editor);
 

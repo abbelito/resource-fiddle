@@ -6,12 +6,14 @@ var TargetControllerView = require("../views/TargetControllerView");
 var EditorController = require("../controllers/EditorController");
 var TargetController = require("../controllers/TargetController");
 
-function FiddleClient(domContainer) {
+function FiddleClient(domContainer, session) {
 	RootView.call(this, domContainer);
+
+	this.session = session;
 
 	this.editorView = new EditorControllerView();
 	this.addChild(this.editorView);
-	this.editor = new EditorController(this.editorView);
+	this.editor = new EditorController(this.session, this.editorView);
 	this.editor.on(EditorController.Refresh, this.onRefresh, this);
 
 	this.targetView = new TargetControllerView();

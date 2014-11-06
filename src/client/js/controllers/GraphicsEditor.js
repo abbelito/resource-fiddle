@@ -7,8 +7,8 @@ var SelectButton = require("../views/SelectButton");
 var Resources = require("../../../lib/Resources");
 
 
-function GraphicsEditor(view) {
-	Editor.call(this, view);
+function GraphicsEditor(session, view) {
+	Editor.call(this, session, view);
 
 	this.currentItem = null;
 };
@@ -42,7 +42,7 @@ GraphicsEditor.prototype.onUpload = function(item) {
 		data.append("Filename", item.name);
 		data.append("url", document.location);
 		this.currentItem = item;
-		var connection = new APIConnection();
+		var connection = new APIConnection(this.session);
 		connection.on("loaded", this.onUploaded, this);
 		connection.upload("upload", data);
 	}

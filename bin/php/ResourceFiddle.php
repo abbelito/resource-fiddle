@@ -18,6 +18,8 @@
 		private $groups;
 		private $targetURL;
 
+		private $path;
+
 		public static $GRAPHICS = 0;
 		public static $POSITIONS = 1;
 		public static $COLORS = 2;
@@ -34,6 +36,7 @@
 			$this->strings = array();
 
 			$this->testcases = array();
+			$this->path  = "";
 		}
 
 		/**
@@ -72,6 +75,14 @@
 		/**
 		 *
 		 */
+		public function setBasePath($path)
+		{
+			$this->path  = $path;
+		}
+
+		/**
+		 *
+		 */
 		public function setSession($sessionId)
 		{
 			$this->session = $sessionId;
@@ -92,8 +103,8 @@
 			?>
 			<html>
 				<head>
-					<link rel="stylesheet" type="text/css" href="css/client.min.css">
-					<script type="text/javascript" src="js/resource-fiddle.min.js"></script>
+					<link rel="stylesheet" type="text/css" href="<?= $this->path; ?>css/client.min.css">
+					<script type="text/javascript" src="<?= $this->path; ?>js/resource-fiddle.min.js"></script>
 
 					
 					<script type="text/javascript">
@@ -193,14 +204,14 @@
 								}
 							});
 
-							var jsonUrl = document.location + "textureFiles/<?= $this->session; ?>/texture.json";
+							var jsonUrl = document.location + "<?= $this->path; ?>textureFiles/<?= $this->session; ?>/texture.json";
 							
 							resources.addSource(jsonUrl);
 
 
 							var domContainer = document.getElementById("container");
 
-							var client = new FiddleClient(domContainer, "<?= $this->session; ?>");
+							var client = new FiddleClient(domContainer, "<?= $this->session; ?>", "<?= $this->path; ?>");
 							<?php 
 							$count = count($this->testcases);
 							for($i = 0; $i < $count; $i++) {
@@ -236,7 +247,7 @@
 				return;
 			}
 
-			$contents=file_get_contents(__DIR__."/../".$path);
+			$contents= file_get_contents(__DIR__."/../".$path);
 			echo $contents;
 		}
 

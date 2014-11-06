@@ -7,8 +7,8 @@ var SelectButton = require("../views/SelectButton");
 var Resources = require("../../../lib/Resources");
 
 
-function GraphicsEditor(session, view) {
-	Editor.call(this, session, view);
+function GraphicsEditor(basePath, session, view) {
+	Editor.call(this, basePath, session, view);
 
 	this.currentItem = null;
 };
@@ -27,7 +27,7 @@ GraphicsEditor.prototype.init = function(resources) {
 	for(var key in graphics) {
 		if(key != "textures") {
 			console.log("create ImageItem: ", key, graphics[key]);
-			var imageItem = new ImageItem(key, this.resources.getDOMTexture(key));
+			var imageItem = new ImageItem(this.basePath, key, this.resources.getDOMTexture(key));
 			this.view.addItem(imageItem);
 			imageItem.on(ImageItem.Selected, this.onUpload, this);
 		}
@@ -42,7 +42,7 @@ GraphicsEditor.prototype.onUpload = function(item) {
 		data.append("Filename", item.name);
 		data.append("url", document.location);
 		this.currentItem = item;
-		var connection = new APIConnection(this.session);
+		var connection = new APIConnection(this.basePath, this.session);
 		connection.on("loaded", this.onUploaded, this);
 		connection.upload("upload", data);
 	}

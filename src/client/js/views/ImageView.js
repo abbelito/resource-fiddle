@@ -1,7 +1,7 @@
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
-function ImageView(obj) {
+function ImageView(basePath, obj) {
 	View.call(this, View.Div, "ImageView");
 
 	this.imageObject = null;
@@ -12,7 +12,7 @@ function ImageView(obj) {
 	}
 	else {
 		this.imageObject = new Image();
-		this.imageObject.src = "img/no_image.jpeg";
+		this.imageObject.src = basePath + "img/no_image.jpeg";
 		this.getElement().appendChild(this.imageObject);
 		//this.imageObject = img;
 	}

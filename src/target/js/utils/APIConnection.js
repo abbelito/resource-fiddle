@@ -1,7 +1,7 @@
 var EventDispatcher = require("./EventDispatcher");
 
-function APIConnection(session) {
-	this.url = "php/?__route__=/";
+function APIConnection(basePath, session) {
+	this.url = basePath + "php/";
 	this.session = session;
 };
 EventDispatcher.init(APIConnection);

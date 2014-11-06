@@ -5,12 +5,12 @@ var SelectButton = require("./SelectButton");
 var ImageView = require("./ImageView");
 var Resources = require("../../../lib/Resources");
 
-function ImageItem(name, texture) {
+function ImageItem(basePath, name, texture) {
 	ListItem.call(this, name);
 
 	this.name = name;
 
-	this.image = new ImageView(texture);
+	this.image = new ImageView(basePath, texture);
 	this.addChild(this.image);
 
 	this.image.y = this.header.height;

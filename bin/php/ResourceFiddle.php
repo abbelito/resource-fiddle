@@ -88,13 +88,12 @@
 		/**
 		 *
 		 */
-		public function dispatch()
-		{
+		private function showIndex() {
 			?>
 			<html>
 				<head>
-					<link rel="stylesheet" type="text/css" href="css/client.bundle.css">
-					<script type="text/javascript" src="js/fiddleclient.bundle.js"></script>
+					<link rel="stylesheet" type="text/css" href="css/client.min.css">
+					<script type="text/javascript" src="js/resource-fiddle.min.js"></script>
 
 					
 					<script type="text/javascript">
@@ -223,6 +222,37 @@
 				</body>
 			</html>
 			<?php
+		}
+
+		/**
+		 *
+		 */
+		public function dispatch()
+		{
+			$path=ResourceFiddle::getPath();
+
+			if ($path=="/") {
+				$this->showIndex();
+				return;
+			}
+
+			$contents=file_get_contents(__DIR__."/../".$path);
+			echo $contents;
+		}
+
+		public static function getPath()
+		{
+			$pathinfo=pathinfo($_SERVER["SCRIPT_NAME"]);
+			$dirname=$pathinfo["dirname"];
+			$url=$_SERVER["REQUEST_URI"];
+
+			if (strpos($url,"?")!==FALSE)
+				$url=substr($url,0,strpos($url,"?"));
+
+			if (substr($url,0,strlen($dirname))!=$dirname)
+				throw new Exception("Somthing is malformed.");
+
+			return substr($url,strlen($dirname));
 		}
 	}
 

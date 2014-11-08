@@ -27,6 +27,7 @@ ClassUtils.extends(FiddleClient, RootView);
 
 FiddleClient.prototype.init = function(resources) {
 	//this.editor.init(editorContainer);
+	console.log("FiddleClient.prototype.init graphics: ", resources);
 	this.resources = resources;
 
 	if(resources.isLoading()) {

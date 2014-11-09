@@ -188,7 +188,6 @@ Resources.prototype.onError = function(loader, loadIndex) {
 };
 
 Resources.prototype.onTextureLoaded = function(event) {
-	console.log("Resources.prototype.onTextureLoaded: event.content = ", event.content);
 	this.texturesLoaded ++;
 	if(this.texturesLoaded >= this.textureCount) {
 		console.warn("Trigger Resources.Loaded: ", this.loadCount, ", this.loadIndex = ", this.loadIndex, ", this.texturesLoaded = ", this.texturesLoaded, ", this.textureCount = ", this.textureCount, "in Resources.prototype.onTextureLoaded");
@@ -197,7 +196,6 @@ Resources.prototype.onTextureLoaded = function(event) {
 };
 
 Resources.prototype.onTextureError = function(event) {
-	console.warn("Resources.prototype.onTextureError");
 	this.texturesLoaded ++;
 	if(this.texturesLoaded >= this.textureCount) {
 		console.warn("Trigger Resources.Loaded: ", this.loadCount, ", this.loadIndex = ", this.loadIndex, "in Resources.prototype.onTextureError");

@@ -205,7 +205,7 @@
 							});
 
 							var jsonUrl = document.location + "<?= $this->path; ?>textureFiles/<?= $this->session; ?>/texture.json";
-							
+							console.log("\n\njsonUrl = ", jsonUrl, "\n\n");
 							resources.addSource(jsonUrl);
 
 
@@ -218,7 +218,7 @@
 								$testcaseUrl1 = $this->targetURL . "?resources=";
 								$testcaseUrl2 = "&" . $this->testcases[$i]->url;
 								?>
-								client.addTestcase("<?= $this->testcases[$i]->id ?>", "<?= $this->testcases[$i]->name ?>", "<?= $testcaseUrl1; ?>" + jsonUrl + "<?= $testcaseUrl2; ?>");
+								client.addTestcase("<?= $this->testcases[$i]->id ?>", "<?= $this->testcases[$i]->name ?>", "<?= $testcaseUrl1; ?>" + encodeURIComponent(jsonUrl) + "<?= $testcaseUrl2; ?>");
 								<?php
 							}
 							?>

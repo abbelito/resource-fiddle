@@ -127,7 +127,7 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 						for(var t in this.sources[i][p][o]) {
 							exists = false;
 
-							for(var ot = 0; ot > this.resources[p][o].length; ot++) {
+							for(var ot = 0; ot < this.resources[p][o].length; ot++) {
 								if(this.resources[p][o][ot].id == this.sources[i][p][o][t].id) {
 									exists = true;
 								}
@@ -187,7 +187,7 @@ Resources.prototype.onError = function(loader, loadIndex) {
 						for(var t in this.sources[i][p][o]) {
 							exists = false;
 
-							for(var ot = 0; ot > this.resources[p][o].length; ot++) {
+							for(var ot = 0; ot < this.resources[p][o].length; ot++) {
 								if(this.resources[p][o][ot].id == this.sources[i][p][o][t].id) {
 									exists = true;
 								}

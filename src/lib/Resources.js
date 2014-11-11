@@ -123,8 +123,18 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 						if(!this.resources[p][o]) {
 							this.resources[p][o] = [];
 						}
+						var exists = false;
 						for(var t in this.sources[i][p][o]) {
-							this.resources[p][o].push(this.sources[i][p][o][t]);
+							exists = false;
+
+							for(var ot = 0; ot > this.resources[p][o].length; ot++) {
+								if(this.resources[p][o][ot].id == this.sources[i][p][o][t].id) {
+									exists = true;
+								}
+							}
+							if(!exists) {
+								this.resources[p][o].push(this.sources[i][p][o][t]);
+							}
 						}
 					}
 					else {
@@ -173,8 +183,18 @@ Resources.prototype.onError = function(loader, loadIndex) {
 						if(!this.resources[p][o]) {
 							this.resources[p][o] = [];
 						}
+						var exists = false;
 						for(var t in this.sources[i][p][o]) {
-							this.resources[p][o].push(this.sources[i][p][o][t]);
+							exists = false;
+
+							for(var ot = 0; ot > this.resources[p][o].length; ot++) {
+								if(this.resources[p][o][ot].id == this.sources[i][p][o][t].id) {
+									exists = true;
+								}
+							}
+							if(!exists) {
+								this.resources[p][o].push(this.sources[i][p][o][t]);
+							}
 						}
 					}
 					else {

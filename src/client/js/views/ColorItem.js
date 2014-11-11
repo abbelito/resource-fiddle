@@ -48,6 +48,7 @@ ColorItem.prototype.updateLayout = function(width, height) {
 };
 
 ColorItem.prototype.onChanged = function() {
+	this.colorView.background = this.input.getValue();
 	this.trigger(ColorItem.Changed, this);
 };
 

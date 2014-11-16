@@ -22,7 +22,8 @@ class Route {
 	}
 
 	public function run() {
-		return call_user_func_array(array($this->object, $this->functionName), array());
+		call_user_func_array(array($this->object, $this->functionName), array());
+		return true;
 	}
 }
 

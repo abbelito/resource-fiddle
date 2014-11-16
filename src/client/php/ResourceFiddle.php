@@ -1,5 +1,7 @@
 <?php
 	
+	include_once("Controllers/API.php");
+	include_once("Controllers/Routes.php");
 	include_once("Models/Resource.php");
 	include_once("Models/Testcase.php");
 
@@ -283,6 +285,21 @@
 
 			if ($path=="/") {
 				$this->showIndex();
+				return;
+			}
+
+
+			$api = new API();
+			$api->setTexturePath($this->texturePath);
+			$api->setSession($this->session);
+
+			$routes = new Routes("__route__");
+			$routes->addRoute("/save", $api, "saveJson");
+			$routes->addRoute("/upload", $api, "uploadImage");
+			$routes->addRoute("/getImages", $api, "getImages");
+			$routes->addRoute("/getTexture", $api, "getTexture");
+			$routes->addRoute("/merge", $api, "merge");
+			if($routes->run() != false) {
 				return;
 			}
 

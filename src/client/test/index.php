@@ -91,6 +91,7 @@ $resourceFiddle->setTexturePath("textureFiles");
 $resourceFiddle->setSession("bajs");
 
 $resourceFiddle->setTarget("target.php");
+$resourceFiddle->setBasePath("./");
 /*
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "background");
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "scratchSurface");

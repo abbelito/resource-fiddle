@@ -26,6 +26,7 @@ class Routes {
 				return $this->routes[$i]->run();
 			}
 		}
+		return false;
 	}
 }
 

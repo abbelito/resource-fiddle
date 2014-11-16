@@ -5,10 +5,12 @@
 */
 class Route {
 	private $path;
+	private $object;
 	private $functionName;
 
-	function __construct($path, $functionName) {
+	function __construct($path, $object, $functionName) {
 		$this->path = $path;
+		$this->object = $object;
 		$this->functionName = $functionName;
 	}
 
@@ -20,7 +22,8 @@ class Route {
 	}
 
 	public function run() {
-		return call_user_func_array($this->functionName, array());
+		call_user_func_array(array($this->object, $this->functionName), array());
+		return true;
 	}
 }
 

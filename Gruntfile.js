@@ -5,7 +5,8 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON('package.json'),
 		browserify: { 
 			
-      		'www/js/fiddleclient.bundle.js': ['src/client/js/fiddleclient.js'],
+      		'www/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
+      		'bin/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
       		'www/js/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
 		
 		},
@@ -139,13 +140,6 @@ module.exports = function(grunt) {
 					'bin/css/client.min.css': ['www/css/client.bundle.css']
 				}
 			}
-		},
-		uglify: {
-			release: {
-				files: {
-					'bin/js/resource-fiddle.min.js': ['www/js/fiddleclient.bundle.js']
-				}
-			}
 		}
 	});
 
@@ -158,7 +152,7 @@ module.exports = function(grunt) {
 
 	//grunt.registerTask('precommit', ['phplint:all', 'phpunit:unit']);
 	grunt.registerTask('default', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client']);
-	grunt.registerTask('release', ['copy:release', 'browserify', 'concat_css:release', 'cssmin:release', 'uglify:release']);
+	grunt.registerTask('release', ['copy:release', 'browserify', 'concat_css:release', 'cssmin:release']);
 	//grunt.registerTask('browserify', ['browserify']);
 	grunt.registerTask('server', ['php']);
 

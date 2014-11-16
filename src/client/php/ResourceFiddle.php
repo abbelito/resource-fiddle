@@ -104,7 +104,7 @@
 			<html>
 				<head>
 					<link rel="stylesheet" type="text/css" href="<?= $this->path; ?>css/client.min.css">
-					<script type="text/javascript" src="<?= $this->path; ?>js/resource-fiddle.min.js"></script>
+					<script type="text/javascript" src="<?= $this->path; ?>js/resource-fiddle.bundle.js"></script>
 
 					
 					<script type="text/javascript">

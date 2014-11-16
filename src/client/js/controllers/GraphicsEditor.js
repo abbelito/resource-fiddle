@@ -56,7 +56,7 @@ GraphicsEditor.prototype.onUploaded = function(data) {
 	var json = data.json;
 	console.log("GraphicsEditor.prototype.onUploaded: json = ", JSON.stringify(json));
 
-	this.resources.addSource({graphics: json});
+	this.resources.addSource({graphics: json}, true);
 	this.save();
 	this.currentItem.setTexture(this.resources.getDOMTexture(this.currentItem.name));
 	//this.loadImages();

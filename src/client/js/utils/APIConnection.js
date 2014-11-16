@@ -1,7 +1,7 @@
 var EventDispatcher = require("./EventDispatcher");
 
 function APIConnection(basePath, session) {
-	this.url = basePath + "/";
+	this.url = basePath;
 	this.basePath = basePath;
 	this.session = session;
 };
@@ -30,8 +30,6 @@ APIConnection.prototype.load = function(route, paramObject) {
 		}
 		params += o + "=" + paramObject[o];
 	}
-	params += "&session=" + this.session;
-	params += "&___timestamp____=" + Date.now();
 
 	xmlhttp.open("POST", url, true);
 	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -49,7 +47,7 @@ APIConnection.prototype.upload = function(route, paramObject) {
 
 	xmlhttp.onreadystatechange = this.onReadyStateChange.bind(this, xmlhttp);
 
-	var url = this.url + route + "&session=" + this.session;//"getImages";
+	var url = this.url + route;//"getImages";
 	
 	xmlhttp.open("POST", url, true);
 	//xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");

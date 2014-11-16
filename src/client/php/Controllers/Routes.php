@@ -9,8 +9,7 @@ class Routes {
 	private $routes;
 	private $routeId;
 
-	function __construct($routeId) {
-		$this->routeId = $routeId;
+	function __construct() {
 		$this->routes = array();
 	}
 
@@ -19,8 +18,7 @@ class Routes {
 		array_push($this->routes, $route);
 	}
 
-	public function run() {
-		$routeString = $_GET[$this->routeId];
+	public function run($routeString) {
 		for($i = 0; $i < count($this->routes); $i++) {
 			if($this->routes[$i]->compare($routeString)) {
 				return $this->routes[$i]->run();

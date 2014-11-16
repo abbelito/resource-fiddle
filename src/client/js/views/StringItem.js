@@ -10,9 +10,6 @@ var Resources = require("../../../lib/Resources");
 function StringItem(id, value) {
 	ListItem.call(this, id);
 
-	if(value && (value != '')) {
-		console.log("Image item frame seems to exist");
-	}
 
 	this.name = name;
 

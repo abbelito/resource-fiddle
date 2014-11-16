@@ -16,7 +16,6 @@ ColorsEditor.prototype.init = function(resources) {
 	var colors = this.resources.getResourceObject().colors;
 
 	for(var key in colors) {
-		console.log("create ColorItem: ", key, colors[key]);
 		var item = new ColorItem(key, colors[key]);
 		this.view.addItem(item);
 		item.on(ColorItem.Changed, this.onChanged, this);

@@ -46,11 +46,9 @@ ClassUtils.extends(FiddleClient, RootView);
 
 FiddleClient.prototype.init = function(resources) {
 	//this.editor.init(editorContainer);
-	console.log("FiddleClient.prototype.init graphics: ", resources);
 	this.resources = resources;
 
 	if(resources.isLoading()) {
-		console.log("resources is loading");
 		resources.on(Resources.Loaded, this.doInit, this);
 	}
 	else {
@@ -63,7 +61,6 @@ FiddleClient.prototype.addTestcase = function(id, name, url) {
 };
 
 FiddleClient.prototype.doInit = function() {
-	console.log("FiddleClient.prototype.doInit graphics: ", this.resources.getResourceObject().graphics);
 	this.target.init();
 	this.editor.init(this.resources);
 
@@ -75,7 +72,6 @@ FiddleClient.prototype.onRefresh = function() {
 };
 
 FiddleClient.prototype.onResize = function() {
-	console.log("FiddleClient.prototype.onResize");
 	this.updateLayout(document.body.clientWidth, document.body.clientHeight);
 };
 
@@ -108,7 +104,6 @@ ColorsEditor.prototype.init = function(resources) {
 	var colors = this.resources.getResourceObject().colors;
 
 	for(var key in colors) {
-		console.log("create ColorItem: ", key, colors[key]);
 		var item = new ColorItem(key, colors[key]);
 		this.view.addItem(item);
 		item.on(ColorItem.Changed, this.onChanged, this);
@@ -318,11 +313,9 @@ GraphicsEditor.prototype.init = function(resources) {
 
 	var graphics = this.resources.getResourceObject().graphics;
 
-	console.log("graphics: ", graphics);
 
 	for(var key in graphics) {
 		if(key != "textures") {
-			console.log("create ImageItem: ", key, graphics[key]);
 			var imageItem = new ImageItem(this.basePath, key, this.resources.getDOMTexture(key));
 			this.view.addItem(imageItem);
 			imageItem.on(ImageItem.Selected, this.onUpload, this);
@@ -350,8 +343,7 @@ GraphicsEditor.prototype.onUpload = function(item) {
 GraphicsEditor.prototype.onUploaded = function(data) {
 	var connection = data.connection;
 	var json = data.json;
-	console.log("GraphicsEditor.prototype.onUploaded: json = ", JSON.stringify(json));
-
+	
 	this.resources.addSource({graphics: json}, true);
 	this.save();
 	this.currentItem.setTexture(this.resources.getDOMTexture(this.currentItem.name));
@@ -542,7 +534,7 @@ module.exports = Testcase;
 var EventDispatcher = require("./EventDispatcher");
 
 function APIConnection(basePath, session) {
-	this.url = basePath + "/";
+	this.url = basePath;
 	this.basePath = basePath;
 	this.session = session;
 };
@@ -571,8 +563,6 @@ APIConnection.prototype.load = function(route, paramObject) {
 		}
 		params += o + "=" + paramObject[o];
 	}
-	params += "&session=" + this.session;
-	params += "&___timestamp____=" + Date.now();
 
 	xmlhttp.open("POST", url, true);
 	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -590,7 +580,7 @@ APIConnection.prototype.upload = function(route, paramObject) {
 
 	xmlhttp.onreadystatechange = this.onReadyStateChange.bind(this, xmlhttp);
 
-	var url = this.url + route + "&session=" + this.session;//"getImages";
+	var url = this.url + route;//"getImages";
 	
 	xmlhttp.open("POST", url, true);
 	//xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -1335,9 +1325,6 @@ var Resources = require("../../../lib/Resources");
 function StringItem(id, value) {
 	ListItem.call(this, id);
 
-	if(value && (value != '')) {
-		console.log("Image item frame seems to exist");
-	}
 
 	this.name = name;
 
@@ -1578,7 +1565,6 @@ Object.defineProperty(View.prototype, "width", {
 	set: function(width) { 
 		if(this.isOnStage()) {
 			if((typeof width) == "string") {
-				console.log("width is string: ", width);
 				this._domElement.style.width = width;
 			}
 			else {
@@ -1612,7 +1598,6 @@ Object.defineProperty(View.prototype, "height", {
 	set: function(height) { 
 		if(this.isOnStage()) {
 			if((typeof height) == "string") {
-				console.log("height is string: ", height);
 				this._domElement.style.height = height;
 			}
 			else {
@@ -1702,7 +1687,6 @@ Resources.prototype.isLoading = function() {
 };
 
 Resources.prototype.addSource = function(object, noCache) {
-	console.log("Resources.prototype.addSource  (typeof object) = ", (typeof object));
 	if(typeof object == "string") {
 
 		function fileExists(url) {
@@ -1717,7 +1701,6 @@ Resources.prototype.addSource = function(object, noCache) {
 		}
 		try {
 			if(!fileExists(object)) {
-				console.warn("File didn't exist: ", object);
 				return;
 			}
 		}
@@ -1763,7 +1746,6 @@ Resources.prototype.getResourceObject = function() {
 };
 
 Resources.prototype.onLoaded = function(loader, loadIndex) {
-	console.log("Resources.prototype.onLoaded");
 	this.loadCount--;
 	
 	if(loader != null) {
@@ -1807,18 +1789,15 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 				var textureObject = this.resources.graphics.textures[i];
 				this.textures[textureObject.id] = new PIXI.Texture.fromImage(textureObject.file);
 				if(this.textures[textureObject.id].baseTexture.hasLoaded) {
-					console.log("Call on loaded straight away");
 					this.onTextureLoaded();
 				}
 				else {
-					console.log("Wait for base texture to load");
 					this.textures[textureObject.id].baseTexture.addEventListener("loaded", this.onTextureLoaded.bind(this));
 					this.textures[textureObject.id].baseTexture.addEventListener("error", this.onTextureError.bind(this));
 				}
 			}
 		}
 		else {
-		console.warn("Trigger Resources.Loaded: ", this.loadCount, ", this.loadIndex = ", this.loadIndex, "in Resources.prototype.onLoaded");
 			this.trigger(Resources.Loaded);
 		}
 
@@ -1876,7 +1855,6 @@ Resources.prototype.onError = function(loader, loadIndex) {
 			}
 		}
 		else {
-		console.warn("Trigger Resources.Loaded: ", this.loadCount, ", this.loadIndex = ", this.loadIndex, "in Resources.prototype.onError");
 			this.trigger(Resources.Loaded);
 		}
 
@@ -1886,7 +1864,6 @@ Resources.prototype.onError = function(loader, loadIndex) {
 Resources.prototype.onTextureLoaded = function(event) {
 	this.texturesLoaded ++;
 	if(this.texturesLoaded >= this.textureCount) {
-		console.warn("Trigger Resources.Loaded: ", this.loadCount, ", this.loadIndex = ", this.loadIndex, ", this.texturesLoaded = ", this.texturesLoaded, ", this.textureCount = ", this.textureCount, "in Resources.prototype.onTextureLoaded");
 		this.trigger(Resources.Loaded);
 	}
 };
@@ -1894,7 +1871,6 @@ Resources.prototype.onTextureLoaded = function(event) {
 Resources.prototype.onTextureError = function(event) {
 	this.texturesLoaded ++;
 	if(this.texturesLoaded >= this.textureCount) {
-		console.warn("Trigger Resources.Loaded: ", this.loadCount, ", this.loadIndex = ", this.loadIndex, "in Resources.prototype.onTextureError");
 		this.trigger(Resources.Loaded);
 	}
 };
@@ -2021,7 +1997,6 @@ Resources.prototype.getDOMTexture = function(key) {
 			return this.getDOMComponentsPart(texture, frame);
 	}
 	
-	console.warn("Invalid key: " + key);
 	
 	return null;
 }

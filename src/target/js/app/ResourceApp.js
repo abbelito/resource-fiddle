@@ -14,7 +14,6 @@ function ResourceApp(resourceURL, testcase) {
 ResourceApp.prototype.constructor = ResourceApp;
 
 ResourceApp.prototype.onResources = function() {
-	console.log("ResourceApp.prototype.onResources");
 
 	if(this.testcase == "test1") {
 		try {

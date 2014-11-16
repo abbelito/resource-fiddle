@@ -26,8 +26,6 @@
 				var params = getQueryStringParams();
 				var resourceURL = params["resources"];
 				var testcase = params["testcase"];
-				console.log("resourceURL = ", resourceURL);
-				console.log("params = ", params);
 				var resourceApp = new ResourceApp(resourceURL, testcase);
 			//	resourceApp.loadTextures(params['textures']);
 			};

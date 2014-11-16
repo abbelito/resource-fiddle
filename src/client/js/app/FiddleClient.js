@@ -27,11 +27,9 @@ ClassUtils.extends(FiddleClient, RootView);
 
 FiddleClient.prototype.init = function(resources) {
 	//this.editor.init(editorContainer);
-	console.log("FiddleClient.prototype.init graphics: ", resources);
 	this.resources = resources;
 
 	if(resources.isLoading()) {
-		console.log("resources is loading");
 		resources.on(Resources.Loaded, this.doInit, this);
 	}
 	else {
@@ -44,7 +42,6 @@ FiddleClient.prototype.addTestcase = function(id, name, url) {
 };
 
 FiddleClient.prototype.doInit = function() {
-	console.log("FiddleClient.prototype.doInit graphics: ", this.resources.getResourceObject().graphics);
 	this.target.init();
 	this.editor.init(this.resources);
 
@@ -56,7 +53,6 @@ FiddleClient.prototype.onRefresh = function() {
 };
 
 FiddleClient.prototype.onResize = function() {
-	console.log("FiddleClient.prototype.onResize");
 	this.updateLayout(document.body.clientWidth, document.body.clientHeight);
 };
 

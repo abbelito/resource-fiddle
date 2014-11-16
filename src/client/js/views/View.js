@@ -135,7 +135,6 @@ Object.defineProperty(View.prototype, "width", {
 	set: function(width) { 
 		if(this.isOnStage()) {
 			if((typeof width) == "string") {
-				console.log("width is string: ", width);
 				this._domElement.style.width = width;
 			}
 			else {
@@ -169,7 +168,6 @@ Object.defineProperty(View.prototype, "height", {
 	set: function(height) { 
 		if(this.isOnStage()) {
 			if((typeof height) == "string") {
-				console.log("height is string: ", height);
 				this._domElement.style.height = height;
 			}
 			else {

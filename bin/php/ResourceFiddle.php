@@ -216,14 +216,13 @@
 								}
 							});
 
-							var jsonUrl = document.location + "<?= $this->path; ?><?= $this->texturePath; ?>/<?= $this->session; ?>/texture.json";
-							console.log("\n\njsonUrl = ", jsonUrl, "\n\n");
+							var jsonUrl = document.location + "<?= $this->texturePath; ?>/<?= $this->session; ?>/texture.json";
 							resources.addSource(jsonUrl, true);
 
 
 							var domContainer = document.getElementById("container");
 
-							var client = new FiddleClient(domContainer, "<?= $this->session; ?>", "<?= $this->path; ?>");
+							var client = new FiddleClient(domContainer, "<?= $this->session; ?>", "./");
 							<?php 
 							$count = count($this->testcases);
 							for($i = 0; $i < $count; $i++) {
@@ -293,16 +292,15 @@
 			$api->setTexturePath($this->texturePath);
 			$api->setSession($this->session);
 
-			$routes = new Routes("__route__");
+			$routes = new Routes();
 			$routes->addRoute("/save", $api, "saveJson");
 			$routes->addRoute("/upload", $api, "uploadImage");
 			$routes->addRoute("/getImages", $api, "getImages");
 			$routes->addRoute("/getTexture", $api, "getTexture");
 			$routes->addRoute("/merge", $api, "merge");
-			if($routes->run() != false) {
+			if($routes->run($path) != false) {
 				return;
 			}
-
 			$contents= file_get_contents(__DIR__."/../".$path);
 			echo $contents;
 		}

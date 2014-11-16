@@ -22,11 +22,9 @@ GraphicsEditor.prototype.init = function(resources) {
 
 	var graphics = this.resources.getResourceObject().graphics;
 
-	console.log("graphics: ", graphics);
 
 	for(var key in graphics) {
 		if(key != "textures") {
-			console.log("create ImageItem: ", key, graphics[key]);
 			var imageItem = new ImageItem(this.basePath, key, this.resources.getDOMTexture(key));
 			this.view.addItem(imageItem);
 			imageItem.on(ImageItem.Selected, this.onUpload, this);
@@ -54,8 +52,7 @@ GraphicsEditor.prototype.onUpload = function(item) {
 GraphicsEditor.prototype.onUploaded = function(data) {
 	var connection = data.connection;
 	var json = data.json;
-	console.log("GraphicsEditor.prototype.onUploaded: json = ", JSON.stringify(json));
-
+	
 	this.resources.addSource({graphics: json}, true);
 	this.save();
 	this.currentItem.setTexture(this.resources.getDOMTexture(this.currentItem.name));

@@ -38,9 +38,9 @@ GraphicsEditor.prototype.onUpload = function(item) {
 		var data = new FormData();
 		data.append('SelectedFile', item.getValues()[0]);
 		data.append("Filename", item.name);
-		data.append("url", document.location + this.basePath);
+		data.append("url", document.location);
 		this.currentItem = item;
-		var connection = new APIConnection(this.basePath, this.session);
+		var connection = new APIConnection("./", this.session);
 		connection.on("loaded", this.onUploaded, this);
 		connection.upload("upload", data);
 	}

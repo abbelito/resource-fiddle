@@ -150,7 +150,7 @@ Editor.prototype.hide = function() {
 
 Editor.prototype.save = function() {
 	try {
-		var connection = new APIConnection(this.basePath, this.session);
+		var connection = new APIConnection("./", this.session);
 		connection.on("loaded", this.onSaved, this);
 		connection.load("save", {session: this.session, json: JSON.stringify(this.resources.getResourceObject())});
 	}
@@ -207,16 +207,16 @@ function EditorController(basePath, session, view) {
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
-	this.positionsEditor = new PositionsEditor(basePath, session, editorView);
+	this.positionsEditor = new PositionsEditor("./", session, editorView);
 
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
-	this.colorsEditor = new ColorsEditor(basePath, session, editorView);
+	this.colorsEditor = new ColorsEditor("./", session, editorView);
 
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
-	this.stringsEditor = new StringsEditor(basePath, session, editorView);
+	this.stringsEditor = new StringsEditor("./", session, editorView);
 
 	this.currentEditor = this.graphicsEditor;
 	this.currentEditor.show();
@@ -329,9 +329,9 @@ GraphicsEditor.prototype.onUpload = function(item) {
 		var data = new FormData();
 		data.append('SelectedFile', item.getValues()[0]);
 		data.append("Filename", item.name);
-		data.append("url", document.location + this.basePath);
+		data.append("url", document.location);
 		this.currentItem = item;
-		var connection = new APIConnection(this.basePath, this.session);
+		var connection = new APIConnection("./", this.session);
 		connection.on("loaded", this.onUploaded, this);
 		connection.upload("upload", data);
 	}

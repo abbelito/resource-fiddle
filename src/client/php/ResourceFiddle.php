@@ -222,7 +222,7 @@
 
 							var domContainer = document.getElementById("container");
 
-							var client = new FiddleClient(domContainer, "<?= $this->session; ?>", "./");
+							var client = new FiddleClient(domContainer, "<?= $this->session; ?>", "<?= $this->path; ?>");
 							<?php 
 							$count = count($this->testcases);
 							for($i = 0; $i < $count; $i++) {

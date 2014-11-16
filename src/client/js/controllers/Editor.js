@@ -31,7 +31,7 @@ Editor.prototype.hide = function() {
 
 Editor.prototype.save = function() {
 	try {
-		var connection = new APIConnection(this.basePath, this.session);
+		var connection = new APIConnection("./", this.session);
 		connection.on("loaded", this.onSaved, this);
 		connection.load("save", {session: this.session, json: JSON.stringify(this.resources.getResourceObject())});
 	}

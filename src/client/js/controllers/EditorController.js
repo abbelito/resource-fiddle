@@ -37,16 +37,16 @@ function EditorController(basePath, session, view) {
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
-	this.positionsEditor = new PositionsEditor(basePath, session, editorView);
+	this.positionsEditor = new PositionsEditor("./", session, editorView);
 
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
 	editorView.y = this.menuView.height;
-	this.colorsEditor = new ColorsEditor(basePath, session, editorView);
+	this.colorsEditor = new ColorsEditor("./", session, editorView);
 
 	var editorView = new EditorView();
 	this.view.addEditor(editorView);
-	this.stringsEditor = new StringsEditor(basePath, session, editorView);
+	this.stringsEditor = new StringsEditor("./", session, editorView);
 
 	this.currentEditor = this.graphicsEditor;
 	this.currentEditor.show();

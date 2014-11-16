@@ -14,8 +14,8 @@ class Routes {
 		$this->routes = array();
 	}
 
-	public function addRoute($routePath, $functionName)  {
-		$route = new Route($routePath, $functionName);
+	public function addRoute($routePath, $object, $functionName)  {
+		$route = new Route($routePath, $object, $functionName);
 		array_push($this->routes, $route);
 	}
 

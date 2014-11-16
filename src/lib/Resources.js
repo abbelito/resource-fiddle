@@ -2,7 +2,7 @@
 
 var PIXI = require("pixi.js");
 var EventDispatcher = require("../client/js/utils/EventDispatcher");
-var request = require('request');
+
 
 
 /**
@@ -70,7 +70,7 @@ Resources.prototype.addSource = function(object, noCache) {
 		}
 
 		try {
-			var loader = new PIXI.JsonLoader(object, true);
+			var loader = new Resources.JsonLoader(object, true, noCache);
 			loader.onLoaded = this.onLoaded.bind(this, loader, this.loadIndex);
 			var loadIndex = parseInt(this.loadIndex + 0);
 			loader.onError = this.onError.bind(this, loader, loadIndex);
@@ -410,6 +410,7 @@ Resources.prototype.getDOMComponentsPart = function(textureid, x, y, w, h) {
 	var texture = this.getComponentsPart(textureid, x, y, w, h);
 
 	var dom = texture.baseTexture.source.cloneNode();
+	dom.src = dom.src + "?__timestamp__=" + Date.now();
 
 	var div = document.createElement("div");
 	div.appendChild(dom);
@@ -454,97 +455,13 @@ Resources.prototype.getTextureFromSkin = function(textureid) {
 /**
  * @class Resources.JsonLoader
  */
-Resources.JsonLoader = function() {
-    PIXI.EventTarget.call(this);
-
-    /**
-     * The url of the bitmap font data
-     *
-     * @property url
-     * @type String
-     */
-    this.url = url;
-
-    /**
-     * Whether the requests should be treated as cross origin
-     *
-     * @property crossorigin
-     * @type Boolean
-     */
-    this.crossorigin = crossorigin;
-
-    /**
-     * [read-only] The base url of the bitmap font data
-     *
-     * @property baseUrl
-     * @type String
-     * @readOnly
-     */
-    this.baseUrl = url.replace(/[^\/]*$/, '');
-
-    /**
-     * [read-only] Whether the data has loaded yet
-     *
-     * @property loaded
-     * @type Boolean
-     * @readOnly
-     */
-    this.loaded = false;
-
+Resources.JsonLoader = function(url, crossorigin, noCache) {
+    PIXI.JsonLoader.call(this, url, crossorigin);
+    this.noCache = noCache;
 };
-
-// constructor
+Resources.JsonLoader.prototype = Object.create(PIXI.JsonLoader.prototype);
 Resources.JsonLoader.prototype.constructor = Resources.JsonLoader;
 
-/**
- * Loads the JSON data
- *
- * @method load
- */
-Resources.JsonLoader.prototype.load = function () {
-
-    var scope = this;
-
-    if(window.XDomainRequest && scope.crossorigin)
-    {
-        this.ajaxRequest = new window.XDomainRequest();
-
-        // XDomainRequest has a few querks. Occasionally it will abort requests
-        // A way to avoid this is to make sure ALL callbacks are set even if not used
-        // More info here: http://stackoverflow.com/questions/15786966/xdomainrequest-aborts-post-on-ie-9
-        this.ajaxRequest.timeout = 3000;
-
-        this.ajaxRequest.onerror = function () {
-            scope.onError();
-        };
-           
-        this.ajaxRequest.ontimeout = function () {
-            scope.onError();
-        };
-
-        this.ajaxRequest.onprogress = function() {};
-
-    }
-    else if (window.XMLHttpRequest)
-    {
-        this.ajaxRequest = new window.XMLHttpRequest();
-    }
-    else
-    {
-        this.ajaxRequest = new window.ActiveXObject('Microsoft.XMLHTTP');
-    }
-
-    
-
-    this.ajaxRequest.onload = function(){
-
-        scope.onJSONLoaded();
-    };
-
-    this.ajaxRequest.open('GET',this.url,true);
-
-    this.ajaxRequest.send();
-};
 
 /**
  * Invoke when JSON file is loaded
@@ -566,7 +483,7 @@ Resources.JsonLoader.prototype.onJSONLoaded = function () {
     {
         // sprite sheet
         var scope = this;
-        var textureUrl = this.baseUrl + this.json.meta.image;
+        var textureUrl = this.baseUrl + this.json.meta.image + (this.noCache ? ("?__timestamp__=" + Date.now()) : "");
         var image = new PIXI.ImageLoader(textureUrl, this.crossorigin);
         var frameData = this.json.frames;
 
@@ -617,33 +534,6 @@ Resources.JsonLoader.prototype.onJSONLoaded = function () {
     }
 };
 
-/**
- * Invoke when json file loaded
- *
- * @method onLoaded
- * @private
- */
-Resources.JsonLoader.prototype.onLoaded = function () {
-    this.loaded = true;
-    this.dispatchEvent({
-        type: 'loaded',
-        content: this
-    });
-};
-
-/**
- * Invoke when error occured
- *
- * @method onError
- * @private
- */
-Resources.JsonLoader.prototype.onError = function () {
-
-    this.dispatchEvent({
-        type: 'error',
-        content: this
-    });
-};
 
 
 module.exports = Resources;

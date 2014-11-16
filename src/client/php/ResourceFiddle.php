@@ -206,7 +206,7 @@
 
 							var jsonUrl = document.location + "<?= $this->path; ?>textureFiles/<?= $this->session; ?>/texture.json";
 							console.log("\n\njsonUrl = ", jsonUrl, "\n\n");
-							resources.addSource(jsonUrl);
+							resources.addSource(jsonUrl, true);
 
 
 							var domContainer = document.getElementById("container");

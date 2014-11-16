@@ -7,7 +7,7 @@ function ResourceApp(resourceURL, testcase) {
 	document.body.appendChild(this.renderer.view);
 	this.resources = new Resources();
 	this.resources.on("loaded", this.onResources, this);
-	this.resources.addSource(resourceURL);
+	this.resources.addSource(resourceURL, true);
 	this.appStage = new PIXI.Stage(0, true);
 	window.requestAnimationFrame(this.onAnimationFrame.bind(this));
 };

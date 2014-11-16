@@ -362,6257 +362,9 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":64}],3:[function(require,module,exports){
+},{"util/":50}],3:[function(require,module,exports){
 module.exports=require(1)
-},{"/Users/albertschapiro/Documents/GitHub/resource-fiddle/node_modules/grunt-browserify/node_modules/browserify/lib/_empty.js":1}],4:[function(require,module,exports){
-'use strict';
-
-
-var TYPED_OK =  (typeof Uint8Array !== 'undefined') &&
-                (typeof Uint16Array !== 'undefined') &&
-                (typeof Int32Array !== 'undefined');
-
-
-exports.assign = function (obj /*from1, from2, from3, ...*/) {
-  var sources = Array.prototype.slice.call(arguments, 1);
-  while (sources.length) {
-    var source = sources.shift();
-    if (!source) { continue; }
-
-    if (typeof(source) !== 'object') {
-      throw new TypeError(source + 'must be non-object');
-    }
-
-    for (var p in source) {
-      if (source.hasOwnProperty(p)) {
-        obj[p] = source[p];
-      }
-    }
-  }
-
-  return obj;
-};
-
-
-// reduce buffer size, avoiding mem copy
-exports.shrinkBuf = function (buf, size) {
-  if (buf.length === size) { return buf; }
-  if (buf.subarray) { return buf.subarray(0, size); }
-  buf.length = size;
-  return buf;
-};
-
-
-var fnTyped = {
-  arraySet: function (dest, src, src_offs, len, dest_offs) {
-    if (src.subarray && dest.subarray) {
-      dest.set(src.subarray(src_offs, src_offs+len), dest_offs);
-      return;
-    }
-    // Fallback to ordinary array
-    for(var i=0; i<len; i++) {
-      dest[dest_offs + i] = src[src_offs + i];
-    }
-  },
-  // Join array of chunks to single array.
-  flattenChunks: function(chunks) {
-    var i, l, len, pos, chunk, result;
-
-    // calculate data length
-    len = 0;
-    for (i=0, l=chunks.length; i<l; i++) {
-      len += chunks[i].length;
-    }
-
-    // join chunks
-    result = new Uint8Array(len);
-    pos = 0;
-    for (i=0, l=chunks.length; i<l; i++) {
-      chunk = chunks[i];
-      result.set(chunk, pos);
-      pos += chunk.length;
-    }
-
-    return result;
-  }
-};
-
-var fnUntyped = {
-  arraySet: function (dest, src, src_offs, len, dest_offs) {
-    for(var i=0; i<len; i++) {
-      dest[dest_offs + i] = src[src_offs + i];
-    }
-  },
-  // Join array of chunks to single array.
-  flattenChunks: function(chunks) {
-    return [].concat.apply([], chunks);
-  }
-};
-
-
-// Enable/Disable typed arrays use, for testing
-//
-exports.setTyped = function (on) {
-  if (on) {
-    exports.Buf8  = Uint8Array;
-    exports.Buf16 = Uint16Array;
-    exports.Buf32 = Int32Array;
-    exports.assign(exports, fnTyped);
-  } else {
-    exports.Buf8  = Array;
-    exports.Buf16 = Array;
-    exports.Buf32 = Array;
-    exports.assign(exports, fnUntyped);
-  }
-};
-
-exports.setTyped(TYPED_OK);
-},{}],5:[function(require,module,exports){
-'use strict';
-
-// Note: adler32 takes 12% for level 0 and 2% for level 6.
-// It doesn't worth to make additional optimizationa as in original.
-// Small size is preferable.
-
-function adler32(adler, buf, len, pos) {
-  var s1 = (adler & 0xffff) |0
-    , s2 = ((adler >>> 16) & 0xffff) |0
-    , n = 0;
-
-  while (len !== 0) {
-    // Set limit ~ twice less than 5552, to keep
-    // s2 in 31-bits, because we force signed ints.
-    // in other case %= will fail.
-    n = len > 2000 ? 2000 : len;
-    len -= n;
-
-    do {
-      s1 = (s1 + buf[pos++]) |0;
-      s2 = (s2 + s1) |0;
-    } while (--n);
-
-    s1 %= 65521;
-    s2 %= 65521;
-  }
-
-  return (s1 | (s2 << 16)) |0;
-}
-
-
-module.exports = adler32;
-},{}],6:[function(require,module,exports){
-module.exports = {
-
-  /* Allowed flush values; see deflate() and inflate() below for details */
-  Z_NO_FLUSH:         0,
-  Z_PARTIAL_FLUSH:    1,
-  Z_SYNC_FLUSH:       2,
-  Z_FULL_FLUSH:       3,
-  Z_FINISH:           4,
-  Z_BLOCK:            5,
-  Z_TREES:            6,
-
-  /* Return codes for the compression/decompression functions. Negative values
-  * are errors, positive values are used for special but normal events.
-  */
-  Z_OK:               0,
-  Z_STREAM_END:       1,
-  Z_NEED_DICT:        2,
-  Z_ERRNO:           -1,
-  Z_STREAM_ERROR:    -2,
-  Z_DATA_ERROR:      -3,
-  //Z_MEM_ERROR:     -4,
-  Z_BUF_ERROR:       -5,
-  //Z_VERSION_ERROR: -6,
-
-  /* compression levels */
-  Z_NO_COMPRESSION:         0,
-  Z_BEST_SPEED:             1,
-  Z_BEST_COMPRESSION:       9,
-  Z_DEFAULT_COMPRESSION:   -1,
-
-
-  Z_FILTERED:               1,
-  Z_HUFFMAN_ONLY:           2,
-  Z_RLE:                    3,
-  Z_FIXED:                  4,
-  Z_DEFAULT_STRATEGY:       0,
-
-  /* Possible values of the data_type field (though see inflate()) */
-  Z_BINARY:                 0,
-  Z_TEXT:                   1,
-  //Z_ASCII:                1, // = Z_TEXT (deprecated)
-  Z_UNKNOWN:                2,
-
-  /* The deflate compression method */
-  Z_DEFLATED:               8
-  //Z_NULL:                 null // Use -1 or null inline, depending on var type
-};
-},{}],7:[function(require,module,exports){
-'use strict';
-
-// Note: we can't get significant speed boost here.
-// So write code to minimize size - no pregenerated tables
-// and array tools dependencies.
-
-
-// Use ordinary array, since untyped makes no boost here
-function makeTable() {
-  var c, table = [];
-
-  for(var n =0; n < 256; n++){
-    c = n;
-    for(var k =0; k < 8; k++){
-      c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-    }
-    table[n] = c;
-  }
-
-  return table;
-}
-
-// Create table on load. Just 255 signed longs. Not a problem.
-var crcTable = makeTable();
-
-
-function crc32(crc, buf, len, pos) {
-  var t = crcTable
-    , end = pos + len;
-
-  crc = crc ^ (-1);
-
-  for (var i = pos; i < end; i++ ) {
-    crc = (crc >>> 8) ^ t[(crc ^ buf[i]) & 0xFF];
-  }
-
-  return (crc ^ (-1)); // >>> 0;
-}
-
-
-module.exports = crc32;
-},{}],8:[function(require,module,exports){
-'use strict';
-
-var utils   = require('../utils/common');
-var trees   = require('./trees');
-var adler32 = require('./adler32');
-var crc32   = require('./crc32');
-var msg   = require('./messages');
-
-/* Public constants ==========================================================*/
-/* ===========================================================================*/
-
-
-/* Allowed flush values; see deflate() and inflate() below for details */
-var Z_NO_FLUSH      = 0;
-var Z_PARTIAL_FLUSH = 1;
-//var Z_SYNC_FLUSH    = 2;
-var Z_FULL_FLUSH    = 3;
-var Z_FINISH        = 4;
-var Z_BLOCK         = 5;
-//var Z_TREES         = 6;
-
-
-/* Return codes for the compression/decompression functions. Negative values
- * are errors, positive values are used for special but normal events.
- */
-var Z_OK            = 0;
-var Z_STREAM_END    = 1;
-//var Z_NEED_DICT     = 2;
-//var Z_ERRNO         = -1;
-var Z_STREAM_ERROR  = -2;
-var Z_DATA_ERROR    = -3;
-//var Z_MEM_ERROR     = -4;
-var Z_BUF_ERROR     = -5;
-//var Z_VERSION_ERROR = -6;
-
-
-/* compression levels */
-//var Z_NO_COMPRESSION      = 0;
-//var Z_BEST_SPEED          = 1;
-//var Z_BEST_COMPRESSION    = 9;
-var Z_DEFAULT_COMPRESSION = -1;
-
-
-var Z_FILTERED            = 1;
-var Z_HUFFMAN_ONLY        = 2;
-var Z_RLE                 = 3;
-var Z_FIXED               = 4;
-var Z_DEFAULT_STRATEGY    = 0;
-
-/* Possible values of the data_type field (though see inflate()) */
-//var Z_BINARY              = 0;
-//var Z_TEXT                = 1;
-//var Z_ASCII               = 1; // = Z_TEXT
-var Z_UNKNOWN             = 2;
-
-
-/* The deflate compression method */
-var Z_DEFLATED  = 8;
-
-/*============================================================================*/
-
-
-var MAX_MEM_LEVEL = 9;
-/* Maximum value for memLevel in deflateInit2 */
-var MAX_WBITS = 15;
-/* 32K LZ77 window */
-var DEF_MEM_LEVEL = 8;
-
-
-var LENGTH_CODES  = 29;
-/* number of length codes, not counting the special END_BLOCK code */
-var LITERALS      = 256;
-/* number of literal bytes 0..255 */
-var L_CODES       = LITERALS + 1 + LENGTH_CODES;
-/* number of Literal or Length codes, including the END_BLOCK code */
-var D_CODES       = 30;
-/* number of distance codes */
-var BL_CODES      = 19;
-/* number of codes used to transfer the bit lengths */
-var HEAP_SIZE     = 2*L_CODES + 1;
-/* maximum heap size */
-var MAX_BITS  = 15;
-/* All codes must not exceed MAX_BITS bits */
-
-var MIN_MATCH = 3;
-var MAX_MATCH = 258;
-var MIN_LOOKAHEAD = (MAX_MATCH + MIN_MATCH + 1);
-
-var PRESET_DICT = 0x20;
-
-var INIT_STATE = 42;
-var EXTRA_STATE = 69;
-var NAME_STATE = 73;
-var COMMENT_STATE = 91;
-var HCRC_STATE = 103;
-var BUSY_STATE = 113;
-var FINISH_STATE = 666;
-
-var BS_NEED_MORE      = 1; /* block not completed, need more input or more output */
-var BS_BLOCK_DONE     = 2; /* block flush performed */
-var BS_FINISH_STARTED = 3; /* finish started, need only more output at next deflate */
-var BS_FINISH_DONE    = 4; /* finish done, accept no more input or output */
-
-var OS_CODE = 0x03; // Unix :) . Don't detect, use this default.
-
-function err(strm, errorCode) {
-  strm.msg = msg[errorCode];
-  return errorCode;
-}
-
-function rank(f) {
-  return ((f) << 1) - ((f) > 4 ? 9 : 0);
-}
-
-function zero(buf) { var len = buf.length; while (--len >= 0) { buf[len] = 0; } }
-
-
-/* =========================================================================
- * Flush as much pending output as possible. All deflate() output goes
- * through this function so some applications may wish to modify it
- * to avoid allocating a large strm->output buffer and copying into it.
- * (See also read_buf()).
- */
-function flush_pending(strm) {
-  var s = strm.state;
-
-  //_tr_flush_bits(s);
-  var len = s.pending;
-  if (len > strm.avail_out) {
-    len = strm.avail_out;
-  }
-  if (len === 0) { return; }
-
-  utils.arraySet(strm.output, s.pending_buf, s.pending_out, len, strm.next_out);
-  strm.next_out += len;
-  s.pending_out += len;
-  strm.total_out += len;
-  strm.avail_out -= len;
-  s.pending -= len;
-  if (s.pending === 0) {
-    s.pending_out = 0;
-  }
-}
-
-
-function flush_block_only (s, last) {
-  trees._tr_flush_block(s, (s.block_start >= 0 ? s.block_start : -1), s.strstart - s.block_start, last);
-  s.block_start = s.strstart;
-  flush_pending(s.strm);
-}
-
-
-function put_byte(s, b) {
-  s.pending_buf[s.pending++] = b;
-}
-
-
-/* =========================================================================
- * Put a short in the pending buffer. The 16-bit value is put in MSB order.
- * IN assertion: the stream state is correct and there is enough room in
- * pending_buf.
- */
-function putShortMSB(s, b) {
-//  put_byte(s, (Byte)(b >> 8));
-//  put_byte(s, (Byte)(b & 0xff));
-  s.pending_buf[s.pending++] = (b >>> 8) & 0xff;
-  s.pending_buf[s.pending++] = b & 0xff;
-}
-
-
-/* ===========================================================================
- * Read a new buffer from the current input stream, update the adler32
- * and total number of bytes read.  All deflate() input goes through
- * this function so some applications may wish to modify it to avoid
- * allocating a large strm->input buffer and copying from it.
- * (See also flush_pending()).
- */
-function read_buf(strm, buf, start, size) {
-  var len = strm.avail_in;
-
-  if (len > size) { len = size; }
-  if (len === 0) { return 0; }
-
-  strm.avail_in -= len;
-
-  utils.arraySet(buf, strm.input, strm.next_in, len, start);
-  if (strm.state.wrap === 1) {
-    strm.adler = adler32(strm.adler, buf, len, start);
-  }
-
-  else if (strm.state.wrap === 2) {
-    strm.adler = crc32(strm.adler, buf, len, start);
-  }
-
-  strm.next_in += len;
-  strm.total_in += len;
-
-  return len;
-}
-
-
-/* ===========================================================================
- * Set match_start to the longest match starting at the given string and
- * return its length. Matches shorter or equal to prev_length are discarded,
- * in which case the result is equal to prev_length and match_start is
- * garbage.
- * IN assertions: cur_match is the head of the hash chain for the current
- *   string (strstart) and its distance is <= MAX_DIST, and prev_length >= 1
- * OUT assertion: the match length is not greater than s->lookahead.
- */
-function longest_match(s, cur_match) {
-  var chain_length = s.max_chain_length;      /* max hash chain length */
-  var scan = s.strstart; /* current string */
-  var match;                       /* matched string */
-  var len;                           /* length of current match */
-  var best_len = s.prev_length;              /* best match length so far */
-  var nice_match = s.nice_match;             /* stop if match long enough */
-  var limit = (s.strstart > (s.w_size - MIN_LOOKAHEAD)) ?
-      s.strstart - (s.w_size - MIN_LOOKAHEAD) : 0/*NIL*/;
-
-  var _win = s.window; // shortcut
-
-  var wmask = s.w_mask;
-  var prev  = s.prev;
-
-  /* Stop when cur_match becomes <= limit. To simplify the code,
-   * we prevent matches with the string of window index 0.
-   */
-
-  var strend = s.strstart + MAX_MATCH;
-  var scan_end1  = _win[scan + best_len - 1];
-  var scan_end   = _win[scan + best_len];
-
-  /* The code is optimized for HASH_BITS >= 8 and MAX_MATCH-2 multiple of 16.
-   * It is easy to get rid of this optimization if necessary.
-   */
-  // Assert(s->hash_bits >= 8 && MAX_MATCH == 258, "Code too clever");
-
-  /* Do not waste too much time if we already have a good match: */
-  if (s.prev_length >= s.good_match) {
-    chain_length >>= 2;
-  }
-  /* Do not look for matches beyond the end of the input. This is necessary
-   * to make deflate deterministic.
-   */
-  if (nice_match > s.lookahead) { nice_match = s.lookahead; }
-
-  // Assert((ulg)s->strstart <= s->window_size-MIN_LOOKAHEAD, "need lookahead");
-
-  do {
-    // Assert(cur_match < s->strstart, "no future");
-    match = cur_match;
-
-    /* Skip to next match if the match length cannot increase
-     * or if the match length is less than 2.  Note that the checks below
-     * for insufficient lookahead only occur occasionally for performance
-     * reasons.  Therefore uninitialized memory will be accessed, and
-     * conditional jumps will be made that depend on those values.
-     * However the length of the match is limited to the lookahead, so
-     * the output of deflate is not affected by the uninitialized values.
-     */
-
-    if (_win[match + best_len]     !== scan_end  ||
-        _win[match + best_len - 1] !== scan_end1 ||
-        _win[match]                !== _win[scan] ||
-        _win[++match]              !== _win[scan + 1]) {
-      continue;
-    }
-
-    /* The check at best_len-1 can be removed because it will be made
-     * again later. (This heuristic is not always a win.)
-     * It is not necessary to compare scan[2] and match[2] since they
-     * are always equal when the other bytes match, given that
-     * the hash keys are equal and that HASH_BITS >= 8.
-     */
-    scan += 2;
-    match++;
-    // Assert(*scan == *match, "match[2]?");
-
-    /* We check for insufficient lookahead only every 8th comparison;
-     * the 256th check will be made at strstart+258.
-     */
-    do {
-      /*jshint noempty:false*/
-    } while (_win[++scan] === _win[++match] && _win[++scan] === _win[++match] &&
-             _win[++scan] === _win[++match] && _win[++scan] === _win[++match] &&
-             _win[++scan] === _win[++match] && _win[++scan] === _win[++match] &&
-             _win[++scan] === _win[++match] && _win[++scan] === _win[++match] &&
-             scan < strend);
-
-    // Assert(scan <= s->window+(unsigned)(s->window_size-1), "wild scan");
-
-    len = MAX_MATCH - (strend - scan);
-    scan = strend - MAX_MATCH;
-
-    if (len > best_len) {
-      s.match_start = cur_match;
-      best_len = len;
-      if (len >= nice_match) {
-        break;
-      }
-      scan_end1  = _win[scan + best_len - 1];
-      scan_end   = _win[scan + best_len];
-    }
-  } while ((cur_match = prev[cur_match & wmask]) > limit && --chain_length !== 0);
-
-  if (best_len <= s.lookahead) {
-    return best_len;
-  }
-  return s.lookahead;
-}
-
-
-/* ===========================================================================
- * Fill the window when the lookahead becomes insufficient.
- * Updates strstart and lookahead.
- *
- * IN assertion: lookahead < MIN_LOOKAHEAD
- * OUT assertions: strstart <= window_size-MIN_LOOKAHEAD
- *    At least one byte has been read, or avail_in == 0; reads are
- *    performed for at least two bytes (required for the zip translate_eol
- *    option -- not supported here).
- */
-function fill_window(s) {
-  var _w_size = s.w_size;
-  var p, n, m, more, str;
-
-  //Assert(s->lookahead < MIN_LOOKAHEAD, "already enough lookahead");
-
-  do {
-    more = s.window_size - s.lookahead - s.strstart;
-
-    // JS ints have 32 bit, block below not needed
-    /* Deal with !@#$% 64K limit: */
-    //if (sizeof(int) <= 2) {
-    //    if (more == 0 && s->strstart == 0 && s->lookahead == 0) {
-    //        more = wsize;
-    //
-    //  } else if (more == (unsigned)(-1)) {
-    //        /* Very unlikely, but possible on 16 bit machine if
-    //         * strstart == 0 && lookahead == 1 (input done a byte at time)
-    //         */
-    //        more--;
-    //    }
-    //}
-
-
-    /* If the window is almost full and there is insufficient lookahead,
-     * move the upper half to the lower one to make room in the upper half.
-     */
-    if (s.strstart >= _w_size + (_w_size - MIN_LOOKAHEAD)) {
-
-      utils.arraySet(s.window, s.window, _w_size, _w_size, 0);
-      s.match_start -= _w_size;
-      s.strstart -= _w_size;
-      /* we now have strstart >= MAX_DIST */
-      s.block_start -= _w_size;
-
-      /* Slide the hash table (could be avoided with 32 bit values
-       at the expense of memory usage). We slide even when level == 0
-       to keep the hash table consistent if we switch back to level > 0
-       later. (Using level 0 permanently is not an optimal usage of
-       zlib, so we don't care about this pathological case.)
-       */
-
-      n = s.hash_size;
-      p = n;
-      do {
-        m = s.head[--p];
-        s.head[p] = (m >= _w_size ? m - _w_size : 0);
-      } while (--n);
-
-      n = _w_size;
-      p = n;
-      do {
-        m = s.prev[--p];
-        s.prev[p] = (m >= _w_size ? m - _w_size : 0);
-        /* If n is not on any hash chain, prev[n] is garbage but
-         * its value will never be used.
-         */
-      } while (--n);
-
-      more += _w_size;
-    }
-    if (s.strm.avail_in === 0) {
-      break;
-    }
-
-    /* If there was no sliding:
-     *    strstart <= WSIZE+MAX_DIST-1 && lookahead <= MIN_LOOKAHEAD - 1 &&
-     *    more == window_size - lookahead - strstart
-     * => more >= window_size - (MIN_LOOKAHEAD-1 + WSIZE + MAX_DIST-1)
-     * => more >= window_size - 2*WSIZE + 2
-     * In the BIG_MEM or MMAP case (not yet supported),
-     *   window_size == input_size + MIN_LOOKAHEAD  &&
-     *   strstart + s->lookahead <= input_size => more >= MIN_LOOKAHEAD.
-     * Otherwise, window_size == 2*WSIZE so more >= 2.
-     * If there was sliding, more >= WSIZE. So in all cases, more >= 2.
-     */
-    //Assert(more >= 2, "more < 2");
-    n = read_buf(s.strm, s.window, s.strstart + s.lookahead, more);
-    s.lookahead += n;
-
-    /* Initialize the hash value now that we have some input: */
-    if (s.lookahead + s.insert >= MIN_MATCH) {
-      str = s.strstart - s.insert;
-      s.ins_h = s.window[str];
-
-      /* UPDATE_HASH(s, s->ins_h, s->window[str + 1]); */
-      s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[str + 1]) & s.hash_mask;
-//#if MIN_MATCH != 3
-//        Call update_hash() MIN_MATCH-3 more times
-//#endif
-      while (s.insert) {
-        /* UPDATE_HASH(s, s->ins_h, s->window[str + MIN_MATCH-1]); */
-        s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[str + MIN_MATCH-1]) & s.hash_mask;
-
-        s.prev[str & s.w_mask] = s.head[s.ins_h];
-        s.head[s.ins_h] = str;
-        str++;
-        s.insert--;
-        if (s.lookahead + s.insert < MIN_MATCH) {
-          break;
-        }
-      }
-    }
-    /* If the whole input has less than MIN_MATCH bytes, ins_h is garbage,
-     * but this is not important since only literal bytes will be emitted.
-     */
-
-  } while (s.lookahead < MIN_LOOKAHEAD && s.strm.avail_in !== 0);
-
-  /* If the WIN_INIT bytes after the end of the current data have never been
-   * written, then zero those bytes in order to avoid memory check reports of
-   * the use of uninitialized (or uninitialised as Julian writes) bytes by
-   * the longest match routines.  Update the high water mark for the next
-   * time through here.  WIN_INIT is set to MAX_MATCH since the longest match
-   * routines allow scanning to strstart + MAX_MATCH, ignoring lookahead.
-   */
-//  if (s.high_water < s.window_size) {
-//    var curr = s.strstart + s.lookahead;
-//    var init = 0;
-//
-//    if (s.high_water < curr) {
-//      /* Previous high water mark below current data -- zero WIN_INIT
-//       * bytes or up to end of window, whichever is less.
-//       */
-//      init = s.window_size - curr;
-//      if (init > WIN_INIT)
-//        init = WIN_INIT;
-//      zmemzero(s->window + curr, (unsigned)init);
-//      s->high_water = curr + init;
-//    }
-//    else if (s->high_water < (ulg)curr + WIN_INIT) {
-//      /* High water mark at or above current data, but below current data
-//       * plus WIN_INIT -- zero out to current data plus WIN_INIT, or up
-//       * to end of window, whichever is less.
-//       */
-//      init = (ulg)curr + WIN_INIT - s->high_water;
-//      if (init > s->window_size - s->high_water)
-//        init = s->window_size - s->high_water;
-//      zmemzero(s->window + s->high_water, (unsigned)init);
-//      s->high_water += init;
-//    }
-//  }
-//
-//  Assert((ulg)s->strstart <= s->window_size - MIN_LOOKAHEAD,
-//    "not enough room for search");
-}
-
-/* ===========================================================================
- * Copy without compression as much as possible from the input stream, return
- * the current block state.
- * This function does not insert new strings in the dictionary since
- * uncompressible data is probably not useful. This function is used
- * only for the level=0 compression option.
- * NOTE: this function should be optimized to avoid extra copying from
- * window to pending_buf.
- */
-function deflate_stored(s, flush) {
-  /* Stored blocks are limited to 0xffff bytes, pending_buf is limited
-   * to pending_buf_size, and each stored block has a 5 byte header:
-   */
-  var max_block_size = 0xffff;
-
-  if (max_block_size > s.pending_buf_size - 5) {
-    max_block_size = s.pending_buf_size - 5;
-  }
-
-  /* Copy as much as possible from input to output: */
-  for (;;) {
-    /* Fill the window as much as possible: */
-    if (s.lookahead <= 1) {
-
-      //Assert(s->strstart < s->w_size+MAX_DIST(s) ||
-      //  s->block_start >= (long)s->w_size, "slide too late");
-//      if (!(s.strstart < s.w_size + (s.w_size - MIN_LOOKAHEAD) ||
-//        s.block_start >= s.w_size)) {
-//        throw  new Error("slide too late");
-//      }
-
-      fill_window(s);
-      if (s.lookahead === 0 && flush === Z_NO_FLUSH) {
-        return BS_NEED_MORE;
-      }
-
-      if (s.lookahead === 0) {
-        break;
-      }
-      /* flush the current block */
-    }
-    //Assert(s->block_start >= 0L, "block gone");
-//    if (s.block_start < 0) throw new Error("block gone");
-
-    s.strstart += s.lookahead;
-    s.lookahead = 0;
-
-    /* Emit a stored block if pending_buf will be full: */
-    var max_start = s.block_start + max_block_size;
-
-    if (s.strstart === 0 || s.strstart >= max_start) {
-      /* strstart == 0 is possible when wraparound on 16-bit machine */
-      s.lookahead = s.strstart - max_start;
-      s.strstart = max_start;
-      /*** FLUSH_BLOCK(s, 0); ***/
-      flush_block_only(s, false);
-      if (s.strm.avail_out === 0) {
-        return BS_NEED_MORE;
-      }
-      /***/
-
-
-    }
-    /* Flush if we may have to slide, otherwise block_start may become
-     * negative and the data will be gone:
-     */
-    if (s.strstart - s.block_start >= (s.w_size - MIN_LOOKAHEAD)) {
-      /*** FLUSH_BLOCK(s, 0); ***/
-      flush_block_only(s, false);
-      if (s.strm.avail_out === 0) {
-        return BS_NEED_MORE;
-      }
-      /***/
-    }
-  }
-
-  s.insert = 0;
-
-  if (flush === Z_FINISH) {
-    /*** FLUSH_BLOCK(s, 1); ***/
-    flush_block_only(s, true);
-    if (s.strm.avail_out === 0) {
-      return BS_FINISH_STARTED;
-    }
-    /***/
-    return BS_FINISH_DONE;
-  }
-
-  if (s.strstart > s.block_start) {
-    /*** FLUSH_BLOCK(s, 0); ***/
-    flush_block_only(s, false);
-    if (s.strm.avail_out === 0) {
-      return BS_NEED_MORE;
-    }
-    /***/
-  }
-
-  return BS_NEED_MORE;
-}
-
-/* ===========================================================================
- * Compress as much as possible from the input stream, return the current
- * block state.
- * This function does not perform lazy evaluation of matches and inserts
- * new strings in the dictionary only for unmatched strings or for short
- * matches. It is used only for the fast compression options.
- */
-function deflate_fast(s, flush) {
-  var hash_head;        /* head of the hash chain */
-  var bflush;           /* set if current block must be flushed */
-
-  for (;;) {
-    /* Make sure that we always have enough lookahead, except
-     * at the end of the input file. We need MAX_MATCH bytes
-     * for the next match, plus MIN_MATCH bytes to insert the
-     * string following the next match.
-     */
-    if (s.lookahead < MIN_LOOKAHEAD) {
-      fill_window(s);
-      if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH) {
-        return BS_NEED_MORE;
-      }
-      if (s.lookahead === 0) {
-        break; /* flush the current block */
-      }
-    }
-
-    /* Insert the string window[strstart .. strstart+2] in the
-     * dictionary, and set hash_head to the head of the hash chain:
-     */
-    hash_head = 0/*NIL*/;
-    if (s.lookahead >= MIN_MATCH) {
-      /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-      s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
-      hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
-      s.head[s.ins_h] = s.strstart;
-      /***/
-    }
-
-    /* Find the longest match, discarding those <= prev_length.
-     * At this point we have always match_length < MIN_MATCH
-     */
-    if (hash_head !== 0/*NIL*/ && ((s.strstart - hash_head) <= (s.w_size - MIN_LOOKAHEAD))) {
-      /* To simplify the code, we prevent matches with the string
-       * of window index 0 (in particular we have to avoid a match
-       * of the string with itself at the start of the input file).
-       */
-      s.match_length = longest_match(s, hash_head);
-      /* longest_match() sets match_start */
-    }
-    if (s.match_length >= MIN_MATCH) {
-      // check_match(s, s.strstart, s.match_start, s.match_length); // for debug only
-
-      /*** _tr_tally_dist(s, s.strstart - s.match_start,
-                     s.match_length - MIN_MATCH, bflush); ***/
-      bflush = trees._tr_tally(s, s.strstart - s.match_start, s.match_length - MIN_MATCH);
-
-      s.lookahead -= s.match_length;
-
-      /* Insert new strings in the hash table only if the match length
-       * is not too large. This saves time but degrades compression.
-       */
-      if (s.match_length <= s.max_lazy_match/*max_insert_length*/ && s.lookahead >= MIN_MATCH) {
-        s.match_length--; /* string at strstart already in table */
-        do {
-          s.strstart++;
-          /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-          s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
-          hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
-          s.head[s.ins_h] = s.strstart;
-          /***/
-          /* strstart never exceeds WSIZE-MAX_MATCH, so there are
-           * always MIN_MATCH bytes ahead.
-           */
-        } while (--s.match_length !== 0);
-        s.strstart++;
-      } else
-      {
-        s.strstart += s.match_length;
-        s.match_length = 0;
-        s.ins_h = s.window[s.strstart];
-        /* UPDATE_HASH(s, s.ins_h, s.window[s.strstart+1]); */
-        s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + 1]) & s.hash_mask;
-
-//#if MIN_MATCH != 3
-//                Call UPDATE_HASH() MIN_MATCH-3 more times
-//#endif
-        /* If lookahead < MIN_MATCH, ins_h is garbage, but it does not
-         * matter since it will be recomputed at next deflate call.
-         */
-      }
-    } else {
-      /* No match, output a literal byte */
-      //Tracevv((stderr,"%c", s.window[s.strstart]));
-      /*** _tr_tally_lit(s, s.window[s.strstart], bflush); ***/
-      bflush = trees._tr_tally(s, 0, s.window[s.strstart]);
-
-      s.lookahead--;
-      s.strstart++;
-    }
-    if (bflush) {
-      /*** FLUSH_BLOCK(s, 0); ***/
-      flush_block_only(s, false);
-      if (s.strm.avail_out === 0) {
-        return BS_NEED_MORE;
-      }
-      /***/
-    }
-  }
-  s.insert = ((s.strstart < (MIN_MATCH-1)) ? s.strstart : MIN_MATCH-1);
-  if (flush === Z_FINISH) {
-    /*** FLUSH_BLOCK(s, 1); ***/
-    flush_block_only(s, true);
-    if (s.strm.avail_out === 0) {
-      return BS_FINISH_STARTED;
-    }
-    /***/
-    return BS_FINISH_DONE;
-  }
-  if (s.last_lit) {
-    /*** FLUSH_BLOCK(s, 0); ***/
-    flush_block_only(s, false);
-    if (s.strm.avail_out === 0) {
-      return BS_NEED_MORE;
-    }
-    /***/
-  }
-  return BS_BLOCK_DONE;
-}
-
-/* ===========================================================================
- * Same as above, but achieves better compression. We use a lazy
- * evaluation for matches: a match is finally adopted only if there is
- * no better match at the next window position.
- */
-function deflate_slow(s, flush) {
-  var hash_head;          /* head of hash chain */
-  var bflush;              /* set if current block must be flushed */
-
-  var max_insert;
-
-  /* Process the input block. */
-  for (;;) {
-    /* Make sure that we always have enough lookahead, except
-     * at the end of the input file. We need MAX_MATCH bytes
-     * for the next match, plus MIN_MATCH bytes to insert the
-     * string following the next match.
-     */
-    if (s.lookahead < MIN_LOOKAHEAD) {
-      fill_window(s);
-      if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH) {
-        return BS_NEED_MORE;
-      }
-      if (s.lookahead === 0) { break; } /* flush the current block */
-    }
-
-    /* Insert the string window[strstart .. strstart+2] in the
-     * dictionary, and set hash_head to the head of the hash chain:
-     */
-    hash_head = 0/*NIL*/;
-    if (s.lookahead >= MIN_MATCH) {
-      /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-      s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
-      hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
-      s.head[s.ins_h] = s.strstart;
-      /***/
-    }
-
-    /* Find the longest match, discarding those <= prev_length.
-     */
-    s.prev_length = s.match_length;
-    s.prev_match = s.match_start;
-    s.match_length = MIN_MATCH-1;
-
-    if (hash_head !== 0/*NIL*/ && s.prev_length < s.max_lazy_match &&
-        s.strstart - hash_head <= (s.w_size-MIN_LOOKAHEAD)/*MAX_DIST(s)*/) {
-      /* To simplify the code, we prevent matches with the string
-       * of window index 0 (in particular we have to avoid a match
-       * of the string with itself at the start of the input file).
-       */
-      s.match_length = longest_match(s, hash_head);
-      /* longest_match() sets match_start */
-
-      if (s.match_length <= 5 &&
-         (s.strategy === Z_FILTERED || (s.match_length === MIN_MATCH && s.strstart - s.match_start > 4096/*TOO_FAR*/))) {
-
-        /* If prev_match is also MIN_MATCH, match_start is garbage
-         * but we will ignore the current match anyway.
-         */
-        s.match_length = MIN_MATCH-1;
-      }
-    }
-    /* If there was a match at the previous step and the current
-     * match is not better, output the previous match:
-     */
-    if (s.prev_length >= MIN_MATCH && s.match_length <= s.prev_length) {
-      max_insert = s.strstart + s.lookahead - MIN_MATCH;
-      /* Do not insert strings in hash table beyond this. */
-
-      //check_match(s, s.strstart-1, s.prev_match, s.prev_length);
-
-      /***_tr_tally_dist(s, s.strstart - 1 - s.prev_match,
-                     s.prev_length - MIN_MATCH, bflush);***/
-      bflush = trees._tr_tally(s, s.strstart - 1- s.prev_match, s.prev_length - MIN_MATCH);
-      /* Insert in hash table all strings up to the end of the match.
-       * strstart-1 and strstart are already inserted. If there is not
-       * enough lookahead, the last two strings are not inserted in
-       * the hash table.
-       */
-      s.lookahead -= s.prev_length-1;
-      s.prev_length -= 2;
-      do {
-        if (++s.strstart <= max_insert) {
-          /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-          s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
-          hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
-          s.head[s.ins_h] = s.strstart;
-          /***/
-        }
-      } while (--s.prev_length !== 0);
-      s.match_available = 0;
-      s.match_length = MIN_MATCH-1;
-      s.strstart++;
-
-      if (bflush) {
-        /*** FLUSH_BLOCK(s, 0); ***/
-        flush_block_only(s, false);
-        if (s.strm.avail_out === 0) {
-          return BS_NEED_MORE;
-        }
-        /***/
-      }
-
-    } else if (s.match_available) {
-      /* If there was no match at the previous position, output a
-       * single literal. If there was a match but the current match
-       * is longer, truncate the previous match to a single literal.
-       */
-      //Tracevv((stderr,"%c", s->window[s->strstart-1]));
-      /*** _tr_tally_lit(s, s.window[s.strstart-1], bflush); ***/
-      bflush = trees._tr_tally(s, 0, s.window[s.strstart-1]);
-
-      if (bflush) {
-        /*** FLUSH_BLOCK_ONLY(s, 0) ***/
-        flush_block_only(s, false);
-        /***/
-      }
-      s.strstart++;
-      s.lookahead--;
-      if (s.strm.avail_out === 0) {
-        return BS_NEED_MORE;
-      }
-    } else {
-      /* There is no previous match to compare with, wait for
-       * the next step to decide.
-       */
-      s.match_available = 1;
-      s.strstart++;
-      s.lookahead--;
-    }
-  }
-  //Assert (flush != Z_NO_FLUSH, "no flush?");
-  if (s.match_available) {
-    //Tracevv((stderr,"%c", s->window[s->strstart-1]));
-    /*** _tr_tally_lit(s, s.window[s.strstart-1], bflush); ***/
-    bflush = trees._tr_tally(s, 0, s.window[s.strstart-1]);
-
-    s.match_available = 0;
-  }
-  s.insert = s.strstart < MIN_MATCH-1 ? s.strstart : MIN_MATCH-1;
-  if (flush === Z_FINISH) {
-    /*** FLUSH_BLOCK(s, 1); ***/
-    flush_block_only(s, true);
-    if (s.strm.avail_out === 0) {
-      return BS_FINISH_STARTED;
-    }
-    /***/
-    return BS_FINISH_DONE;
-  }
-  if (s.last_lit) {
-    /*** FLUSH_BLOCK(s, 0); ***/
-    flush_block_only(s, false);
-    if (s.strm.avail_out === 0) {
-      return BS_NEED_MORE;
-    }
-    /***/
-  }
-
-  return BS_BLOCK_DONE;
-}
-
-
-/* ===========================================================================
- * For Z_RLE, simply look for runs of bytes, generate matches only of distance
- * one.  Do not maintain a hash table.  (It will be regenerated if this run of
- * deflate switches away from Z_RLE.)
- */
-function deflate_rle(s, flush) {
-  var bflush;            /* set if current block must be flushed */
-  var prev;              /* byte at distance one to match */
-  var scan, strend;      /* scan goes up to strend for length of run */
-
-  var _win = s.window;
-
-  for (;;) {
-    /* Make sure that we always have enough lookahead, except
-     * at the end of the input file. We need MAX_MATCH bytes
-     * for the longest run, plus one for the unrolled loop.
-     */
-    if (s.lookahead <= MAX_MATCH) {
-      fill_window(s);
-      if (s.lookahead <= MAX_MATCH && flush === Z_NO_FLUSH) {
-        return BS_NEED_MORE;
-      }
-      if (s.lookahead === 0) { break; } /* flush the current block */
-    }
-
-    /* See how many times the previous byte repeats */
-    s.match_length = 0;
-    if (s.lookahead >= MIN_MATCH && s.strstart > 0) {
-      scan = s.strstart - 1;
-      prev = _win[scan];
-      if (prev === _win[++scan] && prev === _win[++scan] && prev === _win[++scan]) {
-        strend = s.strstart + MAX_MATCH;
-        do {
-          /*jshint noempty:false*/
-        } while (prev === _win[++scan] && prev === _win[++scan] &&
-                 prev === _win[++scan] && prev === _win[++scan] &&
-                 prev === _win[++scan] && prev === _win[++scan] &&
-                 prev === _win[++scan] && prev === _win[++scan] &&
-                 scan < strend);
-        s.match_length = MAX_MATCH - (strend - scan);
-        if (s.match_length > s.lookahead) {
-          s.match_length = s.lookahead;
-        }
-      }
-      //Assert(scan <= s->window+(uInt)(s->window_size-1), "wild scan");
-    }
-
-    /* Emit match if have run of MIN_MATCH or longer, else emit literal */
-    if (s.match_length >= MIN_MATCH) {
-      //check_match(s, s.strstart, s.strstart - 1, s.match_length);
-
-      /*** _tr_tally_dist(s, 1, s.match_length - MIN_MATCH, bflush); ***/
-      bflush = trees._tr_tally(s, 1, s.match_length - MIN_MATCH);
-
-      s.lookahead -= s.match_length;
-      s.strstart += s.match_length;
-      s.match_length = 0;
-    } else {
-      /* No match, output a literal byte */
-      //Tracevv((stderr,"%c", s->window[s->strstart]));
-      /*** _tr_tally_lit(s, s.window[s.strstart], bflush); ***/
-      bflush = trees._tr_tally(s, 0, s.window[s.strstart]);
-
-      s.lookahead--;
-      s.strstart++;
-    }
-    if (bflush) {
-      /*** FLUSH_BLOCK(s, 0); ***/
-      flush_block_only(s, false);
-      if (s.strm.avail_out === 0) {
-        return BS_NEED_MORE;
-      }
-      /***/
-    }
-  }
-  s.insert = 0;
-  if (flush === Z_FINISH) {
-    /*** FLUSH_BLOCK(s, 1); ***/
-    flush_block_only(s, true);
-    if (s.strm.avail_out === 0) {
-      return BS_FINISH_STARTED;
-    }
-    /***/
-    return BS_FINISH_DONE;
-  }
-  if (s.last_lit) {
-    /*** FLUSH_BLOCK(s, 0); ***/
-    flush_block_only(s, false);
-    if (s.strm.avail_out === 0) {
-      return BS_NEED_MORE;
-    }
-    /***/
-  }
-  return BS_BLOCK_DONE;
-}
-
-/* ===========================================================================
- * For Z_HUFFMAN_ONLY, do not look for matches.  Do not maintain a hash table.
- * (It will be regenerated if this run of deflate switches away from Huffman.)
- */
-function deflate_huff(s, flush) {
-  var bflush;             /* set if current block must be flushed */
-
-  for (;;) {
-    /* Make sure that we have a literal to write. */
-    if (s.lookahead === 0) {
-      fill_window(s);
-      if (s.lookahead === 0) {
-        if (flush === Z_NO_FLUSH) {
-          return BS_NEED_MORE;
-        }
-        break;      /* flush the current block */
-      }
-    }
-
-    /* Output a literal byte */
-    s.match_length = 0;
-    //Tracevv((stderr,"%c", s->window[s->strstart]));
-    /*** _tr_tally_lit(s, s.window[s.strstart], bflush); ***/
-    bflush = trees._tr_tally(s, 0, s.window[s.strstart]);
-    s.lookahead--;
-    s.strstart++;
-    if (bflush) {
-      /*** FLUSH_BLOCK(s, 0); ***/
-      flush_block_only(s, false);
-      if (s.strm.avail_out === 0) {
-        return BS_NEED_MORE;
-      }
-      /***/
-    }
-  }
-  s.insert = 0;
-  if (flush === Z_FINISH) {
-    /*** FLUSH_BLOCK(s, 1); ***/
-    flush_block_only(s, true);
-    if (s.strm.avail_out === 0) {
-      return BS_FINISH_STARTED;
-    }
-    /***/
-    return BS_FINISH_DONE;
-  }
-  if (s.last_lit) {
-    /*** FLUSH_BLOCK(s, 0); ***/
-    flush_block_only(s, false);
-    if (s.strm.avail_out === 0) {
-      return BS_NEED_MORE;
-    }
-    /***/
-  }
-  return BS_BLOCK_DONE;
-}
-
-/* Values for max_lazy_match, good_match and max_chain_length, depending on
- * the desired pack level (0..9). The values given below have been tuned to
- * exclude worst case performance for pathological files. Better values may be
- * found for specific files.
- */
-var Config = function (good_length, max_lazy, nice_length, max_chain, func) {
-  this.good_length = good_length;
-  this.max_lazy = max_lazy;
-  this.nice_length = nice_length;
-  this.max_chain = max_chain;
-  this.func = func;
-};
-
-var configuration_table;
-
-configuration_table = [
-  /*      good lazy nice chain */
-  new Config(0, 0, 0, 0, deflate_stored),          /* 0 store only */
-  new Config(4, 4, 8, 4, deflate_fast),            /* 1 max speed, no lazy matches */
-  new Config(4, 5, 16, 8, deflate_fast),           /* 2 */
-  new Config(4, 6, 32, 32, deflate_fast),          /* 3 */
-
-  new Config(4, 4, 16, 16, deflate_slow),          /* 4 lazy matches */
-  new Config(8, 16, 32, 32, deflate_slow),         /* 5 */
-  new Config(8, 16, 128, 128, deflate_slow),       /* 6 */
-  new Config(8, 32, 128, 256, deflate_slow),       /* 7 */
-  new Config(32, 128, 258, 1024, deflate_slow),    /* 8 */
-  new Config(32, 258, 258, 4096, deflate_slow)     /* 9 max compression */
-];
-
-
-/* ===========================================================================
- * Initialize the "longest match" routines for a new zlib stream
- */
-function lm_init(s) {
-  s.window_size = 2 * s.w_size;
-
-  /*** CLEAR_HASH(s); ***/
-  zero(s.head); // Fill with NIL (= 0);
-
-  /* Set the default configuration parameters:
-   */
-  s.max_lazy_match = configuration_table[s.level].max_lazy;
-  s.good_match = configuration_table[s.level].good_length;
-  s.nice_match = configuration_table[s.level].nice_length;
-  s.max_chain_length = configuration_table[s.level].max_chain;
-
-  s.strstart = 0;
-  s.block_start = 0;
-  s.lookahead = 0;
-  s.insert = 0;
-  s.match_length = s.prev_length = MIN_MATCH - 1;
-  s.match_available = 0;
-  s.ins_h = 0;
-}
-
-
-function DeflateState() {
-  this.strm = null;            /* pointer back to this zlib stream */
-  this.status = 0;            /* as the name implies */
-  this.pending_buf = null;      /* output still pending */
-  this.pending_buf_size = 0;  /* size of pending_buf */
-  this.pending_out = 0;       /* next pending byte to output to the stream */
-  this.pending = 0;           /* nb of bytes in the pending buffer */
-  this.wrap = 0;              /* bit 0 true for zlib, bit 1 true for gzip */
-  this.gzhead = null;         /* gzip header information to write */
-  this.gzindex = 0;           /* where in extra, name, or comment */
-  this.method = Z_DEFLATED; /* can only be DEFLATED */
-  this.last_flush = -1;   /* value of flush param for previous deflate call */
-
-  this.w_size = 0;  /* LZ77 window size (32K by default) */
-  this.w_bits = 0;  /* log2(w_size)  (8..16) */
-  this.w_mask = 0;  /* w_size - 1 */
-
-  this.window = null;
-  /* Sliding window. Input bytes are read into the second half of the window,
-   * and move to the first half later to keep a dictionary of at least wSize
-   * bytes. With this organization, matches are limited to a distance of
-   * wSize-MAX_MATCH bytes, but this ensures that IO is always
-   * performed with a length multiple of the block size.
-   */
-
-  this.window_size = 0;
-  /* Actual size of window: 2*wSize, except when the user input buffer
-   * is directly used as sliding window.
-   */
-
-  this.prev = null;
-  /* Link to older string with same hash index. To limit the size of this
-   * array to 64K, this link is maintained only for the last 32K strings.
-   * An index in this array is thus a window index modulo 32K.
-   */
-
-  this.head = null;   /* Heads of the hash chains or NIL. */
-
-  this.ins_h = 0;       /* hash index of string to be inserted */
-  this.hash_size = 0;   /* number of elements in hash table */
-  this.hash_bits = 0;   /* log2(hash_size) */
-  this.hash_mask = 0;   /* hash_size-1 */
-
-  this.hash_shift = 0;
-  /* Number of bits by which ins_h must be shifted at each input
-   * step. It must be such that after MIN_MATCH steps, the oldest
-   * byte no longer takes part in the hash key, that is:
-   *   hash_shift * MIN_MATCH >= hash_bits
-   */
-
-  this.block_start = 0;
-  /* Window position at the beginning of the current output block. Gets
-   * negative when the window is moved backwards.
-   */
-
-  this.match_length = 0;      /* length of best match */
-  this.prev_match = 0;        /* previous match */
-  this.match_available = 0;   /* set if previous match exists */
-  this.strstart = 0;          /* start of string to insert */
-  this.match_start = 0;       /* start of matching string */
-  this.lookahead = 0;         /* number of valid bytes ahead in window */
-
-  this.prev_length = 0;
-  /* Length of the best match at previous step. Matches not greater than this
-   * are discarded. This is used in the lazy match evaluation.
-   */
-
-  this.max_chain_length = 0;
-  /* To speed up deflation, hash chains are never searched beyond this
-   * length.  A higher limit improves compression ratio but degrades the
-   * speed.
-   */
-
-  this.max_lazy_match = 0;
-  /* Attempt to find a better match only when the current match is strictly
-   * smaller than this value. This mechanism is used only for compression
-   * levels >= 4.
-   */
-  // That's alias to max_lazy_match, don't use directly
-  //this.max_insert_length = 0;
-  /* Insert new strings in the hash table only if the match length is not
-   * greater than this length. This saves time but degrades compression.
-   * max_insert_length is used only for compression levels <= 3.
-   */
-
-  this.level = 0;     /* compression level (1..9) */
-  this.strategy = 0;  /* favor or force Huffman coding*/
-
-  this.good_match = 0;
-  /* Use a faster search when the previous match is longer than this */
-
-  this.nice_match = 0; /* Stop searching when current match exceeds this */
-
-              /* used by trees.c: */
-
-  /* Didn't use ct_data typedef below to suppress compiler warning */
-
-  // struct ct_data_s dyn_ltree[HEAP_SIZE];   /* literal and length tree */
-  // struct ct_data_s dyn_dtree[2*D_CODES+1]; /* distance tree */
-  // struct ct_data_s bl_tree[2*BL_CODES+1];  /* Huffman tree for bit lengths */
-
-  // Use flat array of DOUBLE size, with interleaved fata,
-  // because JS does not support effective
-  this.dyn_ltree  = new utils.Buf16(HEAP_SIZE * 2);
-  this.dyn_dtree  = new utils.Buf16((2*D_CODES+1) * 2);
-  this.bl_tree    = new utils.Buf16((2*BL_CODES+1) * 2);
-  zero(this.dyn_ltree);
-  zero(this.dyn_dtree);
-  zero(this.bl_tree);
-
-  this.l_desc   = null;         /* desc. for literal tree */
-  this.d_desc   = null;         /* desc. for distance tree */
-  this.bl_desc  = null;         /* desc. for bit length tree */
-
-  //ush bl_count[MAX_BITS+1];
-  this.bl_count = new utils.Buf16(MAX_BITS+1);
-  /* number of codes at each bit length for an optimal tree */
-
-  //int heap[2*L_CODES+1];      /* heap used to build the Huffman trees */
-  this.heap = new utils.Buf16(2*L_CODES+1);  /* heap used to build the Huffman trees */
-  zero(this.heap);
-
-  this.heap_len = 0;               /* number of elements in the heap */
-  this.heap_max = 0;               /* element of largest frequency */
-  /* The sons of heap[n] are heap[2*n] and heap[2*n+1]. heap[0] is not used.
-   * The same heap array is used to build all trees.
-   */
-
-  this.depth = new utils.Buf16(2*L_CODES+1); //uch depth[2*L_CODES+1];
-  zero(this.depth);
-  /* Depth of each subtree used as tie breaker for trees of equal frequency
-   */
-
-  this.l_buf = 0;          /* buffer index for literals or lengths */
-
-  this.lit_bufsize = 0;
-  /* Size of match buffer for literals/lengths.  There are 4 reasons for
-   * limiting lit_bufsize to 64K:
-   *   - frequencies can be kept in 16 bit counters
-   *   - if compression is not successful for the first block, all input
-   *     data is still in the window so we can still emit a stored block even
-   *     when input comes from standard input.  (This can also be done for
-   *     all blocks if lit_bufsize is not greater than 32K.)
-   *   - if compression is not successful for a file smaller than 64K, we can
-   *     even emit a stored file instead of a stored block (saving 5 bytes).
-   *     This is applicable only for zip (not gzip or zlib).
-   *   - creating new Huffman trees less frequently may not provide fast
-   *     adaptation to changes in the input data statistics. (Take for
-   *     example a binary file with poorly compressible code followed by
-   *     a highly compressible string table.) Smaller buffer sizes give
-   *     fast adaptation but have of course the overhead of transmitting
-   *     trees more frequently.
-   *   - I can't count above 4
-   */
-
-  this.last_lit = 0;      /* running index in l_buf */
-
-  this.d_buf = 0;
-  /* Buffer index for distances. To simplify the code, d_buf and l_buf have
-   * the same number of elements. To use different lengths, an extra flag
-   * array would be necessary.
-   */
-
-  this.opt_len = 0;       /* bit length of current block with optimal trees */
-  this.static_len = 0;    /* bit length of current block with static trees */
-  this.matches = 0;       /* number of string matches in current block */
-  this.insert = 0;        /* bytes at end of window left to insert */
-
-
-  this.bi_buf = 0;
-  /* Output buffer. bits are inserted starting at the bottom (least
-   * significant bits).
-   */
-  this.bi_valid = 0;
-  /* Number of valid bits in bi_buf.  All bits above the last valid bit
-   * are always zero.
-   */
-
-  // Used for window memory init. We safely ignore it for JS. That makes
-  // sense only for pointers and memory check tools.
-  //this.high_water = 0;
-  /* High water mark offset in window for initialized bytes -- bytes above
-   * this are set to zero in order to avoid memory check warnings when
-   * longest match routines access bytes past the input.  This is then
-   * updated to the new high water mark.
-   */
-}
-
-
-function deflateResetKeep(strm) {
-  var s;
-
-  if (!strm || !strm.state) {
-    return err(strm, Z_STREAM_ERROR);
-  }
-
-  strm.total_in = strm.total_out = 0;
-  strm.data_type = Z_UNKNOWN;
-
-  s = strm.state;
-  s.pending = 0;
-  s.pending_out = 0;
-
-  if (s.wrap < 0) {
-    s.wrap = -s.wrap;
-    /* was made negative by deflate(..., Z_FINISH); */
-  }
-  s.status = (s.wrap ? INIT_STATE : BUSY_STATE);
-  strm.adler = (s.wrap === 2) ?
-    0  // crc32(0, Z_NULL, 0)
-  :
-    1; // adler32(0, Z_NULL, 0)
-  s.last_flush = Z_NO_FLUSH;
-  trees._tr_init(s);
-  return Z_OK;
-}
-
-
-function deflateReset(strm) {
-  var ret = deflateResetKeep(strm);
-  if (ret === Z_OK) {
-    lm_init(strm.state);
-  }
-  return ret;
-}
-
-
-function deflateSetHeader(strm, head) {
-  if (!strm || !strm.state) { return Z_STREAM_ERROR; }
-  if (strm.state.wrap !== 2) { return Z_STREAM_ERROR; }
-  strm.state.gzhead = head;
-  return Z_OK;
-}
-
-
-function deflateInit2(strm, level, method, windowBits, memLevel, strategy) {
-  if (!strm) { // === Z_NULL
-    return Z_STREAM_ERROR;
-  }
-  var wrap = 1;
-
-  if (level === Z_DEFAULT_COMPRESSION) {
-    level = 6;
-  }
-
-  if (windowBits < 0) { /* suppress zlib wrapper */
-    wrap = 0;
-    windowBits = -windowBits;
-  }
-
-  else if (windowBits > 15) {
-    wrap = 2;           /* write gzip wrapper instead */
-    windowBits -= 16;
-  }
-
-
-  if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method !== Z_DEFLATED ||
-    windowBits < 8 || windowBits > 15 || level < 0 || level > 9 ||
-    strategy < 0 || strategy > Z_FIXED) {
-    return err(strm, Z_STREAM_ERROR);
-  }
-
-
-  if (windowBits === 8) {
-    windowBits = 9;
-  }
-  /* until 256-byte window bug fixed */
-
-  var s = new DeflateState();
-
-  strm.state = s;
-  s.strm = strm;
-
-  s.wrap = wrap;
-  s.gzhead = null;
-  s.w_bits = windowBits;
-  s.w_size = 1 << s.w_bits;
-  s.w_mask = s.w_size - 1;
-
-  s.hash_bits = memLevel + 7;
-  s.hash_size = 1 << s.hash_bits;
-  s.hash_mask = s.hash_size - 1;
-  s.hash_shift = ~~((s.hash_bits + MIN_MATCH - 1) / MIN_MATCH);
-
-  s.window = new utils.Buf8(s.w_size * 2);
-  s.head = new utils.Buf16(s.hash_size);
-  s.prev = new utils.Buf16(s.w_size);
-
-  // Don't need mem init magic for JS.
-  //s.high_water = 0;  /* nothing written to s->window yet */
-
-  s.lit_bufsize = 1 << (memLevel + 6); /* 16K elements by default */
-
-  s.pending_buf_size = s.lit_bufsize * 4;
-  s.pending_buf = new utils.Buf8(s.pending_buf_size);
-
-  s.d_buf = s.lit_bufsize >> 1;
-  s.l_buf = (1 + 2) * s.lit_bufsize;
-
-  s.level = level;
-  s.strategy = strategy;
-  s.method = method;
-
-  return deflateReset(strm);
-}
-
-function deflateInit(strm, level) {
-  return deflateInit2(strm, level, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY);
-}
-
-
-function deflate(strm, flush) {
-  var old_flush, s;
-  var beg, val; // for gzip header write only
-
-  if (!strm || !strm.state ||
-    flush > Z_BLOCK || flush < 0) {
-    return strm ? err(strm, Z_STREAM_ERROR) : Z_STREAM_ERROR;
-  }
-
-  s = strm.state;
-
-  if (!strm.output ||
-      (!strm.input && strm.avail_in !== 0) ||
-      (s.status === FINISH_STATE && flush !== Z_FINISH)) {
-    return err(strm, (strm.avail_out === 0) ? Z_BUF_ERROR : Z_STREAM_ERROR);
-  }
-
-  s.strm = strm; /* just in case */
-  old_flush = s.last_flush;
-  s.last_flush = flush;
-
-  /* Write the header */
-  if (s.status === INIT_STATE) {
-
-    if (s.wrap === 2) { // GZIP header
-      strm.adler = 0;  //crc32(0L, Z_NULL, 0);
-      put_byte(s, 31);
-      put_byte(s, 139);
-      put_byte(s, 8);
-      if (!s.gzhead) { // s->gzhead == Z_NULL
-        put_byte(s, 0);
-        put_byte(s, 0);
-        put_byte(s, 0);
-        put_byte(s, 0);
-        put_byte(s, 0);
-        put_byte(s, s.level === 9 ? 2 :
-                    (s.strategy >= Z_HUFFMAN_ONLY || s.level < 2 ?
-                     4 : 0));
-        put_byte(s, OS_CODE);
-        s.status = BUSY_STATE;
-      }
-      else {
-        put_byte(s, (s.gzhead.text ? 1 : 0) +
-                    (s.gzhead.hcrc ? 2 : 0) +
-                    (!s.gzhead.extra ? 0 : 4) +
-                    (!s.gzhead.name ? 0 : 8) +
-                    (!s.gzhead.comment ? 0 : 16)
-                );
-        put_byte(s, s.gzhead.time & 0xff);
-        put_byte(s, (s.gzhead.time >> 8) & 0xff);
-        put_byte(s, (s.gzhead.time >> 16) & 0xff);
-        put_byte(s, (s.gzhead.time >> 24) & 0xff);
-        put_byte(s, s.level === 9 ? 2 :
-                    (s.strategy >= Z_HUFFMAN_ONLY || s.level < 2 ?
-                     4 : 0));
-        put_byte(s, s.gzhead.os & 0xff);
-        if (s.gzhead.extra && s.gzhead.extra.length) {
-          put_byte(s, s.gzhead.extra.length & 0xff);
-          put_byte(s, (s.gzhead.extra.length >> 8) & 0xff);
-        }
-        if (s.gzhead.hcrc) {
-          strm.adler = crc32(strm.adler, s.pending_buf, s.pending, 0);
-        }
-        s.gzindex = 0;
-        s.status = EXTRA_STATE;
-      }
-    }
-    else // DEFLATE header
-    {
-      var header = (Z_DEFLATED + ((s.w_bits - 8) << 4)) << 8;
-      var level_flags = -1;
-
-      if (s.strategy >= Z_HUFFMAN_ONLY || s.level < 2) {
-        level_flags = 0;
-      } else if (s.level < 6) {
-        level_flags = 1;
-      } else if (s.level === 6) {
-        level_flags = 2;
-      } else {
-        level_flags = 3;
-      }
-      header |= (level_flags << 6);
-      if (s.strstart !== 0) { header |= PRESET_DICT; }
-      header += 31 - (header % 31);
-
-      s.status = BUSY_STATE;
-      putShortMSB(s, header);
-
-      /* Save the adler32 of the preset dictionary: */
-      if (s.strstart !== 0) {
-        putShortMSB(s, strm.adler >>> 16);
-        putShortMSB(s, strm.adler & 0xffff);
-      }
-      strm.adler = 1; // adler32(0L, Z_NULL, 0);
-    }
-  }
-
-//#ifdef GZIP
-  if (s.status === EXTRA_STATE) {
-    if (s.gzhead.extra/* != Z_NULL*/) {
-      beg = s.pending;  /* start of bytes to update crc */
-
-      while (s.gzindex < (s.gzhead.extra.length & 0xffff)) {
-        if (s.pending === s.pending_buf_size) {
-          if (s.gzhead.hcrc && s.pending > beg) {
-            strm.adler = crc32(strm.adler, s.pending_buf, s.pending - beg, beg);
-          }
-          flush_pending(strm);
-          beg = s.pending;
-          if (s.pending === s.pending_buf_size) {
-            break;
-          }
-        }
-        put_byte(s, s.gzhead.extra[s.gzindex] & 0xff);
-        s.gzindex++;
-      }
-      if (s.gzhead.hcrc && s.pending > beg) {
-        strm.adler = crc32(strm.adler, s.pending_buf, s.pending - beg, beg);
-      }
-      if (s.gzindex === s.gzhead.extra.length) {
-        s.gzindex = 0;
-        s.status = NAME_STATE;
-      }
-    }
-    else {
-      s.status = NAME_STATE;
-    }
-  }
-  if (s.status === NAME_STATE) {
-    if (s.gzhead.name/* != Z_NULL*/) {
-      beg = s.pending;  /* start of bytes to update crc */
-      //int val;
-
-      do {
-        if (s.pending === s.pending_buf_size) {
-          if (s.gzhead.hcrc && s.pending > beg) {
-            strm.adler = crc32(strm.adler, s.pending_buf, s.pending - beg, beg);
-          }
-          flush_pending(strm);
-          beg = s.pending;
-          if (s.pending === s.pending_buf_size) {
-            val = 1;
-            break;
-          }
-        }
-        // JS specific: little magic to add zero terminator to end of string
-        if (s.gzindex < s.gzhead.name.length) {
-          val = s.gzhead.name.charCodeAt(s.gzindex++) & 0xff;
-        } else {
-          val = 0;
-        }
-        put_byte(s, val);
-      } while (val !== 0);
-
-      if (s.gzhead.hcrc && s.pending > beg){
-        strm.adler = crc32(strm.adler, s.pending_buf, s.pending - beg, beg);
-      }
-      if (val === 0) {
-        s.gzindex = 0;
-        s.status = COMMENT_STATE;
-      }
-    }
-    else {
-      s.status = COMMENT_STATE;
-    }
-  }
-  if (s.status === COMMENT_STATE) {
-    if (s.gzhead.comment/* != Z_NULL*/) {
-      beg = s.pending;  /* start of bytes to update crc */
-      //int val;
-
-      do {
-        if (s.pending === s.pending_buf_size) {
-          if (s.gzhead.hcrc && s.pending > beg) {
-            strm.adler = crc32(strm.adler, s.pending_buf, s.pending - beg, beg);
-          }
-          flush_pending(strm);
-          beg = s.pending;
-          if (s.pending === s.pending_buf_size) {
-            val = 1;
-            break;
-          }
-        }
-        // JS specific: little magic to add zero terminator to end of string
-        if (s.gzindex < s.gzhead.comment.length) {
-          val = s.gzhead.comment.charCodeAt(s.gzindex++) & 0xff;
-        } else {
-          val = 0;
-        }
-        put_byte(s, val);
-      } while (val !== 0);
-
-      if (s.gzhead.hcrc && s.pending > beg) {
-        strm.adler = crc32(strm.adler, s.pending_buf, s.pending - beg, beg);
-      }
-      if (val === 0) {
-        s.status = HCRC_STATE;
-      }
-    }
-    else {
-      s.status = HCRC_STATE;
-    }
-  }
-  if (s.status === HCRC_STATE) {
-    if (s.gzhead.hcrc) {
-      if (s.pending + 2 > s.pending_buf_size) {
-        flush_pending(strm);
-      }
-      if (s.pending + 2 <= s.pending_buf_size) {
-        put_byte(s, strm.adler & 0xff);
-        put_byte(s, (strm.adler >> 8) & 0xff);
-        strm.adler = 0; //crc32(0L, Z_NULL, 0);
-        s.status = BUSY_STATE;
-      }
-    }
-    else {
-      s.status = BUSY_STATE;
-    }
-  }
-//#endif
-
-  /* Flush as much pending output as possible */
-  if (s.pending !== 0) {
-    flush_pending(strm);
-    if (strm.avail_out === 0) {
-      /* Since avail_out is 0, deflate will be called again with
-       * more output space, but possibly with both pending and
-       * avail_in equal to zero. There won't be anything to do,
-       * but this is not an error situation so make sure we
-       * return OK instead of BUF_ERROR at next call of deflate:
-       */
-      s.last_flush = -1;
-      return Z_OK;
-    }
-
-    /* Make sure there is something to do and avoid duplicate consecutive
-     * flushes. For repeated and useless calls with Z_FINISH, we keep
-     * returning Z_STREAM_END instead of Z_BUF_ERROR.
-     */
-  } else if (strm.avail_in === 0 && rank(flush) <= rank(old_flush) &&
-    flush !== Z_FINISH) {
-    return err(strm, Z_BUF_ERROR);
-  }
-
-  /* User must not provide more input after the first FINISH: */
-  if (s.status === FINISH_STATE && strm.avail_in !== 0) {
-    return err(strm, Z_BUF_ERROR);
-  }
-
-  /* Start a new block or continue the current one.
-   */
-  if (strm.avail_in !== 0 || s.lookahead !== 0 ||
-    (flush !== Z_NO_FLUSH && s.status !== FINISH_STATE)) {
-    var bstate = (s.strategy === Z_HUFFMAN_ONLY) ? deflate_huff(s, flush) :
-      (s.strategy === Z_RLE ? deflate_rle(s, flush) :
-        configuration_table[s.level].func(s, flush));
-
-    if (bstate === BS_FINISH_STARTED || bstate === BS_FINISH_DONE) {
-      s.status = FINISH_STATE;
-    }
-    if (bstate === BS_NEED_MORE || bstate === BS_FINISH_STARTED) {
-      if (strm.avail_out === 0) {
-        s.last_flush = -1;
-        /* avoid BUF_ERROR next call, see above */
-      }
-      return Z_OK;
-      /* If flush != Z_NO_FLUSH && avail_out == 0, the next call
-       * of deflate should use the same flush parameter to make sure
-       * that the flush is complete. So we don't have to output an
-       * empty block here, this will be done at next call. This also
-       * ensures that for a very small output buffer, we emit at most
-       * one empty block.
-       */
-    }
-    if (bstate === BS_BLOCK_DONE) {
-      if (flush === Z_PARTIAL_FLUSH) {
-        trees._tr_align(s);
-      }
-      else if (flush !== Z_BLOCK) { /* FULL_FLUSH or SYNC_FLUSH */
-
-        trees._tr_stored_block(s, 0, 0, false);
-        /* For a full flush, this empty block will be recognized
-         * as a special marker by inflate_sync().
-         */
-        if (flush === Z_FULL_FLUSH) {
-          /*** CLEAR_HASH(s); ***/             /* forget history */
-          zero(s.head); // Fill with NIL (= 0);
-
-          if (s.lookahead === 0) {
-            s.strstart = 0;
-            s.block_start = 0;
-            s.insert = 0;
-          }
-        }
-      }
-      flush_pending(strm);
-      if (strm.avail_out === 0) {
-        s.last_flush = -1; /* avoid BUF_ERROR at next call, see above */
-        return Z_OK;
-      }
-    }
-  }
-  //Assert(strm->avail_out > 0, "bug2");
-  //if (strm.avail_out <= 0) { throw new Error("bug2");}
-
-  if (flush !== Z_FINISH) { return Z_OK; }
-  if (s.wrap <= 0) { return Z_STREAM_END; }
-
-  /* Write the trailer */
-  if (s.wrap === 2) {
-    put_byte(s, strm.adler & 0xff);
-    put_byte(s, (strm.adler >> 8) & 0xff);
-    put_byte(s, (strm.adler >> 16) & 0xff);
-    put_byte(s, (strm.adler >> 24) & 0xff);
-    put_byte(s, strm.total_in & 0xff);
-    put_byte(s, (strm.total_in >> 8) & 0xff);
-    put_byte(s, (strm.total_in >> 16) & 0xff);
-    put_byte(s, (strm.total_in >> 24) & 0xff);
-  }
-  else
-  {
-    putShortMSB(s, strm.adler >>> 16);
-    putShortMSB(s, strm.adler & 0xffff);
-  }
-
-  flush_pending(strm);
-  /* If avail_out is zero, the application will call deflate again
-   * to flush the rest.
-   */
-  if (s.wrap > 0) { s.wrap = -s.wrap; }
-  /* write the trailer only once! */
-  return s.pending !== 0 ? Z_OK : Z_STREAM_END;
-}
-
-function deflateEnd(strm) {
-  var status;
-
-  if (!strm/*== Z_NULL*/ || !strm.state/*== Z_NULL*/) {
-    return Z_STREAM_ERROR;
-  }
-
-  status = strm.state.status;
-  if (status !== INIT_STATE &&
-    status !== EXTRA_STATE &&
-    status !== NAME_STATE &&
-    status !== COMMENT_STATE &&
-    status !== HCRC_STATE &&
-    status !== BUSY_STATE &&
-    status !== FINISH_STATE
-  ) {
-    return err(strm, Z_STREAM_ERROR);
-  }
-
-  strm.state = null;
-
-  return status === BUSY_STATE ? err(strm, Z_DATA_ERROR) : Z_OK;
-}
-
-/* =========================================================================
- * Copy the source state to the destination state
- */
-//function deflateCopy(dest, source) {
-//
-//}
-
-exports.deflateInit = deflateInit;
-exports.deflateInit2 = deflateInit2;
-exports.deflateReset = deflateReset;
-exports.deflateResetKeep = deflateResetKeep;
-exports.deflateSetHeader = deflateSetHeader;
-exports.deflate = deflate;
-exports.deflateEnd = deflateEnd;
-exports.deflateInfo = 'pako deflate (from Nodeca project)';
-
-/* Not implemented
-exports.deflateBound = deflateBound;
-exports.deflateCopy = deflateCopy;
-exports.deflateSetDictionary = deflateSetDictionary;
-exports.deflateParams = deflateParams;
-exports.deflatePending = deflatePending;
-exports.deflatePrime = deflatePrime;
-exports.deflateTune = deflateTune;
-*/
-},{"../utils/common":4,"./adler32":5,"./crc32":7,"./messages":12,"./trees":13}],9:[function(require,module,exports){
-'use strict';
-
-// See state defs from inflate.js
-var BAD = 30;       /* got a data error -- remain here until reset */
-var TYPE = 12;      /* i: waiting for type bits, including last-flag bit */
-
-/*
-   Decode literal, length, and distance codes and write out the resulting
-   literal and match bytes until either not enough input or output is
-   available, an end-of-block is encountered, or a data error is encountered.
-   When large enough input and output buffers are supplied to inflate(), for
-   example, a 16K input buffer and a 64K output buffer, more than 95% of the
-   inflate execution time is spent in this routine.
-
-   Entry assumptions:
-
-        state.mode === LEN
-        strm.avail_in >= 6
-        strm.avail_out >= 258
-        start >= strm.avail_out
-        state.bits < 8
-
-   On return, state.mode is one of:
-
-        LEN -- ran out of enough output space or enough available input
-        TYPE -- reached end of block code, inflate() to interpret next block
-        BAD -- error in block data
-
-   Notes:
-
-    - The maximum input bits used by a length/distance pair is 15 bits for the
-      length code, 5 bits for the length extra, 15 bits for the distance code,
-      and 13 bits for the distance extra.  This totals 48 bits, or six bytes.
-      Therefore if strm.avail_in >= 6, then there is enough input to avoid
-      checking for available input while decoding.
-
-    - The maximum bytes that a single length/distance pair can output is 258
-      bytes, which is the maximum length that can be coded.  inflate_fast()
-      requires strm.avail_out >= 258 for each loop to avoid checking for
-      output space.
- */
-module.exports = function inflate_fast(strm, start) {
-  var state;
-  var _in;                    /* local strm.input */
-  var last;                   /* have enough input while in < last */
-  var _out;                   /* local strm.output */
-  var beg;                    /* inflate()'s initial strm.output */
-  var end;                    /* while out < end, enough space available */
-//#ifdef INFLATE_STRICT
-  var dmax;                   /* maximum distance from zlib header */
-//#endif
-  var wsize;                  /* window size or zero if not using window */
-  var whave;                  /* valid bytes in the window */
-  var wnext;                  /* window write index */
-  var window;                 /* allocated sliding window, if wsize != 0 */
-  var hold;                   /* local strm.hold */
-  var bits;                   /* local strm.bits */
-  var lcode;                  /* local strm.lencode */
-  var dcode;                  /* local strm.distcode */
-  var lmask;                  /* mask for first level of length codes */
-  var dmask;                  /* mask for first level of distance codes */
-  var here;                   /* retrieved table entry */
-  var op;                     /* code bits, operation, extra bits, or */
-                              /*  window position, window bytes to copy */
-  var len;                    /* match length, unused bytes */
-  var dist;                   /* match distance */
-  var from;                   /* where to copy match from */
-  var from_source;
-
-
-  var input, output; // JS specific, because we have no pointers
-
-  /* copy state to local variables */
-  state = strm.state;
-  //here = state.here;
-  _in = strm.next_in;
-  input = strm.input;
-  last = _in + (strm.avail_in - 5);
-  _out = strm.next_out;
-  output = strm.output;
-  beg = _out - (start - strm.avail_out);
-  end = _out + (strm.avail_out - 257);
-//#ifdef INFLATE_STRICT
-  dmax = state.dmax;
-//#endif
-  wsize = state.wsize;
-  whave = state.whave;
-  wnext = state.wnext;
-  window = state.window;
-  hold = state.hold;
-  bits = state.bits;
-  lcode = state.lencode;
-  dcode = state.distcode;
-  lmask = (1 << state.lenbits) - 1;
-  dmask = (1 << state.distbits) - 1;
-
-
-  /* decode literals and length/distances until end-of-block or not enough
-     input data or output space */
-
-  top:
-  do {
-    if (bits < 15) {
-      hold += input[_in++] << bits;
-      bits += 8;
-      hold += input[_in++] << bits;
-      bits += 8;
-    }
-
-    here = lcode[hold & lmask];
-
-    dolen:
-    for (;;) { // Goto emulation
-      op = here >>> 24/*here.bits*/;
-      hold >>>= op;
-      bits -= op;
-      op = (here >>> 16) & 0xff/*here.op*/;
-      if (op === 0) {                          /* literal */
-        //Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
-        //        "inflate:         literal '%c'\n" :
-        //        "inflate:         literal 0x%02x\n", here.val));
-        output[_out++] = here & 0xffff/*here.val*/;
-      }
-      else if (op & 16) {                     /* length base */
-        len = here & 0xffff/*here.val*/;
-        op &= 15;                           /* number of extra bits */
-        if (op) {
-          if (bits < op) {
-            hold += input[_in++] << bits;
-            bits += 8;
-          }
-          len += hold & ((1 << op) - 1);
-          hold >>>= op;
-          bits -= op;
-        }
-        //Tracevv((stderr, "inflate:         length %u\n", len));
-        if (bits < 15) {
-          hold += input[_in++] << bits;
-          bits += 8;
-          hold += input[_in++] << bits;
-          bits += 8;
-        }
-        here = dcode[hold & dmask];
-
-        dodist:
-        for (;;) { // goto emulation
-          op = here >>> 24/*here.bits*/;
-          hold >>>= op;
-          bits -= op;
-          op = (here >>> 16) & 0xff/*here.op*/;
-
-          if (op & 16) {                      /* distance base */
-            dist = here & 0xffff/*here.val*/;
-            op &= 15;                       /* number of extra bits */
-            if (bits < op) {
-              hold += input[_in++] << bits;
-              bits += 8;
-              if (bits < op) {
-                hold += input[_in++] << bits;
-                bits += 8;
-              }
-            }
-            dist += hold & ((1 << op) - 1);
-//#ifdef INFLATE_STRICT
-            if (dist > dmax) {
-              strm.msg = 'invalid distance too far back';
-              state.mode = BAD;
-              break top;
-            }
-//#endif
-            hold >>>= op;
-            bits -= op;
-            //Tracevv((stderr, "inflate:         distance %u\n", dist));
-            op = _out - beg;                /* max distance in output */
-            if (dist > op) {                /* see if copy from window */
-              op = dist - op;               /* distance back in window */
-              if (op > whave) {
-                if (state.sane) {
-                  strm.msg = 'invalid distance too far back';
-                  state.mode = BAD;
-                  break top;
-                }
-
-// (!) This block is disabled in zlib defailts,
-// don't enable it for binary compatibility
-//#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
-//                if (len <= op - whave) {
-//                  do {
-//                    output[_out++] = 0;
-//                  } while (--len);
-//                  continue top;
-//                }
-//                len -= op - whave;
-//                do {
-//                  output[_out++] = 0;
-//                } while (--op > whave);
-//                if (op === 0) {
-//                  from = _out - dist;
-//                  do {
-//                    output[_out++] = output[from++];
-//                  } while (--len);
-//                  continue top;
-//                }
-//#endif
-              }
-              from = 0; // window index
-              from_source = window;
-              if (wnext === 0) {           /* very common case */
-                from += wsize - op;
-                if (op < len) {         /* some from window */
-                  len -= op;
-                  do {
-                    output[_out++] = window[from++];
-                  } while (--op);
-                  from = _out - dist;  /* rest from output */
-                  from_source = output;
-                }
-              }
-              else if (wnext < op) {      /* wrap around window */
-                from += wsize + wnext - op;
-                op -= wnext;
-                if (op < len) {         /* some from end of window */
-                  len -= op;
-                  do {
-                    output[_out++] = window[from++];
-                  } while (--op);
-                  from = 0;
-                  if (wnext < len) {  /* some from start of window */
-                    op = wnext;
-                    len -= op;
-                    do {
-                      output[_out++] = window[from++];
-                    } while (--op);
-                    from = _out - dist;      /* rest from output */
-                    from_source = output;
-                  }
-                }
-              }
-              else {                      /* contiguous in window */
-                from += wnext - op;
-                if (op < len) {         /* some from window */
-                  len -= op;
-                  do {
-                    output[_out++] = window[from++];
-                  } while (--op);
-                  from = _out - dist;  /* rest from output */
-                  from_source = output;
-                }
-              }
-              while (len > 2) {
-                output[_out++] = from_source[from++];
-                output[_out++] = from_source[from++];
-                output[_out++] = from_source[from++];
-                len -= 3;
-              }
-              if (len) {
-                output[_out++] = from_source[from++];
-                if (len > 1) {
-                  output[_out++] = from_source[from++];
-                }
-              }
-            }
-            else {
-              from = _out - dist;          /* copy direct from output */
-              do {                        /* minimum length is three */
-                output[_out++] = output[from++];
-                output[_out++] = output[from++];
-                output[_out++] = output[from++];
-                len -= 3;
-              } while (len > 2);
-              if (len) {
-                output[_out++] = output[from++];
-                if (len > 1) {
-                  output[_out++] = output[from++];
-                }
-              }
-            }
-          }
-          else if ((op & 64) === 0) {          /* 2nd level distance code */
-            here = dcode[(here & 0xffff)/*here.val*/ + (hold & ((1 << op) - 1))];
-            continue dodist;
-          }
-          else {
-            strm.msg = 'invalid distance code';
-            state.mode = BAD;
-            break top;
-          }
-
-          break; // need to emulate goto via "continue"
-        }
-      }
-      else if ((op & 64) === 0) {              /* 2nd level length code */
-        here = lcode[(here & 0xffff)/*here.val*/ + (hold & ((1 << op) - 1))];
-        continue dolen;
-      }
-      else if (op & 32) {                     /* end-of-block */
-        //Tracevv((stderr, "inflate:         end of block\n"));
-        state.mode = TYPE;
-        break top;
-      }
-      else {
-        strm.msg = 'invalid literal/length code';
-        state.mode = BAD;
-        break top;
-      }
-
-      break; // need to emulate goto via "continue"
-    }
-  } while (_in < last && _out < end);
-
-  /* return unused bytes (on entry, bits < 8, so in won't go too far back) */
-  len = bits >> 3;
-  _in -= len;
-  bits -= len << 3;
-  hold &= (1 << bits) - 1;
-
-  /* update state and return */
-  strm.next_in = _in;
-  strm.next_out = _out;
-  strm.avail_in = (_in < last ? 5 + (last - _in) : 5 - (_in - last));
-  strm.avail_out = (_out < end ? 257 + (end - _out) : 257 - (_out - end));
-  state.hold = hold;
-  state.bits = bits;
-  return;
-};
-
-},{}],10:[function(require,module,exports){
-'use strict';
-
-
-var utils = require('../utils/common');
-var adler32 = require('./adler32');
-var crc32   = require('./crc32');
-var inflate_fast = require('./inffast');
-var inflate_table = require('./inftrees');
-
-var CODES = 0;
-var LENS = 1;
-var DISTS = 2;
-
-/* Public constants ==========================================================*/
-/* ===========================================================================*/
-
-
-/* Allowed flush values; see deflate() and inflate() below for details */
-//var Z_NO_FLUSH      = 0;
-//var Z_PARTIAL_FLUSH = 1;
-//var Z_SYNC_FLUSH    = 2;
-//var Z_FULL_FLUSH    = 3;
-var Z_FINISH        = 4;
-var Z_BLOCK         = 5;
-var Z_TREES         = 6;
-
-
-/* Return codes for the compression/decompression functions. Negative values
- * are errors, positive values are used for special but normal events.
- */
-var Z_OK            = 0;
-var Z_STREAM_END    = 1;
-var Z_NEED_DICT     = 2;
-//var Z_ERRNO         = -1;
-var Z_STREAM_ERROR  = -2;
-var Z_DATA_ERROR    = -3;
-var Z_MEM_ERROR     = -4;
-var Z_BUF_ERROR     = -5;
-//var Z_VERSION_ERROR = -6;
-
-/* The deflate compression method */
-var Z_DEFLATED  = 8;
-
-
-/* STATES ====================================================================*/
-/* ===========================================================================*/
-
-
-var    HEAD = 1;       /* i: waiting for magic header */
-var    FLAGS = 2;      /* i: waiting for method and flags (gzip) */
-var    TIME = 3;       /* i: waiting for modification time (gzip) */
-var    OS = 4;         /* i: waiting for extra flags and operating system (gzip) */
-var    EXLEN = 5;      /* i: waiting for extra length (gzip) */
-var    EXTRA = 6;      /* i: waiting for extra bytes (gzip) */
-var    NAME = 7;       /* i: waiting for end of file name (gzip) */
-var    COMMENT = 8;    /* i: waiting for end of comment (gzip) */
-var    HCRC = 9;       /* i: waiting for header crc (gzip) */
-var    DICTID = 10;    /* i: waiting for dictionary check value */
-var    DICT = 11;      /* waiting for inflateSetDictionary() call */
-var        TYPE = 12;      /* i: waiting for type bits, including last-flag bit */
-var        TYPEDO = 13;    /* i: same, but skip check to exit inflate on new block */
-var        STORED = 14;    /* i: waiting for stored size (length and complement) */
-var        COPY_ = 15;     /* i/o: same as COPY below, but only first time in */
-var        COPY = 16;      /* i/o: waiting for input or output to copy stored block */
-var        TABLE = 17;     /* i: waiting for dynamic block table lengths */
-var        LENLENS = 18;   /* i: waiting for code length code lengths */
-var        CODELENS = 19;  /* i: waiting for length/lit and distance code lengths */
-var            LEN_ = 20;      /* i: same as LEN below, but only first time in */
-var            LEN = 21;       /* i: waiting for length/lit/eob code */
-var            LENEXT = 22;    /* i: waiting for length extra bits */
-var            DIST = 23;      /* i: waiting for distance code */
-var            DISTEXT = 24;   /* i: waiting for distance extra bits */
-var            MATCH = 25;     /* o: waiting for output space to copy string */
-var            LIT = 26;       /* o: waiting for output space to write literal */
-var    CHECK = 27;     /* i: waiting for 32-bit check value */
-var    LENGTH = 28;    /* i: waiting for 32-bit length (gzip) */
-var    DONE = 29;      /* finished check, done -- remain here until reset */
-var    BAD = 30;       /* got a data error -- remain here until reset */
-var    MEM = 31;       /* got an inflate() memory error -- remain here until reset */
-var    SYNC = 32;      /* looking for synchronization bytes to restart inflate() */
-
-/* ===========================================================================*/
-
-
-
-var ENOUGH_LENS = 852;
-var ENOUGH_DISTS = 592;
-//var ENOUGH =  (ENOUGH_LENS+ENOUGH_DISTS);
-
-var MAX_WBITS = 15;
-/* 32K LZ77 window */
-var DEF_WBITS = MAX_WBITS;
-
-
-function ZSWAP32(q) {
-  return  (((q >>> 24) & 0xff) +
-          ((q >>> 8) & 0xff00) +
-          ((q & 0xff00) << 8) +
-          ((q & 0xff) << 24));
-}
-
-
-function InflateState() {
-  this.mode = 0;             /* current inflate mode */
-  this.last = false;          /* true if processing last block */
-  this.wrap = 0;              /* bit 0 true for zlib, bit 1 true for gzip */
-  this.havedict = false;      /* true if dictionary provided */
-  this.flags = 0;             /* gzip header method and flags (0 if zlib) */
-  this.dmax = 0;              /* zlib header max distance (INFLATE_STRICT) */
-  this.check = 0;             /* protected copy of check value */
-  this.total = 0;             /* protected copy of output count */
-  // TODO: may be {}
-  this.head = null;           /* where to save gzip header information */
-
-  /* sliding window */
-  this.wbits = 0;             /* log base 2 of requested window size */
-  this.wsize = 0;             /* window size or zero if not using window */
-  this.whave = 0;             /* valid bytes in the window */
-  this.wnext = 0;             /* window write index */
-  this.window = null;         /* allocated sliding window, if needed */
-
-  /* bit accumulator */
-  this.hold = 0;              /* input bit accumulator */
-  this.bits = 0;              /* number of bits in "in" */
-
-  /* for string and stored block copying */
-  this.length = 0;            /* literal or length of data to copy */
-  this.offset = 0;            /* distance back to copy string from */
-
-  /* for table and code decoding */
-  this.extra = 0;             /* extra bits needed */
-
-  /* fixed and dynamic code tables */
-  this.lencode = null;          /* starting table for length/literal codes */
-  this.distcode = null;         /* starting table for distance codes */
-  this.lenbits = 0;           /* index bits for lencode */
-  this.distbits = 0;          /* index bits for distcode */
-
-  /* dynamic table building */
-  this.ncode = 0;             /* number of code length code lengths */
-  this.nlen = 0;              /* number of length code lengths */
-  this.ndist = 0;             /* number of distance code lengths */
-  this.have = 0;              /* number of code lengths in lens[] */
-  this.next = null;              /* next available space in codes[] */
-
-  this.lens = new utils.Buf16(320); /* temporary storage for code lengths */
-  this.work = new utils.Buf16(288); /* work area for code table building */
-
-  /*
-   because we don't have pointers in js, we use lencode and distcode directly
-   as buffers so we don't need codes
-  */
-  //this.codes = new utils.Buf32(ENOUGH);       /* space for code tables */
-  this.lendyn = null;              /* dynamic table for length/literal codes (JS specific) */
-  this.distdyn = null;             /* dynamic table for distance codes (JS specific) */
-  this.sane = 0;                   /* if false, allow invalid distance too far */
-  this.back = 0;                   /* bits back of last unprocessed length/lit */
-  this.was = 0;                    /* initial length of match */
-}
-
-function inflateResetKeep(strm) {
-  var state;
-
-  if (!strm || !strm.state) { return Z_STREAM_ERROR; }
-  state = strm.state;
-  strm.total_in = strm.total_out = state.total = 0;
-  strm.msg = ''; /*Z_NULL*/
-  if (state.wrap) {       /* to support ill-conceived Java test suite */
-    strm.adler = state.wrap & 1;
-  }
-  state.mode = HEAD;
-  state.last = 0;
-  state.havedict = 0;
-  state.dmax = 32768;
-  state.head = null/*Z_NULL*/;
-  state.hold = 0;
-  state.bits = 0;
-  //state.lencode = state.distcode = state.next = state.codes;
-  state.lencode = state.lendyn = new utils.Buf32(ENOUGH_LENS);
-  state.distcode = state.distdyn = new utils.Buf32(ENOUGH_DISTS);
-
-  state.sane = 1;
-  state.back = -1;
-  //Tracev((stderr, "inflate: reset\n"));
-  return Z_OK;
-}
-
-function inflateReset(strm) {
-  var state;
-
-  if (!strm || !strm.state) { return Z_STREAM_ERROR; }
-  state = strm.state;
-  state.wsize = 0;
-  state.whave = 0;
-  state.wnext = 0;
-  return inflateResetKeep(strm);
-
-}
-
-function inflateReset2(strm, windowBits) {
-  var wrap;
-  var state;
-
-  /* get the state */
-  if (!strm || !strm.state) { return Z_STREAM_ERROR; }
-  state = strm.state;
-
-  /* extract wrap request from windowBits parameter */
-  if (windowBits < 0) {
-    wrap = 0;
-    windowBits = -windowBits;
-  }
-  else {
-    wrap = (windowBits >> 4) + 1;
-    if (windowBits < 48) {
-      windowBits &= 15;
-    }
-  }
-
-  /* set number of window bits, free window if different */
-  if (windowBits && (windowBits < 8 || windowBits > 15)) {
-    return Z_STREAM_ERROR;
-  }
-  if (state.window !== null && state.wbits !== windowBits) {
-    state.window = null;
-  }
-
-  /* update state and reset the rest of it */
-  state.wrap = wrap;
-  state.wbits = windowBits;
-  return inflateReset(strm);
-}
-
-function inflateInit2(strm, windowBits) {
-  var ret;
-  var state;
-
-  if (!strm) { return Z_STREAM_ERROR; }
-  //strm.msg = Z_NULL;                 /* in case we return an error */
-
-  state = new InflateState();
-
-  //if (state === Z_NULL) return Z_MEM_ERROR;
-  //Tracev((stderr, "inflate: allocated\n"));
-  strm.state = state;
-  state.window = null/*Z_NULL*/;
-  ret = inflateReset2(strm, windowBits);
-  if (ret !== Z_OK) {
-    strm.state = null/*Z_NULL*/;
-  }
-  return ret;
-}
-
-function inflateInit(strm) {
-  return inflateInit2(strm, DEF_WBITS);
-}
-
-
-/*
- Return state with length and distance decoding tables and index sizes set to
- fixed code decoding.  Normally this returns fixed tables from inffixed.h.
- If BUILDFIXED is defined, then instead this routine builds the tables the
- first time it's called, and returns those tables the first time and
- thereafter.  This reduces the size of the code by about 2K bytes, in
- exchange for a little execution time.  However, BUILDFIXED should not be
- used for threaded applications, since the rewriting of the tables and virgin
- may not be thread-safe.
- */
-var virgin = true;
-
-var lenfix, distfix; // We have no pointers in JS, so keep tables separate
-
-function fixedtables(state) {
-  /* build fixed huffman tables if first call (may not be thread safe) */
-  if (virgin) {
-    var sym;
-
-    lenfix = new utils.Buf32(512);
-    distfix = new utils.Buf32(32);
-
-    /* literal/length table */
-    sym = 0;
-    while (sym < 144) { state.lens[sym++] = 8; }
-    while (sym < 256) { state.lens[sym++] = 9; }
-    while (sym < 280) { state.lens[sym++] = 7; }
-    while (sym < 288) { state.lens[sym++] = 8; }
-
-    inflate_table(LENS,  state.lens, 0, 288, lenfix,   0, state.work, {bits: 9});
-
-    /* distance table */
-    sym = 0;
-    while (sym < 32) { state.lens[sym++] = 5; }
-
-    inflate_table(DISTS, state.lens, 0, 32,   distfix, 0, state.work, {bits: 5});
-
-    /* do this just once */
-    virgin = false;
-  }
-
-  state.lencode = lenfix;
-  state.lenbits = 9;
-  state.distcode = distfix;
-  state.distbits = 5;
-}
-
-
-/*
- Update the window with the last wsize (normally 32K) bytes written before
- returning.  If window does not exist yet, create it.  This is only called
- when a window is already in use, or when output has been written during this
- inflate call, but the end of the deflate stream has not been reached yet.
- It is also called to create a window for dictionary data when a dictionary
- is loaded.
-
- Providing output buffers larger than 32K to inflate() should provide a speed
- advantage, since only the last 32K of output is copied to the sliding window
- upon return from inflate(), and since all distances after the first 32K of
- output will fall in the output data, making match copies simpler and faster.
- The advantage may be dependent on the size of the processor's data caches.
- */
-function updatewindow(strm, src, end, copy) {
-  var dist;
-  var state = strm.state;
-
-  /* if it hasn't been done already, allocate space for the window */
-  if (state.window === null) {
-    state.wsize = 1 << state.wbits;
-    state.wnext = 0;
-    state.whave = 0;
-
-    state.window = new utils.Buf8(state.wsize);
-  }
-
-  /* copy state->wsize or less output bytes into the circular window */
-  if (copy >= state.wsize) {
-    utils.arraySet(state.window,src, end - state.wsize, state.wsize, 0);
-    state.wnext = 0;
-    state.whave = state.wsize;
-  }
-  else {
-    dist = state.wsize - state.wnext;
-    if (dist > copy) {
-      dist = copy;
-    }
-    //zmemcpy(state->window + state->wnext, end - copy, dist);
-    utils.arraySet(state.window,src, end - copy, dist, state.wnext);
-    copy -= dist;
-    if (copy) {
-      //zmemcpy(state->window, end - copy, copy);
-      utils.arraySet(state.window,src, end - copy, copy, 0);
-      state.wnext = copy;
-      state.whave = state.wsize;
-    }
-    else {
-      state.wnext += dist;
-      if (state.wnext === state.wsize) { state.wnext = 0; }
-      if (state.whave < state.wsize) { state.whave += dist; }
-    }
-  }
-  return 0;
-}
-
-function inflate(strm, flush) {
-  var state;
-  var input, output;          // input/output buffers
-  var next;                   /* next input INDEX */
-  var put;                    /* next output INDEX */
-  var have, left;             /* available input and output */
-  var hold;                   /* bit buffer */
-  var bits;                   /* bits in bit buffer */
-  var _in, _out;              /* save starting available input and output */
-  var copy;                   /* number of stored or match bytes to copy */
-  var from;                   /* where to copy match bytes from */
-  var from_source;
-  var here = 0;               /* current decoding table entry */
-  var here_bits, here_op, here_val; // paked "here" denormalized (JS specific)
-  //var last;                   /* parent table entry */
-  var last_bits, last_op, last_val; // paked "last" denormalized (JS specific)
-  var len;                    /* length to copy for repeats, bits to drop */
-  var ret;                    /* return code */
-  var hbuf = new utils.Buf8(4);    /* buffer for gzip header crc calculation */
-  var opts;
-
-  var n; // temporary var for NEED_BITS
-
-  var order = /* permutation of code lengths */
-    [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
-
-
-  if (!strm || !strm.state || !strm.output ||
-      (!strm.input && strm.avail_in !== 0)) {
-    return Z_STREAM_ERROR;
-  }
-
-  state = strm.state;
-  if (state.mode === TYPE) { state.mode = TYPEDO; }    /* skip check */
-
-
-  //--- LOAD() ---
-  put = strm.next_out;
-  output = strm.output;
-  left = strm.avail_out;
-  next = strm.next_in;
-  input = strm.input;
-  have = strm.avail_in;
-  hold = state.hold;
-  bits = state.bits;
-  //---
-
-  _in = have;
-  _out = left;
-  ret = Z_OK;
-
-  inf_leave: // goto emulation
-  for (;;) {
-    switch (state.mode) {
-    case HEAD:
-      if (state.wrap === 0) {
-        state.mode = TYPEDO;
-        break;
-      }
-      //=== NEEDBITS(16);
-      while (bits < 16) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      if ((state.wrap & 2) && hold === 0x8b1f) {  /* gzip header */
-        state.check = 0/*crc32(0L, Z_NULL, 0)*/;
-        //=== CRC2(state.check, hold);
-        hbuf[0] = hold & 0xff;
-        hbuf[1] = (hold >>> 8) & 0xff;
-        state.check = crc32(state.check, hbuf, 2, 0);
-        //===//
-
-        //=== INITBITS();
-        hold = 0;
-        bits = 0;
-        //===//
-        state.mode = FLAGS;
-        break;
-      }
-      state.flags = 0;           /* expect zlib header */
-      if (state.head) {
-        state.head.done = false;
-      }
-      if (!(state.wrap & 1) ||   /* check if zlib header allowed */
-        (((hold & 0xff)/*BITS(8)*/ << 8) + (hold >> 8)) % 31) {
-        strm.msg = 'incorrect header check';
-        state.mode = BAD;
-        break;
-      }
-      if ((hold & 0x0f)/*BITS(4)*/ !== Z_DEFLATED) {
-        strm.msg = 'unknown compression method';
-        state.mode = BAD;
-        break;
-      }
-      //--- DROPBITS(4) ---//
-      hold >>>= 4;
-      bits -= 4;
-      //---//
-      len = (hold & 0x0f)/*BITS(4)*/ + 8;
-      if (state.wbits === 0) {
-        state.wbits = len;
-      }
-      else if (len > state.wbits) {
-        strm.msg = 'invalid window size';
-        state.mode = BAD;
-        break;
-      }
-      state.dmax = 1 << len;
-      //Tracev((stderr, "inflate:   zlib header ok\n"));
-      strm.adler = state.check = 1/*adler32(0L, Z_NULL, 0)*/;
-      state.mode = hold & 0x200 ? DICTID : TYPE;
-      //=== INITBITS();
-      hold = 0;
-      bits = 0;
-      //===//
-      break;
-    case FLAGS:
-      //=== NEEDBITS(16); */
-      while (bits < 16) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      state.flags = hold;
-      if ((state.flags & 0xff) !== Z_DEFLATED) {
-        strm.msg = 'unknown compression method';
-        state.mode = BAD;
-        break;
-      }
-      if (state.flags & 0xe000) {
-        strm.msg = 'unknown header flags set';
-        state.mode = BAD;
-        break;
-      }
-      if (state.head) {
-        state.head.text = ((hold >> 8) & 1);
-      }
-      if (state.flags & 0x0200) {
-        //=== CRC2(state.check, hold);
-        hbuf[0] = hold & 0xff;
-        hbuf[1] = (hold >>> 8) & 0xff;
-        state.check = crc32(state.check, hbuf, 2, 0);
-        //===//
-      }
-      //=== INITBITS();
-      hold = 0;
-      bits = 0;
-      //===//
-      state.mode = TIME;
-      /* falls through */
-    case TIME:
-      //=== NEEDBITS(32); */
-      while (bits < 32) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      if (state.head) {
-        state.head.time = hold;
-      }
-      if (state.flags & 0x0200) {
-        //=== CRC4(state.check, hold)
-        hbuf[0] = hold & 0xff;
-        hbuf[1] = (hold >>> 8) & 0xff;
-        hbuf[2] = (hold >>> 16) & 0xff;
-        hbuf[3] = (hold >>> 24) & 0xff;
-        state.check = crc32(state.check, hbuf, 4, 0);
-        //===
-      }
-      //=== INITBITS();
-      hold = 0;
-      bits = 0;
-      //===//
-      state.mode = OS;
-      /* falls through */
-    case OS:
-      //=== NEEDBITS(16); */
-      while (bits < 16) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      if (state.head) {
-        state.head.xflags = (hold & 0xff);
-        state.head.os = (hold >> 8);
-      }
-      if (state.flags & 0x0200) {
-        //=== CRC2(state.check, hold);
-        hbuf[0] = hold & 0xff;
-        hbuf[1] = (hold >>> 8) & 0xff;
-        state.check = crc32(state.check, hbuf, 2, 0);
-        //===//
-      }
-      //=== INITBITS();
-      hold = 0;
-      bits = 0;
-      //===//
-      state.mode = EXLEN;
-      /* falls through */
-    case EXLEN:
-      if (state.flags & 0x0400) {
-        //=== NEEDBITS(16); */
-        while (bits < 16) {
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-        }
-        //===//
-        state.length = hold;
-        if (state.head) {
-          state.head.extra_len = hold;
-        }
-        if (state.flags & 0x0200) {
-          //=== CRC2(state.check, hold);
-          hbuf[0] = hold & 0xff;
-          hbuf[1] = (hold >>> 8) & 0xff;
-          state.check = crc32(state.check, hbuf, 2, 0);
-          //===//
-        }
-        //=== INITBITS();
-        hold = 0;
-        bits = 0;
-        //===//
-      }
-      else if (state.head) {
-        state.head.extra = null/*Z_NULL*/;
-      }
-      state.mode = EXTRA;
-      /* falls through */
-    case EXTRA:
-      if (state.flags & 0x0400) {
-        copy = state.length;
-        if (copy > have) { copy = have; }
-        if (copy) {
-          if (state.head) {
-            len = state.head.extra_len - state.length;
-            if (!state.head.extra) {
-              // Use untyped array for more conveniend processing later
-              state.head.extra = new Array(state.head.extra_len);
-            }
-            utils.arraySet(
-              state.head.extra,
-              input,
-              next,
-              // extra field is limited to 65536 bytes
-              // - no need for additional size check
-              copy,
-              /*len + copy > state.head.extra_max - len ? state.head.extra_max : copy,*/
-              len
-            );
-            //zmemcpy(state.head.extra + len, next,
-            //        len + copy > state.head.extra_max ?
-            //        state.head.extra_max - len : copy);
-          }
-          if (state.flags & 0x0200) {
-            state.check = crc32(state.check, input, copy, next);
-          }
-          have -= copy;
-          next += copy;
-          state.length -= copy;
-        }
-        if (state.length) { break inf_leave; }
-      }
-      state.length = 0;
-      state.mode = NAME;
-      /* falls through */
-    case NAME:
-      if (state.flags & 0x0800) {
-        if (have === 0) { break inf_leave; }
-        copy = 0;
-        do {
-          // TODO: 2 or 1 bytes?
-          len = input[next + copy++];
-          /* use constant limit because in js we should not preallocate memory */
-          if (state.head && len &&
-              (state.length < 65536 /*state.head.name_max*/)) {
-            state.head.name += String.fromCharCode(len);
-          }
-        } while (len && copy < have);
-
-        if (state.flags & 0x0200) {
-          state.check = crc32(state.check, input, copy, next);
-        }
-        have -= copy;
-        next += copy;
-        if (len) { break inf_leave; }
-      }
-      else if (state.head) {
-        state.head.name = null;
-      }
-      state.length = 0;
-      state.mode = COMMENT;
-      /* falls through */
-    case COMMENT:
-      if (state.flags & 0x1000) {
-        if (have === 0) { break inf_leave; }
-        copy = 0;
-        do {
-          len = input[next + copy++];
-          /* use constant limit because in js we should not preallocate memory */
-          if (state.head && len &&
-              (state.length < 65536 /*state.head.comm_max*/)) {
-            state.head.comment += String.fromCharCode(len);
-          }
-        } while (len && copy < have);
-        if (state.flags & 0x0200) {
-          state.check = crc32(state.check, input, copy, next);
-        }
-        have -= copy;
-        next += copy;
-        if (len) { break inf_leave; }
-      }
-      else if (state.head) {
-        state.head.comment = null;
-      }
-      state.mode = HCRC;
-      /* falls through */
-    case HCRC:
-      if (state.flags & 0x0200) {
-        //=== NEEDBITS(16); */
-        while (bits < 16) {
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-        }
-        //===//
-        if (hold !== (state.check & 0xffff)) {
-          strm.msg = 'header crc mismatch';
-          state.mode = BAD;
-          break;
-        }
-        //=== INITBITS();
-        hold = 0;
-        bits = 0;
-        //===//
-      }
-      if (state.head) {
-        state.head.hcrc = ((state.flags >> 9) & 1);
-        state.head.done = true;
-      }
-      strm.adler = state.check = 0 /*crc32(0L, Z_NULL, 0)*/;
-      state.mode = TYPE;
-      break;
-    case DICTID:
-      //=== NEEDBITS(32); */
-      while (bits < 32) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      strm.adler = state.check = ZSWAP32(hold);
-      //=== INITBITS();
-      hold = 0;
-      bits = 0;
-      //===//
-      state.mode = DICT;
-      /* falls through */
-    case DICT:
-      if (state.havedict === 0) {
-        //--- RESTORE() ---
-        strm.next_out = put;
-        strm.avail_out = left;
-        strm.next_in = next;
-        strm.avail_in = have;
-        state.hold = hold;
-        state.bits = bits;
-        //---
-        return Z_NEED_DICT;
-      }
-      strm.adler = state.check = 1/*adler32(0L, Z_NULL, 0)*/;
-      state.mode = TYPE;
-      /* falls through */
-    case TYPE:
-      if (flush === Z_BLOCK || flush === Z_TREES) { break inf_leave; }
-      /* falls through */
-    case TYPEDO:
-      if (state.last) {
-        //--- BYTEBITS() ---//
-        hold >>>= bits & 7;
-        bits -= bits & 7;
-        //---//
-        state.mode = CHECK;
-        break;
-      }
-      //=== NEEDBITS(3); */
-      while (bits < 3) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      state.last = (hold & 0x01)/*BITS(1)*/;
-      //--- DROPBITS(1) ---//
-      hold >>>= 1;
-      bits -= 1;
-      //---//
-
-      switch ((hold & 0x03)/*BITS(2)*/) {
-      case 0:                             /* stored block */
-        //Tracev((stderr, "inflate:     stored block%s\n",
-        //        state.last ? " (last)" : ""));
-        state.mode = STORED;
-        break;
-      case 1:                             /* fixed block */
-        fixedtables(state);
-        //Tracev((stderr, "inflate:     fixed codes block%s\n",
-        //        state.last ? " (last)" : ""));
-        state.mode = LEN_;             /* decode codes */
-        if (flush === Z_TREES) {
-          //--- DROPBITS(2) ---//
-          hold >>>= 2;
-          bits -= 2;
-          //---//
-          break inf_leave;
-        }
-        break;
-      case 2:                             /* dynamic block */
-        //Tracev((stderr, "inflate:     dynamic codes block%s\n",
-        //        state.last ? " (last)" : ""));
-        state.mode = TABLE;
-        break;
-      case 3:
-        strm.msg = 'invalid block type';
-        state.mode = BAD;
-      }
-      //--- DROPBITS(2) ---//
-      hold >>>= 2;
-      bits -= 2;
-      //---//
-      break;
-    case STORED:
-      //--- BYTEBITS() ---// /* go to byte boundary */
-      hold >>>= bits & 7;
-      bits -= bits & 7;
-      //---//
-      //=== NEEDBITS(32); */
-      while (bits < 32) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      if ((hold & 0xffff) !== ((hold >>> 16) ^ 0xffff)) {
-        strm.msg = 'invalid stored block lengths';
-        state.mode = BAD;
-        break;
-      }
-      state.length = hold & 0xffff;
-      //Tracev((stderr, "inflate:       stored length %u\n",
-      //        state.length));
-      //=== INITBITS();
-      hold = 0;
-      bits = 0;
-      //===//
-      state.mode = COPY_;
-      if (flush === Z_TREES) { break inf_leave; }
-      /* falls through */
-    case COPY_:
-      state.mode = COPY;
-      /* falls through */
-    case COPY:
-      copy = state.length;
-      if (copy) {
-        if (copy > have) { copy = have; }
-        if (copy > left) { copy = left; }
-        if (copy === 0) { break inf_leave; }
-        //--- zmemcpy(put, next, copy); ---
-        utils.arraySet(output, input, next, copy, put);
-        //---//
-        have -= copy;
-        next += copy;
-        left -= copy;
-        put += copy;
-        state.length -= copy;
-        break;
-      }
-      //Tracev((stderr, "inflate:       stored end\n"));
-      state.mode = TYPE;
-      break;
-    case TABLE:
-      //=== NEEDBITS(14); */
-      while (bits < 14) {
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-      }
-      //===//
-      state.nlen = (hold & 0x1f)/*BITS(5)*/ + 257;
-      //--- DROPBITS(5) ---//
-      hold >>>= 5;
-      bits -= 5;
-      //---//
-      state.ndist = (hold & 0x1f)/*BITS(5)*/ + 1;
-      //--- DROPBITS(5) ---//
-      hold >>>= 5;
-      bits -= 5;
-      //---//
-      state.ncode = (hold & 0x0f)/*BITS(4)*/ + 4;
-      //--- DROPBITS(4) ---//
-      hold >>>= 4;
-      bits -= 4;
-      //---//
-//#ifndef PKZIP_BUG_WORKAROUND
-      if (state.nlen > 286 || state.ndist > 30) {
-        strm.msg = 'too many length or distance symbols';
-        state.mode = BAD;
-        break;
-      }
-//#endif
-      //Tracev((stderr, "inflate:       table sizes ok\n"));
-      state.have = 0;
-      state.mode = LENLENS;
-      /* falls through */
-    case LENLENS:
-      while (state.have < state.ncode) {
-        //=== NEEDBITS(3);
-        while (bits < 3) {
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-        }
-        //===//
-        state.lens[order[state.have++]] = (hold & 0x07);//BITS(3);
-        //--- DROPBITS(3) ---//
-        hold >>>= 3;
-        bits -= 3;
-        //---//
-      }
-      while (state.have < 19) {
-        state.lens[order[state.have++]] = 0;
-      }
-      // We have separate tables & no pointers. 2 commented lines below not needed.
-      //state.next = state.codes;
-      //state.lencode = state.next;
-      // Switch to use dynamic table
-      state.lencode = state.lendyn;
-      state.lenbits = 7;
-
-      opts = {bits: state.lenbits};
-      ret = inflate_table(CODES, state.lens, 0, 19, state.lencode, 0, state.work, opts);
-      state.lenbits = opts.bits;
-
-      if (ret) {
-        strm.msg = 'invalid code lengths set';
-        state.mode = BAD;
-        break;
-      }
-      //Tracev((stderr, "inflate:       code lengths ok\n"));
-      state.have = 0;
-      state.mode = CODELENS;
-      /* falls through */
-    case CODELENS:
-      while (state.have < state.nlen + state.ndist) {
-        for (;;) {
-          here = state.lencode[hold & ((1 << state.lenbits) - 1)];/*BITS(state.lenbits)*/
-          here_bits = here >>> 24;
-          here_op = (here >>> 16) & 0xff;
-          here_val = here & 0xffff;
-
-          if ((here_bits) <= bits) { break; }
-          //--- PULLBYTE() ---//
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-          //---//
-        }
-        if (here_val < 16) {
-          //--- DROPBITS(here.bits) ---//
-          hold >>>= here_bits;
-          bits -= here_bits;
-          //---//
-          state.lens[state.have++] = here_val;
-        }
-        else {
-          if (here_val === 16) {
-            //=== NEEDBITS(here.bits + 2);
-            n = here_bits + 2;
-            while (bits < n) {
-              if (have === 0) { break inf_leave; }
-              have--;
-              hold += input[next++] << bits;
-              bits += 8;
-            }
-            //===//
-            //--- DROPBITS(here.bits) ---//
-            hold >>>= here_bits;
-            bits -= here_bits;
-            //---//
-            if (state.have === 0) {
-              strm.msg = 'invalid bit length repeat';
-              state.mode = BAD;
-              break;
-            }
-            len = state.lens[state.have - 1];
-            copy = 3 + (hold & 0x03);//BITS(2);
-            //--- DROPBITS(2) ---//
-            hold >>>= 2;
-            bits -= 2;
-            //---//
-          }
-          else if (here_val === 17) {
-            //=== NEEDBITS(here.bits + 3);
-            n = here_bits + 3;
-            while (bits < n) {
-              if (have === 0) { break inf_leave; }
-              have--;
-              hold += input[next++] << bits;
-              bits += 8;
-            }
-            //===//
-            //--- DROPBITS(here.bits) ---//
-            hold >>>= here_bits;
-            bits -= here_bits;
-            //---//
-            len = 0;
-            copy = 3 + (hold & 0x07);//BITS(3);
-            //--- DROPBITS(3) ---//
-            hold >>>= 3;
-            bits -= 3;
-            //---//
-          }
-          else {
-            //=== NEEDBITS(here.bits + 7);
-            n = here_bits + 7;
-            while (bits < n) {
-              if (have === 0) { break inf_leave; }
-              have--;
-              hold += input[next++] << bits;
-              bits += 8;
-            }
-            //===//
-            //--- DROPBITS(here.bits) ---//
-            hold >>>= here_bits;
-            bits -= here_bits;
-            //---//
-            len = 0;
-            copy = 11 + (hold & 0x7f);//BITS(7);
-            //--- DROPBITS(7) ---//
-            hold >>>= 7;
-            bits -= 7;
-            //---//
-          }
-          if (state.have + copy > state.nlen + state.ndist) {
-            strm.msg = 'invalid bit length repeat';
-            state.mode = BAD;
-            break;
-          }
-          while (copy--) {
-            state.lens[state.have++] = len;
-          }
-        }
-      }
-
-      /* handle error breaks in while */
-      if (state.mode === BAD) { break; }
-
-      /* check for end-of-block code (better have one) */
-      if (state.lens[256] === 0) {
-        strm.msg = 'invalid code -- missing end-of-block';
-        state.mode = BAD;
-        break;
-      }
-
-      /* build code tables -- note: do not change the lenbits or distbits
-         values here (9 and 6) without reading the comments in inftrees.h
-         concerning the ENOUGH constants, which depend on those values */
-      state.lenbits = 9;
-
-      opts = {bits: state.lenbits};
-      ret = inflate_table(LENS, state.lens, 0, state.nlen, state.lencode, 0, state.work, opts);
-      // We have separate tables & no pointers. 2 commented lines below not needed.
-      // state.next_index = opts.table_index;
-      state.lenbits = opts.bits;
-      // state.lencode = state.next;
-
-      if (ret) {
-        strm.msg = 'invalid literal/lengths set';
-        state.mode = BAD;
-        break;
-      }
-
-      state.distbits = 6;
-      //state.distcode.copy(state.codes);
-      // Switch to use dynamic table
-      state.distcode = state.distdyn;
-      opts = {bits: state.distbits};
-      ret = inflate_table(DISTS, state.lens, state.nlen, state.ndist, state.distcode, 0, state.work, opts);
-      // We have separate tables & no pointers. 2 commented lines below not needed.
-      // state.next_index = opts.table_index;
-      state.distbits = opts.bits;
-      // state.distcode = state.next;
-
-      if (ret) {
-        strm.msg = 'invalid distances set';
-        state.mode = BAD;
-        break;
-      }
-      //Tracev((stderr, 'inflate:       codes ok\n'));
-      state.mode = LEN_;
-      if (flush === Z_TREES) { break inf_leave; }
-      /* falls through */
-    case LEN_:
-      state.mode = LEN;
-      /* falls through */
-    case LEN:
-      if (have >= 6 && left >= 258) {
-        //--- RESTORE() ---
-        strm.next_out = put;
-        strm.avail_out = left;
-        strm.next_in = next;
-        strm.avail_in = have;
-        state.hold = hold;
-        state.bits = bits;
-        //---
-        inflate_fast(strm, _out);
-        //--- LOAD() ---
-        put = strm.next_out;
-        output = strm.output;
-        left = strm.avail_out;
-        next = strm.next_in;
-        input = strm.input;
-        have = strm.avail_in;
-        hold = state.hold;
-        bits = state.bits;
-        //---
-
-        if (state.mode === TYPE) {
-          state.back = -1;
-        }
-        break;
-      }
-      state.back = 0;
-      for (;;) {
-        here = state.lencode[hold & ((1 << state.lenbits) -1)];  /*BITS(state.lenbits)*/
-        here_bits = here >>> 24;
-        here_op = (here >>> 16) & 0xff;
-        here_val = here & 0xffff;
-
-        if (here_bits <= bits) { break; }
-        //--- PULLBYTE() ---//
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-        //---//
-      }
-      if (here_op && (here_op & 0xf0) === 0) {
-        last_bits = here_bits;
-        last_op = here_op;
-        last_val = here_val;
-        for (;;) {
-          here = state.lencode[last_val +
-                  ((hold & ((1 << (last_bits + last_op)) -1))/*BITS(last.bits + last.op)*/ >> last_bits)];
-          here_bits = here >>> 24;
-          here_op = (here >>> 16) & 0xff;
-          here_val = here & 0xffff;
-
-          if ((last_bits + here_bits) <= bits) { break; }
-          //--- PULLBYTE() ---//
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-          //---//
-        }
-        //--- DROPBITS(last.bits) ---//
-        hold >>>= last_bits;
-        bits -= last_bits;
-        //---//
-        state.back += last_bits;
-      }
-      //--- DROPBITS(here.bits) ---//
-      hold >>>= here_bits;
-      bits -= here_bits;
-      //---//
-      state.back += here_bits;
-      state.length = here_val;
-      if (here_op === 0) {
-        //Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
-        //        "inflate:         literal '%c'\n" :
-        //        "inflate:         literal 0x%02x\n", here.val));
-        state.mode = LIT;
-        break;
-      }
-      if (here_op & 32) {
-        //Tracevv((stderr, "inflate:         end of block\n"));
-        state.back = -1;
-        state.mode = TYPE;
-        break;
-      }
-      if (here_op & 64) {
-        strm.msg = 'invalid literal/length code';
-        state.mode = BAD;
-        break;
-      }
-      state.extra = here_op & 15;
-      state.mode = LENEXT;
-      /* falls through */
-    case LENEXT:
-      if (state.extra) {
-        //=== NEEDBITS(state.extra);
-        n = state.extra;
-        while (bits < n) {
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-        }
-        //===//
-        state.length += hold & ((1 << state.extra) -1)/*BITS(state.extra)*/;
-        //--- DROPBITS(state.extra) ---//
-        hold >>>= state.extra;
-        bits -= state.extra;
-        //---//
-        state.back += state.extra;
-      }
-      //Tracevv((stderr, "inflate:         length %u\n", state.length));
-      state.was = state.length;
-      state.mode = DIST;
-      /* falls through */
-    case DIST:
-      for (;;) {
-        here = state.distcode[hold & ((1 << state.distbits) -1)];/*BITS(state.distbits)*/
-        here_bits = here >>> 24;
-        here_op = (here >>> 16) & 0xff;
-        here_val = here & 0xffff;
-
-        if ((here_bits) <= bits) { break; }
-        //--- PULLBYTE() ---//
-        if (have === 0) { break inf_leave; }
-        have--;
-        hold += input[next++] << bits;
-        bits += 8;
-        //---//
-      }
-      if ((here_op & 0xf0) === 0) {
-        last_bits = here_bits;
-        last_op = here_op;
-        last_val = here_val;
-        for (;;) {
-          here = state.distcode[last_val +
-                  ((hold & ((1 << (last_bits + last_op)) -1))/*BITS(last.bits + last.op)*/ >> last_bits)];
-          here_bits = here >>> 24;
-          here_op = (here >>> 16) & 0xff;
-          here_val = here & 0xffff;
-
-          if ((last_bits + here_bits) <= bits) { break; }
-          //--- PULLBYTE() ---//
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-          //---//
-        }
-        //--- DROPBITS(last.bits) ---//
-        hold >>>= last_bits;
-        bits -= last_bits;
-        //---//
-        state.back += last_bits;
-      }
-      //--- DROPBITS(here.bits) ---//
-      hold >>>= here_bits;
-      bits -= here_bits;
-      //---//
-      state.back += here_bits;
-      if (here_op & 64) {
-        strm.msg = 'invalid distance code';
-        state.mode = BAD;
-        break;
-      }
-      state.offset = here_val;
-      state.extra = (here_op) & 15;
-      state.mode = DISTEXT;
-      /* falls through */
-    case DISTEXT:
-      if (state.extra) {
-        //=== NEEDBITS(state.extra);
-        n = state.extra;
-        while (bits < n) {
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-        }
-        //===//
-        state.offset += hold & ((1 << state.extra) -1)/*BITS(state.extra)*/;
-        //--- DROPBITS(state.extra) ---//
-        hold >>>= state.extra;
-        bits -= state.extra;
-        //---//
-        state.back += state.extra;
-      }
-//#ifdef INFLATE_STRICT
-      if (state.offset > state.dmax) {
-        strm.msg = 'invalid distance too far back';
-        state.mode = BAD;
-        break;
-      }
-//#endif
-      //Tracevv((stderr, "inflate:         distance %u\n", state.offset));
-      state.mode = MATCH;
-      /* falls through */
-    case MATCH:
-      if (left === 0) { break inf_leave; }
-      copy = _out - left;
-      if (state.offset > copy) {         /* copy from window */
-        copy = state.offset - copy;
-        if (copy > state.whave) {
-          if (state.sane) {
-            strm.msg = 'invalid distance too far back';
-            state.mode = BAD;
-            break;
-          }
-// (!) This block is disabled in zlib defailts,
-// don't enable it for binary compatibility
-//#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
-//          Trace((stderr, "inflate.c too far\n"));
-//          copy -= state.whave;
-//          if (copy > state.length) { copy = state.length; }
-//          if (copy > left) { copy = left; }
-//          left -= copy;
-//          state.length -= copy;
-//          do {
-//            output[put++] = 0;
-//          } while (--copy);
-//          if (state.length === 0) { state.mode = LEN; }
-//          break;
-//#endif
-        }
-        if (copy > state.wnext) {
-          copy -= state.wnext;
-          from = state.wsize - copy;
-        }
-        else {
-          from = state.wnext - copy;
-        }
-        if (copy > state.length) { copy = state.length; }
-        from_source = state.window;
-      }
-      else {                              /* copy from output */
-        from_source = output;
-        from = put - state.offset;
-        copy = state.length;
-      }
-      if (copy > left) { copy = left; }
-      left -= copy;
-      state.length -= copy;
-      do {
-        output[put++] = from_source[from++];
-      } while (--copy);
-      if (state.length === 0) { state.mode = LEN; }
-      break;
-    case LIT:
-      if (left === 0) { break inf_leave; }
-      output[put++] = state.length;
-      left--;
-      state.mode = LEN;
-      break;
-    case CHECK:
-      if (state.wrap) {
-        //=== NEEDBITS(32);
-        while (bits < 32) {
-          if (have === 0) { break inf_leave; }
-          have--;
-          // Use '|' insdead of '+' to make sure that result is signed
-          hold |= input[next++] << bits;
-          bits += 8;
-        }
-        //===//
-        _out -= left;
-        strm.total_out += _out;
-        state.total += _out;
-        if (_out) {
-          strm.adler = state.check =
-              /*UPDATE(state.check, put - _out, _out);*/
-              (state.flags ? crc32(state.check, output, _out, put - _out) : adler32(state.check, output, _out, put - _out));
-
-        }
-        _out = left;
-        // NB: crc32 stored as signed 32-bit int, ZSWAP32 returns signed too
-        if ((state.flags ? hold : ZSWAP32(hold)) !== state.check) {
-          strm.msg = 'incorrect data check';
-          state.mode = BAD;
-          break;
-        }
-        //=== INITBITS();
-        hold = 0;
-        bits = 0;
-        //===//
-        //Tracev((stderr, "inflate:   check matches trailer\n"));
-      }
-      state.mode = LENGTH;
-      /* falls through */
-    case LENGTH:
-      if (state.wrap && state.flags) {
-        //=== NEEDBITS(32);
-        while (bits < 32) {
-          if (have === 0) { break inf_leave; }
-          have--;
-          hold += input[next++] << bits;
-          bits += 8;
-        }
-        //===//
-        if (hold !== (state.total & 0xffffffff)) {
-          strm.msg = 'incorrect length check';
-          state.mode = BAD;
-          break;
-        }
-        //=== INITBITS();
-        hold = 0;
-        bits = 0;
-        //===//
-        //Tracev((stderr, "inflate:   length matches trailer\n"));
-      }
-      state.mode = DONE;
-      /* falls through */
-    case DONE:
-      ret = Z_STREAM_END;
-      break inf_leave;
-    case BAD:
-      ret = Z_DATA_ERROR;
-      break inf_leave;
-    case MEM:
-      return Z_MEM_ERROR;
-    case SYNC:
-      /* falls through */
-    default:
-      return Z_STREAM_ERROR;
-    }
-  }
-
-  // inf_leave <- here is real place for "goto inf_leave", emulated via "break inf_leave"
-
-  /*
-     Return from inflate(), updating the total counts and the check value.
-     If there was no progress during the inflate() call, return a buffer
-     error.  Call updatewindow() to create and/or update the window state.
-     Note: a memory error from inflate() is non-recoverable.
-   */
-
-  //--- RESTORE() ---
-  strm.next_out = put;
-  strm.avail_out = left;
-  strm.next_in = next;
-  strm.avail_in = have;
-  state.hold = hold;
-  state.bits = bits;
-  //---
-
-  if (state.wsize || (_out !== strm.avail_out && state.mode < BAD &&
-                      (state.mode < CHECK || flush !== Z_FINISH))) {
-    if (updatewindow(strm, strm.output, strm.next_out, _out - strm.avail_out)) {
-      state.mode = MEM;
-      return Z_MEM_ERROR;
-    }
-  }
-  _in -= strm.avail_in;
-  _out -= strm.avail_out;
-  strm.total_in += _in;
-  strm.total_out += _out;
-  state.total += _out;
-  if (state.wrap && _out) {
-    strm.adler = state.check = /*UPDATE(state.check, strm.next_out - _out, _out);*/
-      (state.flags ? crc32(state.check, output, _out, strm.next_out - _out) : adler32(state.check, output, _out, strm.next_out - _out));
-  }
-  strm.data_type = state.bits + (state.last ? 64 : 0) +
-                    (state.mode === TYPE ? 128 : 0) +
-                    (state.mode === LEN_ || state.mode === COPY_ ? 256 : 0);
-  if (((_in === 0 && _out === 0) || flush === Z_FINISH) && ret === Z_OK) {
-    ret = Z_BUF_ERROR;
-  }
-  return ret;
-}
-
-function inflateEnd(strm) {
-
-  if (!strm || !strm.state /*|| strm->zfree == (free_func)0*/) {
-    return Z_STREAM_ERROR;
-  }
-
-  var state = strm.state;
-  if (state.window) {
-    state.window = null;
-  }
-  strm.state = null;
-  return Z_OK;
-}
-
-function inflateGetHeader(strm, head) {
-  var state;
-
-  /* check state */
-  if (!strm || !strm.state) { return Z_STREAM_ERROR; }
-  state = strm.state;
-  if ((state.wrap & 2) === 0) { return Z_STREAM_ERROR; }
-
-  /* save header structure */
-  state.head = head;
-  head.done = false;
-  return Z_OK;
-}
-
-
-exports.inflateReset = inflateReset;
-exports.inflateReset2 = inflateReset2;
-exports.inflateResetKeep = inflateResetKeep;
-exports.inflateInit = inflateInit;
-exports.inflateInit2 = inflateInit2;
-exports.inflate = inflate;
-exports.inflateEnd = inflateEnd;
-exports.inflateGetHeader = inflateGetHeader;
-exports.inflateInfo = 'pako inflate (from Nodeca project)';
-
-/* Not implemented
-exports.inflateCopy = inflateCopy;
-exports.inflateGetDictionary = inflateGetDictionary;
-exports.inflateMark = inflateMark;
-exports.inflatePrime = inflatePrime;
-exports.inflateSetDictionary = inflateSetDictionary;
-exports.inflateSync = inflateSync;
-exports.inflateSyncPoint = inflateSyncPoint;
-exports.inflateUndermine = inflateUndermine;
-*/
-},{"../utils/common":4,"./adler32":5,"./crc32":7,"./inffast":9,"./inftrees":11}],11:[function(require,module,exports){
-'use strict';
-
-
-var utils = require('../utils/common');
-
-var MAXBITS = 15;
-var ENOUGH_LENS = 852;
-var ENOUGH_DISTS = 592;
-//var ENOUGH = (ENOUGH_LENS+ENOUGH_DISTS);
-
-var CODES = 0;
-var LENS = 1;
-var DISTS = 2;
-
-var lbase = [ /* Length codes 257..285 base */
-  3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
-  35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0
-];
-
-var lext = [ /* Length codes 257..285 extra */
-  16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18,
-  19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 16, 72, 78
-];
-
-var dbase = [ /* Distance codes 0..29 base */
-  1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
-  257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145,
-  8193, 12289, 16385, 24577, 0, 0
-];
-
-var dext = [ /* Distance codes 0..29 extra */
-  16, 16, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22,
-  23, 23, 24, 24, 25, 25, 26, 26, 27, 27,
-  28, 28, 29, 29, 64, 64
-];
-
-module.exports = function inflate_table(type, lens, lens_index, codes, table, table_index, work, opts)
-{
-  var bits = opts.bits;
-      //here = opts.here; /* table entry for duplication */
-
-  var len = 0;               /* a code's length in bits */
-  var sym = 0;               /* index of code symbols */
-  var min = 0, max = 0;          /* minimum and maximum code lengths */
-  var root = 0;              /* number of index bits for root table */
-  var curr = 0;              /* number of index bits for current table */
-  var drop = 0;              /* code bits to drop for sub-table */
-  var left = 0;                   /* number of prefix codes available */
-  var used = 0;              /* code entries in table used */
-  var huff = 0;              /* Huffman code */
-  var incr;              /* for incrementing code, index */
-  var fill;              /* index for replicating entries */
-  var low;               /* low bits for current root entry */
-  var mask;              /* mask for low root bits */
-  var next;             /* next available space in table */
-  var base = null;     /* base value table to use */
-  var base_index = 0;
-//  var shoextra;    /* extra bits table to use */
-  var end;                    /* use base and extra for symbol > end */
-  var count = new utils.Buf16(MAXBITS+1); //[MAXBITS+1];    /* number of codes of each length */
-  var offs = new utils.Buf16(MAXBITS+1); //[MAXBITS+1];     /* offsets in table for each length */
-  var extra = null;
-  var extra_index = 0;
-
-  var here_bits, here_op, here_val;
-
-  /*
-   Process a set of code lengths to create a canonical Huffman code.  The
-   code lengths are lens[0..codes-1].  Each length corresponds to the
-   symbols 0..codes-1.  The Huffman code is generated by first sorting the
-   symbols by length from short to long, and retaining the symbol order
-   for codes with equal lengths.  Then the code starts with all zero bits
-   for the first code of the shortest length, and the codes are integer
-   increments for the same length, and zeros are appended as the length
-   increases.  For the deflate format, these bits are stored backwards
-   from their more natural integer increment ordering, and so when the
-   decoding tables are built in the large loop below, the integer codes
-   are incremented backwards.
-
-   This routine assumes, but does not check, that all of the entries in
-   lens[] are in the range 0..MAXBITS.  The caller must assure this.
-   1..MAXBITS is interpreted as that code length.  zero means that that
-   symbol does not occur in this code.
-
-   The codes are sorted by computing a count of codes for each length,
-   creating from that a table of starting indices for each length in the
-   sorted table, and then entering the symbols in order in the sorted
-   table.  The sorted table is work[], with that space being provided by
-   the caller.
-
-   The length counts are used for other purposes as well, i.e. finding
-   the minimum and maximum length codes, determining if there are any
-   codes at all, checking for a valid set of lengths, and looking ahead
-   at length counts to determine sub-table sizes when building the
-   decoding tables.
-   */
-
-  /* accumulate lengths for codes (assumes lens[] all in 0..MAXBITS) */
-  for (len = 0; len <= MAXBITS; len++) {
-    count[len] = 0;
-  }
-  for (sym = 0; sym < codes; sym++) {
-    count[lens[lens_index + sym]]++;
-  }
-
-  /* bound code lengths, force root to be within code lengths */
-  root = bits;
-  for (max = MAXBITS; max >= 1; max--) {
-    if (count[max] !== 0) { break; }
-  }
-  if (root > max) {
-    root = max;
-  }
-  if (max === 0) {                     /* no symbols to code at all */
-    //table.op[opts.table_index] = 64;  //here.op = (var char)64;    /* invalid code marker */
-    //table.bits[opts.table_index] = 1;   //here.bits = (var char)1;
-    //table.val[opts.table_index++] = 0;   //here.val = (var short)0;
-    table[table_index++] = (1 << 24) | (64 << 16) | 0;
-
-
-    //table.op[opts.table_index] = 64;
-    //table.bits[opts.table_index] = 1;
-    //table.val[opts.table_index++] = 0;
-    table[table_index++] = (1 << 24) | (64 << 16) | 0;
-
-    opts.bits = 1;
-    return 0;     /* no symbols, but wait for decoding to report error */
-  }
-  for (min = 1; min < max; min++) {
-    if (count[min] !== 0) { break; }
-  }
-  if (root < min) {
-    root = min;
-  }
-
-  /* check for an over-subscribed or incomplete set of lengths */
-  left = 1;
-  for (len = 1; len <= MAXBITS; len++) {
-    left <<= 1;
-    left -= count[len];
-    if (left < 0) {
-      return -1;
-    }        /* over-subscribed */
-  }
-  if (left > 0 && (type === CODES || max !== 1)) {
-    return -1;                      /* incomplete set */
-  }
-
-  /* generate offsets into symbol table for each length for sorting */
-  offs[1] = 0;
-  for (len = 1; len < MAXBITS; len++) {
-    offs[len + 1] = offs[len] + count[len];
-  }
-
-  /* sort symbols by length, by symbol order within each length */
-  for (sym = 0; sym < codes; sym++) {
-    if (lens[lens_index + sym] !== 0) {
-      work[offs[lens[lens_index + sym]]++] = sym;
-    }
-  }
-
-  /*
-   Create and fill in decoding tables.  In this loop, the table being
-   filled is at next and has curr index bits.  The code being used is huff
-   with length len.  That code is converted to an index by dropping drop
-   bits off of the bottom.  For codes where len is less than drop + curr,
-   those top drop + curr - len bits are incremented through all values to
-   fill the table with replicated entries.
-
-   root is the number of index bits for the root table.  When len exceeds
-   root, sub-tables are created pointed to by the root entry with an index
-   of the low root bits of huff.  This is saved in low to check for when a
-   new sub-table should be started.  drop is zero when the root table is
-   being filled, and drop is root when sub-tables are being filled.
-
-   When a new sub-table is needed, it is necessary to look ahead in the
-   code lengths to determine what size sub-table is needed.  The length
-   counts are used for this, and so count[] is decremented as codes are
-   entered in the tables.
-
-   used keeps track of how many table entries have been allocated from the
-   provided *table space.  It is checked for LENS and DIST tables against
-   the constants ENOUGH_LENS and ENOUGH_DISTS to guard against changes in
-   the initial root table size constants.  See the comments in inftrees.h
-   for more information.
-
-   sym increments through all symbols, and the loop terminates when
-   all codes of length max, i.e. all codes, have been processed.  This
-   routine permits incomplete codes, so another loop after this one fills
-   in the rest of the decoding tables with invalid code markers.
-   */
-
-  /* set up for code type */
-  // poor man optimization - use if-else instead of switch,
-  // to avoid deopts in old v8
-  if (type === CODES) {
-      base = extra = work;    /* dummy value--not used */
-      end = 19;
-  } else if (type === LENS) {
-      base = lbase;
-      base_index -= 257;
-      extra = lext;
-      extra_index -= 257;
-      end = 256;
-  } else {                    /* DISTS */
-      base = dbase;
-      extra = dext;
-      end = -1;
-  }
-
-  /* initialize opts for loop */
-  huff = 0;                   /* starting code */
-  sym = 0;                    /* starting code symbol */
-  len = min;                  /* starting code length */
-  next = table_index;              /* current table to fill in */
-  curr = root;                /* current table index bits */
-  drop = 0;                   /* current bits to drop from code for index */
-  low = -1;                   /* trigger new sub-table when len > root */
-  used = 1 << root;          /* use root table entries */
-  mask = used - 1;            /* mask for comparing low */
-
-  /* check available table space */
-  if ((type === LENS && used > ENOUGH_LENS) ||
-    (type === DISTS && used > ENOUGH_DISTS)) {
-    return 1;
-  }
-
-  var i=0;
-  /* process all codes and make table entries */
-  for (;;) {
-    i++;
-    /* create table entry */
-    here_bits = len - drop;
-    if (work[sym] < end) {
-      here_op = 0;
-      here_val = work[sym];
-    }
-    else if (work[sym] > end) {
-      here_op = extra[extra_index + work[sym]];
-      here_val = base[base_index + work[sym]];
-    }
-    else {
-      here_op = 32 + 64;         /* end of block */
-      here_val = 0;
-    }
-
-    /* replicate for those indices with low len bits equal to huff */
-    incr = 1 << (len - drop);
-    fill = 1 << curr;
-    min = fill;                 /* save offset to next table */
-    do {
-      fill -= incr;
-      table[next + (huff >> drop) + fill] = (here_bits << 24) | (here_op << 16) | here_val |0;
-    } while (fill !== 0);
-
-    /* backwards increment the len-bit code huff */
-    incr = 1 << (len - 1);
-    while (huff & incr) {
-      incr >>= 1;
-    }
-    if (incr !== 0) {
-      huff &= incr - 1;
-      huff += incr;
-    } else {
-      huff = 0;
-    }
-
-    /* go to next symbol, update count, len */
-    sym++;
-    if (--count[len] === 0) {
-      if (len === max) { break; }
-      len = lens[lens_index + work[sym]];
-    }
-
-    /* create new sub-table if needed */
-    if (len > root && (huff & mask) !== low) {
-      /* if first time, transition to sub-tables */
-      if (drop === 0) {
-        drop = root;
-      }
-
-      /* increment past last table */
-      next += min;            /* here min is 1 << curr */
-
-      /* determine length of next table */
-      curr = len - drop;
-      left = 1 << curr;
-      while (curr + drop < max) {
-        left -= count[curr + drop];
-        if (left <= 0) { break; }
-        curr++;
-        left <<= 1;
-      }
-
-      /* check for enough space */
-      used += 1 << curr;
-      if ((type === LENS && used > ENOUGH_LENS) ||
-        (type === DISTS && used > ENOUGH_DISTS)) {
-        return 1;
-      }
-
-      /* point entry in root table to sub-table */
-      low = huff & mask;
-      /*table.op[low] = curr;
-      table.bits[low] = root;
-      table.val[low] = next - opts.table_index;*/
-      table[low] = (root << 24) | (curr << 16) | (next - table_index) |0;
-    }
-  }
-
-  /* fill in remaining table entry if code is incomplete (guaranteed to have
-   at most one remaining entry, since if the code is incomplete, the
-   maximum code length that was allowed to get this far is one bit) */
-  if (huff !== 0) {
-    //table.op[next + huff] = 64;            /* invalid code marker */
-    //table.bits[next + huff] = len - drop;
-    //table.val[next + huff] = 0;
-    table[next + huff] = ((len - drop) << 24) | (64 << 16) |0;
-  }
-
-  /* set return parameters */
-  //opts.table_index += used;
-  opts.bits = root;
-  return 0;
-};
-
-},{"../utils/common":4}],12:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-  '2':    'need dictionary',     /* Z_NEED_DICT       2  */
-  '1':    'stream end',          /* Z_STREAM_END      1  */
-  '0':    '',                    /* Z_OK              0  */
-  '-1':   'file error',          /* Z_ERRNO         (-1) */
-  '-2':   'stream error',        /* Z_STREAM_ERROR  (-2) */
-  '-3':   'data error',          /* Z_DATA_ERROR    (-3) */
-  '-4':   'insufficient memory', /* Z_MEM_ERROR     (-4) */
-  '-5':   'buffer error',        /* Z_BUF_ERROR     (-5) */
-  '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
-};
-},{}],13:[function(require,module,exports){
-'use strict';
-
-
-var utils = require('../utils/common');
-
-/* Public constants ==========================================================*/
-/* ===========================================================================*/
-
-
-//var Z_FILTERED          = 1;
-//var Z_HUFFMAN_ONLY      = 2;
-//var Z_RLE               = 3;
-var Z_FIXED               = 4;
-//var Z_DEFAULT_STRATEGY  = 0;
-
-/* Possible values of the data_type field (though see inflate()) */
-var Z_BINARY              = 0;
-var Z_TEXT                = 1;
-//var Z_ASCII             = 1; // = Z_TEXT
-var Z_UNKNOWN             = 2;
-
-/*============================================================================*/
-
-
-function zero(buf) { var len = buf.length; while (--len >= 0) { buf[len] = 0; } }
-
-// From zutil.h
-
-var STORED_BLOCK = 0;
-var STATIC_TREES = 1;
-var DYN_TREES    = 2;
-/* The three kinds of block type */
-
-var MIN_MATCH    = 3;
-var MAX_MATCH    = 258;
-/* The minimum and maximum match lengths */
-
-// From deflate.h
-/* ===========================================================================
- * Internal compression state.
- */
-
-var LENGTH_CODES  = 29;
-/* number of length codes, not counting the special END_BLOCK code */
-
-var LITERALS      = 256;
-/* number of literal bytes 0..255 */
-
-var L_CODES       = LITERALS + 1 + LENGTH_CODES;
-/* number of Literal or Length codes, including the END_BLOCK code */
-
-var D_CODES       = 30;
-/* number of distance codes */
-
-var BL_CODES      = 19;
-/* number of codes used to transfer the bit lengths */
-
-var HEAP_SIZE     = 2*L_CODES + 1;
-/* maximum heap size */
-
-var MAX_BITS      = 15;
-/* All codes must not exceed MAX_BITS bits */
-
-var Buf_size      = 16;
-/* size of bit buffer in bi_buf */
-
-
-/* ===========================================================================
- * Constants
- */
-
-var MAX_BL_BITS = 7;
-/* Bit length codes must not exceed MAX_BL_BITS bits */
-
-var END_BLOCK   = 256;
-/* end of block literal code */
-
-var REP_3_6     = 16;
-/* repeat previous bit length 3-6 times (2 bits of repeat count) */
-
-var REPZ_3_10   = 17;
-/* repeat a zero length 3-10 times  (3 bits of repeat count) */
-
-var REPZ_11_138 = 18;
-/* repeat a zero length 11-138 times  (7 bits of repeat count) */
-
-var extra_lbits =   /* extra bits for each length code */
-  [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
-
-var extra_dbits =   /* extra bits for each distance code */
-  [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
-
-var extra_blbits =  /* extra bits for each bit length code */
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7];
-
-var bl_order =
-  [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
-/* The lengths of the bit length codes are sent in order of decreasing
- * probability, to avoid transmitting the lengths for unused bit length codes.
- */
-
-/* ===========================================================================
- * Local data. These are initialized only once.
- */
-
-// We pre-fill arrays with 0 to avoid uninitialized gaps
-
-var DIST_CODE_LEN = 512; /* see definition of array dist_code below */
-
-// !!!! Use flat array insdead of structure, Freq = i*2, Len = i*2+1
-var static_ltree  = new Array((L_CODES+2) * 2);
-zero(static_ltree);
-/* The static literal tree. Since the bit lengths are imposed, there is no
- * need for the L_CODES extra codes used during heap construction. However
- * The codes 286 and 287 are needed to build a canonical tree (see _tr_init
- * below).
- */
-
-var static_dtree  = new Array(D_CODES * 2);
-zero(static_dtree);
-/* The static distance tree. (Actually a trivial tree since all codes use
- * 5 bits.)
- */
-
-var _dist_code    = new Array(DIST_CODE_LEN);
-zero(_dist_code);
-/* Distance codes. The first 256 values correspond to the distances
- * 3 .. 258, the last 256 values correspond to the top 8 bits of
- * the 15 bit distances.
- */
-
-var _length_code  = new Array(MAX_MATCH-MIN_MATCH+1);
-zero(_length_code);
-/* length code for each normalized match length (0 == MIN_MATCH) */
-
-var base_length   = new Array(LENGTH_CODES);
-zero(base_length);
-/* First normalized length for each code (0 = MIN_MATCH) */
-
-var base_dist     = new Array(D_CODES);
-zero(base_dist);
-/* First normalized distance for each code (0 = distance of 1) */
-
-
-var StaticTreeDesc = function (static_tree, extra_bits, extra_base, elems, max_length) {
-
-  this.static_tree  = static_tree;  /* static tree or NULL */
-  this.extra_bits   = extra_bits;   /* extra bits for each code or NULL */
-  this.extra_base   = extra_base;   /* base index for extra_bits */
-  this.elems        = elems;        /* max number of elements in the tree */
-  this.max_length   = max_length;   /* max bit length for the codes */
-
-  // show if `static_tree` has data or dummy - needed for monomorphic objects
-  this.has_stree    = static_tree && static_tree.length;
-};
-
-
-var static_l_desc;
-var static_d_desc;
-var static_bl_desc;
-
-
-var TreeDesc = function(dyn_tree, stat_desc) {
-  this.dyn_tree = dyn_tree;     /* the dynamic tree */
-  this.max_code = 0;            /* largest code with non zero frequency */
-  this.stat_desc = stat_desc;   /* the corresponding static tree */
-};
-
-
-
-function d_code(dist) {
-  return dist < 256 ? _dist_code[dist] : _dist_code[256 + (dist >>> 7)];
-}
-
-
-/* ===========================================================================
- * Output a short LSB first on the stream.
- * IN assertion: there is enough room in pendingBuf.
- */
-function put_short (s, w) {
-//    put_byte(s, (uch)((w) & 0xff));
-//    put_byte(s, (uch)((ush)(w) >> 8));
-  s.pending_buf[s.pending++] = (w) & 0xff;
-  s.pending_buf[s.pending++] = (w >>> 8) & 0xff;
-}
-
-
-/* ===========================================================================
- * Send a value on a given number of bits.
- * IN assertion: length <= 16 and value fits in length bits.
- */
-function send_bits(s, value, length) {
-  if (s.bi_valid > (Buf_size - length)) {
-    s.bi_buf |= (value << s.bi_valid) & 0xffff;
-    put_short(s, s.bi_buf);
-    s.bi_buf = value >> (Buf_size - s.bi_valid);
-    s.bi_valid += length - Buf_size;
-  } else {
-    s.bi_buf |= (value << s.bi_valid) & 0xffff;
-    s.bi_valid += length;
-  }
-}
-
-
-function send_code(s, c, tree) {
-  send_bits(s, tree[c*2]/*.Code*/, tree[c*2 + 1]/*.Len*/);
-}
-
-
-/* ===========================================================================
- * Reverse the first len bits of a code, using straightforward code (a faster
- * method would use a table)
- * IN assertion: 1 <= len <= 15
- */
-function bi_reverse(code, len) {
-  var res = 0;
-  do {
-    res |= code & 1;
-    code >>>= 1;
-    res <<= 1;
-  } while (--len > 0);
-  return res >>> 1;
-}
-
-
-/* ===========================================================================
- * Flush the bit buffer, keeping at most 7 bits in it.
- */
-function bi_flush(s) {
-  if (s.bi_valid === 16) {
-    put_short(s, s.bi_buf);
-    s.bi_buf = 0;
-    s.bi_valid = 0;
-
-  } else if (s.bi_valid >= 8) {
-    s.pending_buf[s.pending++] = s.bi_buf & 0xff;
-    s.bi_buf >>= 8;
-    s.bi_valid -= 8;
-  }
-}
-
-
-/* ===========================================================================
- * Compute the optimal bit lengths for a tree and update the total bit length
- * for the current block.
- * IN assertion: the fields freq and dad are set, heap[heap_max] and
- *    above are the tree nodes sorted by increasing frequency.
- * OUT assertions: the field len is set to the optimal bit length, the
- *     array bl_count contains the frequencies for each bit length.
- *     The length opt_len is updated; static_len is also updated if stree is
- *     not null.
- */
-function gen_bitlen(s, desc)
-//    deflate_state *s;
-//    tree_desc *desc;    /* the tree descriptor */
-{
-  var tree            = desc.dyn_tree;
-  var max_code        = desc.max_code;
-  var stree           = desc.stat_desc.static_tree;
-  var has_stree       = desc.stat_desc.has_stree;
-  var extra           = desc.stat_desc.extra_bits;
-  var base            = desc.stat_desc.extra_base;
-  var max_length      = desc.stat_desc.max_length;
-  var h;              /* heap index */
-  var n, m;           /* iterate over the tree elements */
-  var bits;           /* bit length */
-  var xbits;          /* extra bits */
-  var f;              /* frequency */
-  var overflow = 0;   /* number of elements with bit length too large */
-
-  for (bits = 0; bits <= MAX_BITS; bits++) {
-    s.bl_count[bits] = 0;
-  }
-
-  /* In a first pass, compute the optimal bit lengths (which may
-   * overflow in the case of the bit length tree).
-   */
-  tree[s.heap[s.heap_max]*2 + 1]/*.Len*/ = 0; /* root of the heap */
-
-  for (h = s.heap_max+1; h < HEAP_SIZE; h++) {
-    n = s.heap[h];
-    bits = tree[tree[n*2 +1]/*.Dad*/ * 2 + 1]/*.Len*/ + 1;
-    if (bits > max_length) {
-      bits = max_length;
-      overflow++;
-    }
-    tree[n*2 + 1]/*.Len*/ = bits;
-    /* We overwrite tree[n].Dad which is no longer needed */
-
-    if (n > max_code) { continue; } /* not a leaf node */
-
-    s.bl_count[bits]++;
-    xbits = 0;
-    if (n >= base) {
-      xbits = extra[n-base];
-    }
-    f = tree[n * 2]/*.Freq*/;
-    s.opt_len += f * (bits + xbits);
-    if (has_stree) {
-      s.static_len += f * (stree[n*2 + 1]/*.Len*/ + xbits);
-    }
-  }
-  if (overflow === 0) { return; }
-
-  // Trace((stderr,"\nbit length overflow\n"));
-  /* This happens for example on obj2 and pic of the Calgary corpus */
-
-  /* Find the first bit length which could increase: */
-  do {
-    bits = max_length-1;
-    while (s.bl_count[bits] === 0) { bits--; }
-    s.bl_count[bits]--;      /* move one leaf down the tree */
-    s.bl_count[bits+1] += 2; /* move one overflow item as its brother */
-    s.bl_count[max_length]--;
-    /* The brother of the overflow item also moves one step up,
-     * but this does not affect bl_count[max_length]
-     */
-    overflow -= 2;
-  } while (overflow > 0);
-
-  /* Now recompute all bit lengths, scanning in increasing frequency.
-   * h is still equal to HEAP_SIZE. (It is simpler to reconstruct all
-   * lengths instead of fixing only the wrong ones. This idea is taken
-   * from 'ar' written by Haruhiko Okumura.)
-   */
-  for (bits = max_length; bits !== 0; bits--) {
-    n = s.bl_count[bits];
-    while (n !== 0) {
-      m = s.heap[--h];
-      if (m > max_code) { continue; }
-      if (tree[m*2 + 1]/*.Len*/ !== bits) {
-        // Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
-        s.opt_len += (bits - tree[m*2 + 1]/*.Len*/)*tree[m*2]/*.Freq*/;
-        tree[m*2 + 1]/*.Len*/ = bits;
-      }
-      n--;
-    }
-  }
-}
-
-
-/* ===========================================================================
- * Generate the codes for a given tree and bit counts (which need not be
- * optimal).
- * IN assertion: the array bl_count contains the bit length statistics for
- * the given tree and the field len is set for all tree elements.
- * OUT assertion: the field code is set for all tree elements of non
- *     zero code length.
- */
-function gen_codes(tree, max_code, bl_count)
-//    ct_data *tree;             /* the tree to decorate */
-//    int max_code;              /* largest code with non zero frequency */
-//    ushf *bl_count;            /* number of codes at each bit length */
-{
-  var next_code = new Array(MAX_BITS+1); /* next code value for each bit length */
-  var code = 0;              /* running code value */
-  var bits;                  /* bit index */
-  var n;                     /* code index */
-
-  /* The distribution counts are first used to generate the code values
-   * without bit reversal.
-   */
-  for (bits = 1; bits <= MAX_BITS; bits++) {
-    next_code[bits] = code = (code + bl_count[bits-1]) << 1;
-  }
-  /* Check that the bit counts in bl_count are consistent. The last code
-   * must be all ones.
-   */
-  //Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
-  //        "inconsistent bit counts");
-  //Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
-
-  for (n = 0;  n <= max_code; n++) {
-    var len = tree[n*2 + 1]/*.Len*/;
-    if (len === 0) { continue; }
-    /* Now reverse the bits */
-    tree[n*2]/*.Code*/ = bi_reverse(next_code[len]++, len);
-
-    //Tracecv(tree != static_ltree, (stderr,"\nn %3d %c l %2d c %4x (%x) ",
-    //     n, (isgraph(n) ? n : ' '), len, tree[n].Code, next_code[len]-1));
-  }
-}
-
-
-/* ===========================================================================
- * Initialize the various 'constant' tables.
- */
-function tr_static_init() {
-  var n;        /* iterates over tree elements */
-  var bits;     /* bit counter */
-  var length;   /* length value */
-  var code;     /* code value */
-  var dist;     /* distance index */
-  var bl_count = new Array(MAX_BITS+1);
-  /* number of codes at each bit length for an optimal tree */
-
-  // do check in _tr_init()
-  //if (static_init_done) return;
-
-  /* For some embedded targets, global variables are not initialized: */
-/*#ifdef NO_INIT_GLOBAL_POINTERS
-  static_l_desc.static_tree = static_ltree;
-  static_l_desc.extra_bits = extra_lbits;
-  static_d_desc.static_tree = static_dtree;
-  static_d_desc.extra_bits = extra_dbits;
-  static_bl_desc.extra_bits = extra_blbits;
-#endif*/
-
-  /* Initialize the mapping length (0..255) -> length code (0..28) */
-  length = 0;
-  for (code = 0; code < LENGTH_CODES-1; code++) {
-    base_length[code] = length;
-    for (n = 0; n < (1<<extra_lbits[code]); n++) {
-      _length_code[length++] = code;
-    }
-  }
-  //Assert (length == 256, "tr_static_init: length != 256");
-  /* Note that the length 255 (match length 258) can be represented
-   * in two different ways: code 284 + 5 bits or code 285, so we
-   * overwrite length_code[255] to use the best encoding:
-   */
-  _length_code[length-1] = code;
-
-  /* Initialize the mapping dist (0..32K) -> dist code (0..29) */
-  dist = 0;
-  for (code = 0 ; code < 16; code++) {
-    base_dist[code] = dist;
-    for (n = 0; n < (1<<extra_dbits[code]); n++) {
-      _dist_code[dist++] = code;
-    }
-  }
-  //Assert (dist == 256, "tr_static_init: dist != 256");
-  dist >>= 7; /* from now on, all distances are divided by 128 */
-  for ( ; code < D_CODES; code++) {
-    base_dist[code] = dist << 7;
-    for (n = 0; n < (1<<(extra_dbits[code]-7)); n++) {
-      _dist_code[256 + dist++] = code;
-    }
-  }
-  //Assert (dist == 256, "tr_static_init: 256+dist != 512");
-
-  /* Construct the codes of the static literal tree */
-  for (bits = 0; bits <= MAX_BITS; bits++) {
-    bl_count[bits] = 0;
-  }
-
-  n = 0;
-  while (n <= 143) {
-    static_ltree[n*2 + 1]/*.Len*/ = 8;
-    n++;
-    bl_count[8]++;
-  }
-  while (n <= 255) {
-    static_ltree[n*2 + 1]/*.Len*/ = 9;
-    n++;
-    bl_count[9]++;
-  }
-  while (n <= 279) {
-    static_ltree[n*2 + 1]/*.Len*/ = 7;
-    n++;
-    bl_count[7]++;
-  }
-  while (n <= 287) {
-    static_ltree[n*2 + 1]/*.Len*/ = 8;
-    n++;
-    bl_count[8]++;
-  }
-  /* Codes 286 and 287 do not exist, but we must include them in the
-   * tree construction to get a canonical Huffman tree (longest code
-   * all ones)
-   */
-  gen_codes(static_ltree, L_CODES+1, bl_count);
-
-  /* The static distance tree is trivial: */
-  for (n = 0; n < D_CODES; n++) {
-    static_dtree[n*2 + 1]/*.Len*/ = 5;
-    static_dtree[n*2]/*.Code*/ = bi_reverse(n, 5);
-  }
-
-  // Now data ready and we can init static trees
-  static_l_desc = new StaticTreeDesc(static_ltree, extra_lbits, LITERALS+1, L_CODES, MAX_BITS);
-  static_d_desc = new StaticTreeDesc(static_dtree, extra_dbits, 0,          D_CODES, MAX_BITS);
-  static_bl_desc =new StaticTreeDesc(new Array(0), extra_blbits, 0,         BL_CODES, MAX_BL_BITS);
-
-  //static_init_done = true;
-}
-
-
-/* ===========================================================================
- * Initialize a new block.
- */
-function init_block(s) {
-  var n; /* iterates over tree elements */
-
-  /* Initialize the trees. */
-  for (n = 0; n < L_CODES;  n++) { s.dyn_ltree[n*2]/*.Freq*/ = 0; }
-  for (n = 0; n < D_CODES;  n++) { s.dyn_dtree[n*2]/*.Freq*/ = 0; }
-  for (n = 0; n < BL_CODES; n++) { s.bl_tree[n*2]/*.Freq*/ = 0; }
-
-  s.dyn_ltree[END_BLOCK*2]/*.Freq*/ = 1;
-  s.opt_len = s.static_len = 0;
-  s.last_lit = s.matches = 0;
-}
-
-
-/* ===========================================================================
- * Flush the bit buffer and align the output on a byte boundary
- */
-function bi_windup(s)
-{
-  if (s.bi_valid > 8) {
-    put_short(s, s.bi_buf);
-  } else if (s.bi_valid > 0) {
-    //put_byte(s, (Byte)s->bi_buf);
-    s.pending_buf[s.pending++] = s.bi_buf;
-  }
-  s.bi_buf = 0;
-  s.bi_valid = 0;
-}
-
-/* ===========================================================================
- * Copy a stored block, storing first the length and its
- * one's complement if requested.
- */
-function copy_block(s, buf, len, header)
-//DeflateState *s;
-//charf    *buf;    /* the input data */
-//unsigned len;     /* its length */
-//int      header;  /* true if block header must be written */
-{
-  bi_windup(s);        /* align on byte boundary */
-
-  if (header) {
-    put_short(s, len);
-    put_short(s, ~len);
-  }
-//  while (len--) {
-//    put_byte(s, *buf++);
-//  }
-  utils.arraySet(s.pending_buf, s.window, buf, len, s.pending);
-  s.pending += len;
-}
-
-/* ===========================================================================
- * Compares to subtrees, using the tree depth as tie breaker when
- * the subtrees have equal frequency. This minimizes the worst case length.
- */
-function smaller(tree, n, m, depth) {
-  var _n2 = n*2;
-  var _m2 = m*2;
-  return (tree[_n2]/*.Freq*/ < tree[_m2]/*.Freq*/ ||
-         (tree[_n2]/*.Freq*/ === tree[_m2]/*.Freq*/ && depth[n] <= depth[m]));
-}
-
-/* ===========================================================================
- * Restore the heap property by moving down the tree starting at node k,
- * exchanging a node with the smallest of its two sons if necessary, stopping
- * when the heap property is re-established (each father smaller than its
- * two sons).
- */
-function pqdownheap(s, tree, k)
-//    deflate_state *s;
-//    ct_data *tree;  /* the tree to restore */
-//    int k;               /* node to move down */
-{
-  var v = s.heap[k];
-  var j = k << 1;  /* left son of k */
-  while (j <= s.heap_len) {
-    /* Set j to the smallest of the two sons: */
-    if (j < s.heap_len &&
-      smaller(tree, s.heap[j+1], s.heap[j], s.depth)) {
-      j++;
-    }
-    /* Exit if v is smaller than both sons */
-    if (smaller(tree, v, s.heap[j], s.depth)) { break; }
-
-    /* Exchange v with the smallest son */
-    s.heap[k] = s.heap[j];
-    k = j;
-
-    /* And continue down the tree, setting j to the left son of k */
-    j <<= 1;
-  }
-  s.heap[k] = v;
-}
-
-
-// inlined manually
-// var SMALLEST = 1;
-
-/* ===========================================================================
- * Send the block data compressed using the given Huffman trees
- */
-function compress_block(s, ltree, dtree)
-//    deflate_state *s;
-//    const ct_data *ltree; /* literal tree */
-//    const ct_data *dtree; /* distance tree */
-{
-  var dist;           /* distance of matched string */
-  var lc;             /* match length or unmatched char (if dist == 0) */
-  var lx = 0;         /* running index in l_buf */
-  var code;           /* the code to send */
-  var extra;          /* number of extra bits to send */
-
-  if (s.last_lit !== 0) {
-    do {
-      dist = (s.pending_buf[s.d_buf + lx*2] << 8) | (s.pending_buf[s.d_buf + lx*2 + 1]);
-      lc = s.pending_buf[s.l_buf + lx];
-      lx++;
-
-      if (dist === 0) {
-        send_code(s, lc, ltree); /* send a literal byte */
-        //Tracecv(isgraph(lc), (stderr," '%c' ", lc));
-      } else {
-        /* Here, lc is the match length - MIN_MATCH */
-        code = _length_code[lc];
-        send_code(s, code+LITERALS+1, ltree); /* send the length code */
-        extra = extra_lbits[code];
-        if (extra !== 0) {
-          lc -= base_length[code];
-          send_bits(s, lc, extra);       /* send the extra length bits */
-        }
-        dist--; /* dist is now the match distance - 1 */
-        code = d_code(dist);
-        //Assert (code < D_CODES, "bad d_code");
-
-        send_code(s, code, dtree);       /* send the distance code */
-        extra = extra_dbits[code];
-        if (extra !== 0) {
-          dist -= base_dist[code];
-          send_bits(s, dist, extra);   /* send the extra distance bits */
-        }
-      } /* literal or match pair ? */
-
-      /* Check that the overlay between pending_buf and d_buf+l_buf is ok: */
-      //Assert((uInt)(s->pending) < s->lit_bufsize + 2*lx,
-      //       "pendingBuf overflow");
-
-    } while (lx < s.last_lit);
-  }
-
-  send_code(s, END_BLOCK, ltree);
-}
-
-
-/* ===========================================================================
- * Construct one Huffman tree and assigns the code bit strings and lengths.
- * Update the total bit length for the current block.
- * IN assertion: the field freq is set for all tree elements.
- * OUT assertions: the fields len and code are set to the optimal bit length
- *     and corresponding code. The length opt_len is updated; static_len is
- *     also updated if stree is not null. The field max_code is set.
- */
-function build_tree(s, desc)
-//    deflate_state *s;
-//    tree_desc *desc; /* the tree descriptor */
-{
-  var tree     = desc.dyn_tree;
-  var stree    = desc.stat_desc.static_tree;
-  var has_stree = desc.stat_desc.has_stree;
-  var elems    = desc.stat_desc.elems;
-  var n, m;          /* iterate over heap elements */
-  var max_code = -1; /* largest code with non zero frequency */
-  var node;          /* new node being created */
-
-  /* Construct the initial heap, with least frequent element in
-   * heap[SMALLEST]. The sons of heap[n] are heap[2*n] and heap[2*n+1].
-   * heap[0] is not used.
-   */
-  s.heap_len = 0;
-  s.heap_max = HEAP_SIZE;
-
-  for (n = 0; n < elems; n++) {
-    if (tree[n * 2]/*.Freq*/ !== 0) {
-      s.heap[++s.heap_len] = max_code = n;
-      s.depth[n] = 0;
-
-    } else {
-      tree[n*2 + 1]/*.Len*/ = 0;
-    }
-  }
-
-  /* The pkzip format requires that at least one distance code exists,
-   * and that at least one bit should be sent even if there is only one
-   * possible code. So to avoid special checks later on we force at least
-   * two codes of non zero frequency.
-   */
-  while (s.heap_len < 2) {
-    node = s.heap[++s.heap_len] = (max_code < 2 ? ++max_code : 0);
-    tree[node * 2]/*.Freq*/ = 1;
-    s.depth[node] = 0;
-    s.opt_len--;
-
-    if (has_stree) {
-      s.static_len -= stree[node*2 + 1]/*.Len*/;
-    }
-    /* node is 0 or 1 so it does not have extra bits */
-  }
-  desc.max_code = max_code;
-
-  /* The elements heap[heap_len/2+1 .. heap_len] are leaves of the tree,
-   * establish sub-heaps of increasing lengths:
-   */
-  for (n = (s.heap_len >> 1/*int /2*/); n >= 1; n--) { pqdownheap(s, tree, n); }
-
-  /* Construct the Huffman tree by repeatedly combining the least two
-   * frequent nodes.
-   */
-  node = elems;              /* next internal node of the tree */
-  do {
-    //pqremove(s, tree, n);  /* n = node of least frequency */
-    /*** pqremove ***/
-    n = s.heap[1/*SMALLEST*/];
-    s.heap[1/*SMALLEST*/] = s.heap[s.heap_len--];
-    pqdownheap(s, tree, 1/*SMALLEST*/);
-    /***/
-
-    m = s.heap[1/*SMALLEST*/]; /* m = node of next least frequency */
-
-    s.heap[--s.heap_max] = n; /* keep the nodes sorted by frequency */
-    s.heap[--s.heap_max] = m;
-
-    /* Create a new node father of n and m */
-    tree[node * 2]/*.Freq*/ = tree[n * 2]/*.Freq*/ + tree[m * 2]/*.Freq*/;
-    s.depth[node] = (s.depth[n] >= s.depth[m] ? s.depth[n] : s.depth[m]) + 1;
-    tree[n*2 + 1]/*.Dad*/ = tree[m*2 + 1]/*.Dad*/ = node;
-
-    /* and insert the new node in the heap */
-    s.heap[1/*SMALLEST*/] = node++;
-    pqdownheap(s, tree, 1/*SMALLEST*/);
-
-  } while (s.heap_len >= 2);
-
-  s.heap[--s.heap_max] = s.heap[1/*SMALLEST*/];
-
-  /* At this point, the fields freq and dad are set. We can now
-   * generate the bit lengths.
-   */
-  gen_bitlen(s, desc);
-
-  /* The field len is now set, we can generate the bit codes */
-  gen_codes(tree, max_code, s.bl_count);
-}
-
-
-/* ===========================================================================
- * Scan a literal or distance tree to determine the frequencies of the codes
- * in the bit length tree.
- */
-function scan_tree(s, tree, max_code)
-//    deflate_state *s;
-//    ct_data *tree;   /* the tree to be scanned */
-//    int max_code;    /* and its largest code of non zero frequency */
-{
-  var n;                     /* iterates over all tree elements */
-  var prevlen = -1;          /* last emitted length */
-  var curlen;                /* length of current code */
-
-  var nextlen = tree[0*2 + 1]/*.Len*/; /* length of next code */
-
-  var count = 0;             /* repeat count of the current code */
-  var max_count = 7;         /* max repeat count */
-  var min_count = 4;         /* min repeat count */
-
-  if (nextlen === 0) {
-    max_count = 138;
-    min_count = 3;
-  }
-  tree[(max_code+1)*2 + 1]/*.Len*/ = 0xffff; /* guard */
-
-  for (n = 0; n <= max_code; n++) {
-    curlen = nextlen;
-    nextlen = tree[(n+1)*2 + 1]/*.Len*/;
-
-    if (++count < max_count && curlen === nextlen) {
-      continue;
-
-    } else if (count < min_count) {
-      s.bl_tree[curlen * 2]/*.Freq*/ += count;
-
-    } else if (curlen !== 0) {
-
-      if (curlen !== prevlen) { s.bl_tree[curlen * 2]/*.Freq*/++; }
-      s.bl_tree[REP_3_6*2]/*.Freq*/++;
-
-    } else if (count <= 10) {
-      s.bl_tree[REPZ_3_10*2]/*.Freq*/++;
-
-    } else {
-      s.bl_tree[REPZ_11_138*2]/*.Freq*/++;
-    }
-
-    count = 0;
-    prevlen = curlen;
-
-    if (nextlen === 0) {
-      max_count = 138;
-      min_count = 3;
-
-    } else if (curlen === nextlen) {
-      max_count = 6;
-      min_count = 3;
-
-    } else {
-      max_count = 7;
-      min_count = 4;
-    }
-  }
-}
-
-
-/* ===========================================================================
- * Send a literal or distance tree in compressed form, using the codes in
- * bl_tree.
- */
-function send_tree(s, tree, max_code)
-//    deflate_state *s;
-//    ct_data *tree; /* the tree to be scanned */
-//    int max_code;       /* and its largest code of non zero frequency */
-{
-  var n;                     /* iterates over all tree elements */
-  var prevlen = -1;          /* last emitted length */
-  var curlen;                /* length of current code */
-
-  var nextlen = tree[0*2 + 1]/*.Len*/; /* length of next code */
-
-  var count = 0;             /* repeat count of the current code */
-  var max_count = 7;         /* max repeat count */
-  var min_count = 4;         /* min repeat count */
-
-  /* tree[max_code+1].Len = -1; */  /* guard already set */
-  if (nextlen === 0) {
-    max_count = 138;
-    min_count = 3;
-  }
-
-  for (n = 0; n <= max_code; n++) {
-    curlen = nextlen;
-    nextlen = tree[(n+1)*2 + 1]/*.Len*/;
-
-    if (++count < max_count && curlen === nextlen) {
-      continue;
-
-    } else if (count < min_count) {
-      do { send_code(s, curlen, s.bl_tree); } while (--count !== 0);
-
-    } else if (curlen !== 0) {
-      if (curlen !== prevlen) {
-        send_code(s, curlen, s.bl_tree);
-        count--;
-      }
-      //Assert(count >= 3 && count <= 6, " 3_6?");
-      send_code(s, REP_3_6, s.bl_tree);
-      send_bits(s, count-3, 2);
-
-    } else if (count <= 10) {
-      send_code(s, REPZ_3_10, s.bl_tree);
-      send_bits(s, count-3, 3);
-
-    } else {
-      send_code(s, REPZ_11_138, s.bl_tree);
-      send_bits(s, count-11, 7);
-    }
-
-    count = 0;
-    prevlen = curlen;
-    if (nextlen === 0) {
-      max_count = 138;
-      min_count = 3;
-
-    } else if (curlen === nextlen) {
-      max_count = 6;
-      min_count = 3;
-
-    } else {
-      max_count = 7;
-      min_count = 4;
-    }
-  }
-}
-
-
-/* ===========================================================================
- * Construct the Huffman tree for the bit lengths and return the index in
- * bl_order of the last bit length code to send.
- */
-function build_bl_tree(s) {
-  var max_blindex;  /* index of last bit length code of non zero freq */
-
-  /* Determine the bit length frequencies for literal and distance trees */
-  scan_tree(s, s.dyn_ltree, s.l_desc.max_code);
-  scan_tree(s, s.dyn_dtree, s.d_desc.max_code);
-
-  /* Build the bit length tree: */
-  build_tree(s, s.bl_desc);
-  /* opt_len now includes the length of the tree representations, except
-   * the lengths of the bit lengths codes and the 5+5+4 bits for the counts.
-   */
-
-  /* Determine the number of bit length codes to send. The pkzip format
-   * requires that at least 4 bit length codes be sent. (appnote.txt says
-   * 3 but the actual value used is 4.)
-   */
-  for (max_blindex = BL_CODES-1; max_blindex >= 3; max_blindex--) {
-    if (s.bl_tree[bl_order[max_blindex]*2 + 1]/*.Len*/ !== 0) {
-      break;
-    }
-  }
-  /* Update opt_len to include the bit length tree and counts */
-  s.opt_len += 3*(max_blindex+1) + 5+5+4;
-  //Tracev((stderr, "\ndyn trees: dyn %ld, stat %ld",
-  //        s->opt_len, s->static_len));
-
-  return max_blindex;
-}
-
-
-/* ===========================================================================
- * Send the header for a block using dynamic Huffman trees: the counts, the
- * lengths of the bit length codes, the literal tree and the distance tree.
- * IN assertion: lcodes >= 257, dcodes >= 1, blcodes >= 4.
- */
-function send_all_trees(s, lcodes, dcodes, blcodes)
-//    deflate_state *s;
-//    int lcodes, dcodes, blcodes; /* number of codes for each tree */
-{
-  var rank;                    /* index in bl_order */
-
-  //Assert (lcodes >= 257 && dcodes >= 1 && blcodes >= 4, "not enough codes");
-  //Assert (lcodes <= L_CODES && dcodes <= D_CODES && blcodes <= BL_CODES,
-  //        "too many codes");
-  //Tracev((stderr, "\nbl counts: "));
-  send_bits(s, lcodes-257, 5); /* not +255 as stated in appnote.txt */
-  send_bits(s, dcodes-1,   5);
-  send_bits(s, blcodes-4,  4); /* not -3 as stated in appnote.txt */
-  for (rank = 0; rank < blcodes; rank++) {
-    //Tracev((stderr, "\nbl code %2d ", bl_order[rank]));
-    send_bits(s, s.bl_tree[bl_order[rank]*2 + 1]/*.Len*/, 3);
-  }
-  //Tracev((stderr, "\nbl tree: sent %ld", s->bits_sent));
-
-  send_tree(s, s.dyn_ltree, lcodes-1); /* literal tree */
-  //Tracev((stderr, "\nlit tree: sent %ld", s->bits_sent));
-
-  send_tree(s, s.dyn_dtree, dcodes-1); /* distance tree */
-  //Tracev((stderr, "\ndist tree: sent %ld", s->bits_sent));
-}
-
-
-/* ===========================================================================
- * Check if the data type is TEXT or BINARY, using the following algorithm:
- * - TEXT if the two conditions below are satisfied:
- *    a) There are no non-portable control characters belonging to the
- *       "black list" (0..6, 14..25, 28..31).
- *    b) There is at least one printable character belonging to the
- *       "white list" (9 {TAB}, 10 {LF}, 13 {CR}, 32..255).
- * - BINARY otherwise.
- * - The following partially-portable control characters form a
- *   "gray list" that is ignored in this detection algorithm:
- *   (7 {BEL}, 8 {BS}, 11 {VT}, 12 {FF}, 26 {SUB}, 27 {ESC}).
- * IN assertion: the fields Freq of dyn_ltree are set.
- */
-function detect_data_type(s) {
-  /* black_mask is the bit mask of black-listed bytes
-   * set bits 0..6, 14..25, and 28..31
-   * 0xf3ffc07f = binary 11110011111111111100000001111111
-   */
-  var black_mask = 0xf3ffc07f;
-  var n;
-
-  /* Check for non-textual ("black-listed") bytes. */
-  for (n = 0; n <= 31; n++, black_mask >>>= 1) {
-    if ((black_mask & 1) && (s.dyn_ltree[n*2]/*.Freq*/ !== 0)) {
-      return Z_BINARY;
-    }
-  }
-
-  /* Check for textual ("white-listed") bytes. */
-  if (s.dyn_ltree[9 * 2]/*.Freq*/ !== 0 || s.dyn_ltree[10 * 2]/*.Freq*/ !== 0 ||
-      s.dyn_ltree[13 * 2]/*.Freq*/ !== 0) {
-    return Z_TEXT;
-  }
-  for (n = 32; n < LITERALS; n++) {
-    if (s.dyn_ltree[n * 2]/*.Freq*/ !== 0) {
-      return Z_TEXT;
-    }
-  }
-
-  /* There are no "black-listed" or "white-listed" bytes:
-   * this stream either is empty or has tolerated ("gray-listed") bytes only.
-   */
-  return Z_BINARY;
-}
-
-
-var static_init_done = false;
-
-/* ===========================================================================
- * Initialize the tree data structures for a new zlib stream.
- */
-function _tr_init(s)
-{
-
-  if (!static_init_done) {
-    tr_static_init();
-    static_init_done = true;
-  }
-
-  s.l_desc  = new TreeDesc(s.dyn_ltree, static_l_desc);
-  s.d_desc  = new TreeDesc(s.dyn_dtree, static_d_desc);
-  s.bl_desc = new TreeDesc(s.bl_tree, static_bl_desc);
-
-  s.bi_buf = 0;
-  s.bi_valid = 0;
-
-  /* Initialize the first block of the first file: */
-  init_block(s);
-}
-
-
-/* ===========================================================================
- * Send a stored block
- */
-function _tr_stored_block(s, buf, stored_len, last)
-//DeflateState *s;
-//charf *buf;       /* input block */
-//ulg stored_len;   /* length of input block */
-//int last;         /* one if this is the last block for a file */
-{
-  send_bits(s, (STORED_BLOCK<<1)+(last ? 1 : 0), 3);    /* send block type */
-  copy_block(s, buf, stored_len, true); /* with header */
-}
-
-
-/* ===========================================================================
- * Send one empty static block to give enough lookahead for inflate.
- * This takes 10 bits, of which 7 may remain in the bit buffer.
- */
-function _tr_align(s) {
-  send_bits(s, STATIC_TREES<<1, 3);
-  send_code(s, END_BLOCK, static_ltree);
-  bi_flush(s);
-}
-
-
-/* ===========================================================================
- * Determine the best encoding for the current block: dynamic trees, static
- * trees or store, and output the encoded block to the zip file.
- */
-function _tr_flush_block(s, buf, stored_len, last)
-//DeflateState *s;
-//charf *buf;       /* input block, or NULL if too old */
-//ulg stored_len;   /* length of input block */
-//int last;         /* one if this is the last block for a file */
-{
-  var opt_lenb, static_lenb;  /* opt_len and static_len in bytes */
-  var max_blindex = 0;        /* index of last bit length code of non zero freq */
-
-  /* Build the Huffman trees unless a stored block is forced */
-  if (s.level > 0) {
-
-    /* Check if the file is binary or text */
-    if (s.strm.data_type === Z_UNKNOWN) {
-      s.strm.data_type = detect_data_type(s);
-    }
-
-    /* Construct the literal and distance trees */
-    build_tree(s, s.l_desc);
-    // Tracev((stderr, "\nlit data: dyn %ld, stat %ld", s->opt_len,
-    //        s->static_len));
-
-    build_tree(s, s.d_desc);
-    // Tracev((stderr, "\ndist data: dyn %ld, stat %ld", s->opt_len,
-    //        s->static_len));
-    /* At this point, opt_len and static_len are the total bit lengths of
-     * the compressed block data, excluding the tree representations.
-     */
-
-    /* Build the bit length tree for the above two trees, and get the index
-     * in bl_order of the last bit length code to send.
-     */
-    max_blindex = build_bl_tree(s);
-
-    /* Determine the best encoding. Compute the block lengths in bytes. */
-    opt_lenb = (s.opt_len+3+7) >>> 3;
-    static_lenb = (s.static_len+3+7) >>> 3;
-
-    // Tracev((stderr, "\nopt %lu(%lu) stat %lu(%lu) stored %lu lit %u ",
-    //        opt_lenb, s->opt_len, static_lenb, s->static_len, stored_len,
-    //        s->last_lit));
-
-    if (static_lenb <= opt_lenb) { opt_lenb = static_lenb; }
-
-  } else {
-    // Assert(buf != (char*)0, "lost buf");
-    opt_lenb = static_lenb = stored_len + 5; /* force a stored block */
-  }
-
-  if ((stored_len+4 <= opt_lenb) && (buf !== -1)) {
-    /* 4: two words for the lengths */
-
-    /* The test buf != NULL is only necessary if LIT_BUFSIZE > WSIZE.
-     * Otherwise we can't have processed more than WSIZE input bytes since
-     * the last block flush, because compression would have been
-     * successful. If LIT_BUFSIZE <= WSIZE, it is never too late to
-     * transform a block into a stored block.
-     */
-    _tr_stored_block(s, buf, stored_len, last);
-
-  } else if (s.strategy === Z_FIXED || static_lenb === opt_lenb) {
-
-    send_bits(s, (STATIC_TREES<<1) + (last ? 1 : 0), 3);
-    compress_block(s, static_ltree, static_dtree);
-
-  } else {
-    send_bits(s, (DYN_TREES<<1) + (last ? 1 : 0), 3);
-    send_all_trees(s, s.l_desc.max_code+1, s.d_desc.max_code+1, max_blindex+1);
-    compress_block(s, s.dyn_ltree, s.dyn_dtree);
-  }
-  // Assert (s->compressed_len == s->bits_sent, "bad compressed size");
-  /* The above check is made mod 2^32, for files larger than 512 MB
-   * and uLong implemented on 32 bits.
-   */
-  init_block(s);
-
-  if (last) {
-    bi_windup(s);
-  }
-  // Tracev((stderr,"\ncomprlen %lu(%lu) ", s->compressed_len>>3,
-  //       s->compressed_len-7*last));
-}
-
-/* ===========================================================================
- * Save the match info and tally the frequency counts. Return true if
- * the current block must be flushed.
- */
-function _tr_tally(s, dist, lc)
-//    deflate_state *s;
-//    unsigned dist;  /* distance of matched string */
-//    unsigned lc;    /* match length-MIN_MATCH or unmatched char (if dist==0) */
-{
-  //var out_length, in_length, dcode;
-
-  s.pending_buf[s.d_buf + s.last_lit * 2]     = (dist >>> 8) & 0xff;
-  s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist & 0xff;
-
-  s.pending_buf[s.l_buf + s.last_lit] = lc & 0xff;
-  s.last_lit++;
-
-  if (dist === 0) {
-    /* lc is the unmatched char */
-    s.dyn_ltree[lc*2]/*.Freq*/++;
-  } else {
-    s.matches++;
-    /* Here, lc is the match length - MIN_MATCH */
-    dist--;             /* dist = match distance - 1 */
-    //Assert((ush)dist < (ush)MAX_DIST(s) &&
-    //       (ush)lc <= (ush)(MAX_MATCH-MIN_MATCH) &&
-    //       (ush)d_code(dist) < (ush)D_CODES,  "_tr_tally: bad match");
-
-    s.dyn_ltree[(_length_code[lc]+LITERALS+1) * 2]/*.Freq*/++;
-    s.dyn_dtree[d_code(dist) * 2]/*.Freq*/++;
-  }
-
-// (!) This block is disabled in zlib defailts,
-// don't enable it for binary compatibility
-
-//#ifdef TRUNCATE_BLOCK
-//  /* Try to guess if it is profitable to stop the current block here */
-//  if ((s.last_lit & 0x1fff) === 0 && s.level > 2) {
-//    /* Compute an upper bound for the compressed length */
-//    out_length = s.last_lit*8;
-//    in_length = s.strstart - s.block_start;
-//
-//    for (dcode = 0; dcode < D_CODES; dcode++) {
-//      out_length += s.dyn_dtree[dcode*2]/*.Freq*/ * (5 + extra_dbits[dcode]);
-//    }
-//    out_length >>>= 3;
-//    //Tracev((stderr,"\nlast_lit %u, in %ld, out ~%ld(%ld%%) ",
-//    //       s->last_lit, in_length, out_length,
-//    //       100L - out_length*100L/in_length));
-//    if (s.matches < (s.last_lit>>1)/*int /2*/ && out_length < (in_length>>1)/*int /2*/) {
-//      return true;
-//    }
-//  }
-//#endif
-
-  return (s.last_lit === s.lit_bufsize-1);
-  /* We avoid equality with lit_bufsize because of wraparound at 64K
-   * on 16 bit machines and because stored blocks are restricted to
-   * 64K-1 bytes.
-   */
-}
-
-exports._tr_init  = _tr_init;
-exports._tr_stored_block = _tr_stored_block;
-exports._tr_flush_block  = _tr_flush_block;
-exports._tr_tally = _tr_tally;
-exports._tr_align = _tr_align;
-},{"../utils/common":4}],14:[function(require,module,exports){
-'use strict';
-
-
-function ZStream() {
-  /* next input byte */
-  this.input = null; // JS specific, because we have no pointers
-  this.next_in = 0;
-  /* number of bytes available at input */
-  this.avail_in = 0;
-  /* total number of input bytes read so far */
-  this.total_in = 0;
-  /* next output byte should be put there */
-  this.output = null; // JS specific, because we have no pointers
-  this.next_out = 0;
-  /* remaining free space at output */
-  this.avail_out = 0;
-  /* total number of bytes output so far */
-  this.total_out = 0;
-  /* last error message, NULL if no error */
-  this.msg = ''/*Z_NULL*/;
-  /* not visible by applications */
-  this.state = null;
-  /* best guess about the data type: binary or text */
-  this.data_type = 2/*Z_UNKNOWN*/;
-  /* adler32 value of the uncompressed data */
-  this.adler = 0;
-}
-
-module.exports = ZStream;
-},{}],15:[function(require,module,exports){
-(function (process,Buffer){
-var msg = require('pako/lib/zlib/messages');
-var zstream = require('pako/lib/zlib/zstream');
-var zlib_deflate = require('pako/lib/zlib/deflate.js');
-var zlib_inflate = require('pako/lib/zlib/inflate.js');
-var constants = require('pako/lib/zlib/constants');
-
-for (var key in constants) {
-  exports[key] = constants[key];
-}
-
-// zlib modes
-exports.NONE = 0;
-exports.DEFLATE = 1;
-exports.INFLATE = 2;
-exports.GZIP = 3;
-exports.GUNZIP = 4;
-exports.DEFLATERAW = 5;
-exports.INFLATERAW = 6;
-exports.UNZIP = 7;
-
-/**
- * Emulate Node's zlib C++ layer for use by the JS layer in index.js
- */
-function Zlib(mode) {
-  if (mode < exports.DEFLATE || mode > exports.UNZIP)
-    throw new TypeError("Bad argument");
-    
-  this.mode = mode;
-  this.init_done = false;
-  this.write_in_progress = false;
-  this.pending_close = false;
-  this.windowBits = 0;
-  this.level = 0;
-  this.memLevel = 0;
-  this.strategy = 0;
-  this.dictionary = null;
-}
-
-Zlib.prototype.init = function(windowBits, level, memLevel, strategy, dictionary) {
-  this.windowBits = windowBits;
-  this.level = level;
-  this.memLevel = memLevel;
-  this.strategy = strategy;
-  // dictionary not supported.
-  
-  if (this.mode === exports.GZIP || this.mode === exports.GUNZIP)
-    this.windowBits += 16;
-    
-  if (this.mode === exports.UNZIP)
-    this.windowBits += 32;
-    
-  if (this.mode === exports.DEFLATERAW || this.mode === exports.INFLATERAW)
-    this.windowBits = -this.windowBits;
-    
-  this.strm = new zstream();
-  
-  switch (this.mode) {
-    case exports.DEFLATE:
-    case exports.GZIP:
-    case exports.DEFLATERAW:
-      var status = zlib_deflate.deflateInit2(
-        this.strm,
-        this.level,
-        exports.Z_DEFLATED,
-        this.windowBits,
-        this.memLevel,
-        this.strategy
-      );
-      break;
-    case exports.INFLATE:
-    case exports.GUNZIP:
-    case exports.INFLATERAW:
-    case exports.UNZIP:
-      var status  = zlib_inflate.inflateInit2(
-        this.strm,
-        this.windowBits
-      );
-      break;
-    default:
-      throw new Error("Unknown mode " + this.mode);
-  }
-  
-  if (status !== exports.Z_OK) {
-    this._error(status);
-    return;
-  }
-  
-  this.write_in_progress = false;
-  this.init_done = true;
-};
-
-Zlib.prototype.params = function() {
-  throw new Error("deflateParams Not supported");
-};
-
-Zlib.prototype._writeCheck = function() {
-  if (!this.init_done)
-    throw new Error("write before init");
-    
-  if (this.mode === exports.NONE)
-    throw new Error("already finalized");
-    
-  if (this.write_in_progress)
-    throw new Error("write already in progress");
-    
-  if (this.pending_close)
-    throw new Error("close is pending");
-};
-
-Zlib.prototype.write = function(flush, input, in_off, in_len, out, out_off, out_len) {    
-  this._writeCheck();
-  this.write_in_progress = true;
-  
-  var self = this;
-  process.nextTick(function() {
-    self.write_in_progress = false;
-    var res = self._write(flush, input, in_off, in_len, out, out_off, out_len);
-    self.callback(res[0], res[1]);
-    
-    if (self.pending_close)
-      self.close();
-  });
-  
-  return this;
-};
-
-// set method for Node buffers, used by pako
-function bufferSet(data, offset) {
-  for (var i = 0; i < data.length; i++) {
-    this[offset + i] = data[i];
-  }
-}
-
-Zlib.prototype.writeSync = function(flush, input, in_off, in_len, out, out_off, out_len) {
-  this._writeCheck();
-  return this._write(flush, input, in_off, in_len, out, out_off, out_len);
-};
-
-Zlib.prototype._write = function(flush, input, in_off, in_len, out, out_off, out_len) {
-  this.write_in_progress = true;
-  
-  if (flush !== exports.Z_NO_FLUSH &&
-      flush !== exports.Z_PARTIAL_FLUSH &&
-      flush !== exports.Z_SYNC_FLUSH &&
-      flush !== exports.Z_FULL_FLUSH &&
-      flush !== exports.Z_FINISH &&
-      flush !== exports.Z_BLOCK) {
-    throw new Error("Invalid flush value");
-  }
-  
-  if (input == null) {
-    input = new Buffer(0);
-    in_len = 0;
-    in_off = 0;
-  }
-  
-  if (out._set)
-    out.set = out._set;
-  else
-    out.set = bufferSet;
-  
-  var strm = this.strm;
-  strm.avail_in = in_len;
-  strm.input = input;
-  strm.next_in = in_off;
-  strm.avail_out = out_len;
-  strm.output = out;
-  strm.next_out = out_off;
-  
-  switch (this.mode) {
-    case exports.DEFLATE:
-    case exports.GZIP:
-    case exports.DEFLATERAW:
-      var status = zlib_deflate.deflate(strm, flush);
-      break;
-    case exports.UNZIP:
-    case exports.INFLATE:
-    case exports.GUNZIP:
-    case exports.INFLATERAW:
-      var status = zlib_inflate.inflate(strm, flush);
-      break;
-    default:
-      throw new Error("Unknown mode " + this.mode);
-  }
-  
-  if (status !== exports.Z_STREAM_END && status !== exports.Z_OK) {
-    this._error(status);
-  }
-  
-  this.write_in_progress = false;
-  return [strm.avail_in, strm.avail_out];
-};
-
-Zlib.prototype.close = function() {
-  if (this.write_in_progress) {
-    this.pending_close = true;
-    return;
-  }
-  
-  this.pending_close = false;
-  
-  if (this.mode === exports.DEFLATE || this.mode === exports.GZIP || this.mode === exports.DEFLATERAW) {
-    zlib_deflate.deflateEnd(this.strm);
-  } else {
-    zlib_inflate.inflateEnd(this.strm);
-  }
-  
-  this.mode = exports.NONE;
-};
-
-Zlib.prototype.reset = function() {
-  switch (this.mode) {
-    case exports.DEFLATE:
-    case exports.DEFLATERAW:
-      var status = zlib_deflate.deflateReset(this.strm);
-      break;
-    case exports.INFLATE:
-    case exports.INFLATERAW:
-      var status = zlib_inflate.inflateReset(this.strm);
-      break;
-  }
-  
-  if (status !== exports.Z_OK) {
-    this._error(status);
-  }
-};
-
-Zlib.prototype._error = function(status) {
-  this.onerror(msg[status] + ': ' + this.strm.msg, status);
-  
-  this.write_in_progress = false;
-  if (this.pending_close)
-    this.close();
-};
-
-exports.Zlib = Zlib;
-
-}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":44,"buffer":17,"pako/lib/zlib/constants":6,"pako/lib/zlib/deflate.js":8,"pako/lib/zlib/inflate.js":10,"pako/lib/zlib/messages":12,"pako/lib/zlib/zstream":14}],16:[function(require,module,exports){
-(function (process,Buffer){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-var Transform = require('_stream_transform');
-
-var binding = require('./binding');
-var util = require('util');
-var assert = require('assert').ok;
-
-// zlib doesn't provide these, so kludge them in following the same
-// const naming scheme zlib uses.
-binding.Z_MIN_WINDOWBITS = 8;
-binding.Z_MAX_WINDOWBITS = 15;
-binding.Z_DEFAULT_WINDOWBITS = 15;
-
-// fewer than 64 bytes per chunk is stupid.
-// technically it could work with as few as 8, but even 64 bytes
-// is absurdly low.  Usually a MB or more is best.
-binding.Z_MIN_CHUNK = 64;
-binding.Z_MAX_CHUNK = Infinity;
-binding.Z_DEFAULT_CHUNK = (16 * 1024);
-
-binding.Z_MIN_MEMLEVEL = 1;
-binding.Z_MAX_MEMLEVEL = 9;
-binding.Z_DEFAULT_MEMLEVEL = 8;
-
-binding.Z_MIN_LEVEL = -1;
-binding.Z_MAX_LEVEL = 9;
-binding.Z_DEFAULT_LEVEL = binding.Z_DEFAULT_COMPRESSION;
-
-// expose all the zlib constants
-Object.keys(binding).forEach(function(k) {
-  if (k.match(/^Z/)) exports[k] = binding[k];
-});
-
-// translation table for return codes.
-exports.codes = {
-  Z_OK: binding.Z_OK,
-  Z_STREAM_END: binding.Z_STREAM_END,
-  Z_NEED_DICT: binding.Z_NEED_DICT,
-  Z_ERRNO: binding.Z_ERRNO,
-  Z_STREAM_ERROR: binding.Z_STREAM_ERROR,
-  Z_DATA_ERROR: binding.Z_DATA_ERROR,
-  Z_MEM_ERROR: binding.Z_MEM_ERROR,
-  Z_BUF_ERROR: binding.Z_BUF_ERROR,
-  Z_VERSION_ERROR: binding.Z_VERSION_ERROR
-};
-
-Object.keys(exports.codes).forEach(function(k) {
-  exports.codes[exports.codes[k]] = k;
-});
-
-exports.Deflate = Deflate;
-exports.Inflate = Inflate;
-exports.Gzip = Gzip;
-exports.Gunzip = Gunzip;
-exports.DeflateRaw = DeflateRaw;
-exports.InflateRaw = InflateRaw;
-exports.Unzip = Unzip;
-
-exports.createDeflate = function(o) {
-  return new Deflate(o);
-};
-
-exports.createInflate = function(o) {
-  return new Inflate(o);
-};
-
-exports.createDeflateRaw = function(o) {
-  return new DeflateRaw(o);
-};
-
-exports.createInflateRaw = function(o) {
-  return new InflateRaw(o);
-};
-
-exports.createGzip = function(o) {
-  return new Gzip(o);
-};
-
-exports.createGunzip = function(o) {
-  return new Gunzip(o);
-};
-
-exports.createUnzip = function(o) {
-  return new Unzip(o);
-};
-
-
-// Convenience methods.
-// compress/decompress a string or buffer in one step.
-exports.deflate = function(buffer, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  return zlibBuffer(new Deflate(opts), buffer, callback);
-};
-
-exports.deflateSync = function(buffer, opts) {
-  return zlibBufferSync(new Deflate(opts), buffer);
-};
-
-exports.gzip = function(buffer, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  return zlibBuffer(new Gzip(opts), buffer, callback);
-};
-
-exports.gzipSync = function(buffer, opts) {
-  return zlibBufferSync(new Gzip(opts), buffer);
-};
-
-exports.deflateRaw = function(buffer, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  return zlibBuffer(new DeflateRaw(opts), buffer, callback);
-};
-
-exports.deflateRawSync = function(buffer, opts) {
-  return zlibBufferSync(new DeflateRaw(opts), buffer);
-};
-
-exports.unzip = function(buffer, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  return zlibBuffer(new Unzip(opts), buffer, callback);
-};
-
-exports.unzipSync = function(buffer, opts) {
-  return zlibBufferSync(new Unzip(opts), buffer);
-};
-
-exports.inflate = function(buffer, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  return zlibBuffer(new Inflate(opts), buffer, callback);
-};
-
-exports.inflateSync = function(buffer, opts) {
-  return zlibBufferSync(new Inflate(opts), buffer);
-};
-
-exports.gunzip = function(buffer, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  return zlibBuffer(new Gunzip(opts), buffer, callback);
-};
-
-exports.gunzipSync = function(buffer, opts) {
-  return zlibBufferSync(new Gunzip(opts), buffer);
-};
-
-exports.inflateRaw = function(buffer, opts, callback) {
-  if (typeof opts === 'function') {
-    callback = opts;
-    opts = {};
-  }
-  return zlibBuffer(new InflateRaw(opts), buffer, callback);
-};
-
-exports.inflateRawSync = function(buffer, opts) {
-  return zlibBufferSync(new InflateRaw(opts), buffer);
-};
-
-function zlibBuffer(engine, buffer, callback) {
-  var buffers = [];
-  var nread = 0;
-
-  engine.on('error', onError);
-  engine.on('end', onEnd);
-
-  engine.end(buffer);
-  flow();
-
-  function flow() {
-    var chunk;
-    while (null !== (chunk = engine.read())) {
-      buffers.push(chunk);
-      nread += chunk.length;
-    }
-    engine.once('readable', flow);
-  }
-
-  function onError(err) {
-    engine.removeListener('end', onEnd);
-    engine.removeListener('readable', flow);
-    callback(err);
-  }
-
-  function onEnd() {
-    var buf = Buffer.concat(buffers, nread);
-    buffers = [];
-    callback(null, buf);
-    engine.close();
-  }
-}
-
-function zlibBufferSync(engine, buffer) {
-  if (typeof buffer === 'string')
-    buffer = new Buffer(buffer);
-  if (!Buffer.isBuffer(buffer))
-    throw new TypeError('Not a string or buffer');
-
-  var flushFlag = binding.Z_FINISH;
-
-  return engine._processChunk(buffer, flushFlag);
-}
-
-// generic zlib
-// minimal 2-byte header
-function Deflate(opts) {
-  if (!(this instanceof Deflate)) return new Deflate(opts);
-  Zlib.call(this, opts, binding.DEFLATE);
-}
-
-function Inflate(opts) {
-  if (!(this instanceof Inflate)) return new Inflate(opts);
-  Zlib.call(this, opts, binding.INFLATE);
-}
-
-
-
-// gzip - bigger header, same deflate compression
-function Gzip(opts) {
-  if (!(this instanceof Gzip)) return new Gzip(opts);
-  Zlib.call(this, opts, binding.GZIP);
-}
-
-function Gunzip(opts) {
-  if (!(this instanceof Gunzip)) return new Gunzip(opts);
-  Zlib.call(this, opts, binding.GUNZIP);
-}
-
-
-
-// raw - no header
-function DeflateRaw(opts) {
-  if (!(this instanceof DeflateRaw)) return new DeflateRaw(opts);
-  Zlib.call(this, opts, binding.DEFLATERAW);
-}
-
-function InflateRaw(opts) {
-  if (!(this instanceof InflateRaw)) return new InflateRaw(opts);
-  Zlib.call(this, opts, binding.INFLATERAW);
-}
-
-
-// auto-detect header.
-function Unzip(opts) {
-  if (!(this instanceof Unzip)) return new Unzip(opts);
-  Zlib.call(this, opts, binding.UNZIP);
-}
-
-
-// the Zlib class they all inherit from
-// This thing manages the queue of requests, and returns
-// true or false if there is anything in the queue when
-// you call the .write() method.
-
-function Zlib(opts, mode) {
-  this._opts = opts = opts || {};
-  this._chunkSize = opts.chunkSize || exports.Z_DEFAULT_CHUNK;
-
-  Transform.call(this, opts);
-
-  if (opts.flush) {
-    if (opts.flush !== binding.Z_NO_FLUSH &&
-        opts.flush !== binding.Z_PARTIAL_FLUSH &&
-        opts.flush !== binding.Z_SYNC_FLUSH &&
-        opts.flush !== binding.Z_FULL_FLUSH &&
-        opts.flush !== binding.Z_FINISH &&
-        opts.flush !== binding.Z_BLOCK) {
-      throw new Error('Invalid flush flag: ' + opts.flush);
-    }
-  }
-  this._flushFlag = opts.flush || binding.Z_NO_FLUSH;
-
-  if (opts.chunkSize) {
-    if (opts.chunkSize < exports.Z_MIN_CHUNK ||
-        opts.chunkSize > exports.Z_MAX_CHUNK) {
-      throw new Error('Invalid chunk size: ' + opts.chunkSize);
-    }
-  }
-
-  if (opts.windowBits) {
-    if (opts.windowBits < exports.Z_MIN_WINDOWBITS ||
-        opts.windowBits > exports.Z_MAX_WINDOWBITS) {
-      throw new Error('Invalid windowBits: ' + opts.windowBits);
-    }
-  }
-
-  if (opts.level) {
-    if (opts.level < exports.Z_MIN_LEVEL ||
-        opts.level > exports.Z_MAX_LEVEL) {
-      throw new Error('Invalid compression level: ' + opts.level);
-    }
-  }
-
-  if (opts.memLevel) {
-    if (opts.memLevel < exports.Z_MIN_MEMLEVEL ||
-        opts.memLevel > exports.Z_MAX_MEMLEVEL) {
-      throw new Error('Invalid memLevel: ' + opts.memLevel);
-    }
-  }
-
-  if (opts.strategy) {
-    if (opts.strategy != exports.Z_FILTERED &&
-        opts.strategy != exports.Z_HUFFMAN_ONLY &&
-        opts.strategy != exports.Z_RLE &&
-        opts.strategy != exports.Z_FIXED &&
-        opts.strategy != exports.Z_DEFAULT_STRATEGY) {
-      throw new Error('Invalid strategy: ' + opts.strategy);
-    }
-  }
-
-  if (opts.dictionary) {
-    if (!Buffer.isBuffer(opts.dictionary)) {
-      throw new Error('Invalid dictionary: it should be a Buffer instance');
-    }
-  }
-
-  this._binding = new binding.Zlib(mode);
-
-  var self = this;
-  this._hadError = false;
-  this._binding.onerror = function(message, errno) {
-    // there is no way to cleanly recover.
-    // continuing only obscures problems.
-    self._binding = null;
-    self._hadError = true;
-
-    var error = new Error(message);
-    error.errno = errno;
-    error.code = exports.codes[errno];
-    self.emit('error', error);
-  };
-
-  var level = exports.Z_DEFAULT_COMPRESSION;
-  if (typeof opts.level === 'number') level = opts.level;
-
-  var strategy = exports.Z_DEFAULT_STRATEGY;
-  if (typeof opts.strategy === 'number') strategy = opts.strategy;
-
-  this._binding.init(opts.windowBits || exports.Z_DEFAULT_WINDOWBITS,
-                     level,
-                     opts.memLevel || exports.Z_DEFAULT_MEMLEVEL,
-                     strategy,
-                     opts.dictionary);
-
-  this._buffer = new Buffer(this._chunkSize);
-  this._offset = 0;
-  this._closed = false;
-  this._level = level;
-  this._strategy = strategy;
-
-  this.once('end', this.close);
-}
-
-util.inherits(Zlib, Transform);
-
-Zlib.prototype.params = function(level, strategy, callback) {
-  if (level < exports.Z_MIN_LEVEL ||
-      level > exports.Z_MAX_LEVEL) {
-    throw new RangeError('Invalid compression level: ' + level);
-  }
-  if (strategy != exports.Z_FILTERED &&
-      strategy != exports.Z_HUFFMAN_ONLY &&
-      strategy != exports.Z_RLE &&
-      strategy != exports.Z_FIXED &&
-      strategy != exports.Z_DEFAULT_STRATEGY) {
-    throw new TypeError('Invalid strategy: ' + strategy);
-  }
-
-  if (this._level !== level || this._strategy !== strategy) {
-    var self = this;
-    this.flush(binding.Z_SYNC_FLUSH, function() {
-      self._binding.params(level, strategy);
-      if (!self._hadError) {
-        self._level = level;
-        self._strategy = strategy;
-        if (callback) callback();
-      }
-    });
-  } else {
-    process.nextTick(callback);
-  }
-};
-
-Zlib.prototype.reset = function() {
-  return this._binding.reset();
-};
-
-// This is the _flush function called by the transform class,
-// internally, when the last chunk has been written.
-Zlib.prototype._flush = function(callback) {
-  this._transform(new Buffer(0), '', callback);
-};
-
-Zlib.prototype.flush = function(kind, callback) {
-  var ws = this._writableState;
-
-  if (typeof kind === 'function' || (kind === void 0 && !callback)) {
-    callback = kind;
-    kind = binding.Z_FULL_FLUSH;
-  }
-
-  if (ws.ended) {
-    if (callback)
-      process.nextTick(callback);
-  } else if (ws.ending) {
-    if (callback)
-      this.once('end', callback);
-  } else if (ws.needDrain) {
-    var self = this;
-    this.once('drain', function() {
-      self.flush(callback);
-    });
-  } else {
-    this._flushFlag = kind;
-    this.write(new Buffer(0), '', callback);
-  }
-};
-
-Zlib.prototype.close = function(callback) {
-  if (callback)
-    process.nextTick(callback);
-
-  if (this._closed)
-    return;
-
-  this._closed = true;
-
-  this._binding.close();
-
-  var self = this;
-  process.nextTick(function() {
-    self.emit('close');
-  });
-};
-
-Zlib.prototype._transform = function(chunk, encoding, cb) {
-  var flushFlag;
-  var ws = this._writableState;
-  var ending = ws.ending || ws.ended;
-  var last = ending && (!chunk || ws.length === chunk.length);
-
-  if (!chunk === null && !Buffer.isBuffer(chunk))
-    return cb(new Error('invalid input'));
-
-  // If it's the last chunk, or a final flush, we use the Z_FINISH flush flag.
-  // If it's explicitly flushing at some other time, then we use
-  // Z_FULL_FLUSH. Otherwise, use Z_NO_FLUSH for maximum compression
-  // goodness.
-  if (last)
-    flushFlag = binding.Z_FINISH;
-  else {
-    flushFlag = this._flushFlag;
-    // once we've flushed the last of the queue, stop flushing and
-    // go back to the normal behavior.
-    if (chunk.length >= ws.length) {
-      this._flushFlag = this._opts.flush || binding.Z_NO_FLUSH;
-    }
-  }
-
-  var self = this;
-  this._processChunk(chunk, flushFlag, cb);
-};
-
-Zlib.prototype._processChunk = function(chunk, flushFlag, cb) {
-  var availInBefore = chunk && chunk.length;
-  var availOutBefore = this._chunkSize - this._offset;
-  var inOff = 0;
-
-  var self = this;
-
-  var async = typeof cb === 'function';
-
-  if (!async) {
-    var buffers = [];
-    var nread = 0;
-
-    var error;
-    this.on('error', function(er) {
-      error = er;
-    });
-
-    do {
-      var res = this._binding.writeSync(flushFlag,
-                                        chunk, // in
-                                        inOff, // in_off
-                                        availInBefore, // in_len
-                                        this._buffer, // out
-                                        this._offset, //out_off
-                                        availOutBefore); // out_len
-    } while (!this._hadError && callback(res[0], res[1]));
-
-    if (this._hadError) {
-      throw error;
-    }
-
-    var buf = Buffer.concat(buffers, nread);
-    this.close();
-
-    return buf;
-  }
-
-  var req = this._binding.write(flushFlag,
-                                chunk, // in
-                                inOff, // in_off
-                                availInBefore, // in_len
-                                this._buffer, // out
-                                this._offset, //out_off
-                                availOutBefore); // out_len
-
-  req.buffer = chunk;
-  req.callback = callback;
-
-  function callback(availInAfter, availOutAfter) {
-    if (self._hadError)
-      return;
-
-    var have = availOutBefore - availOutAfter;
-    assert(have >= 0, 'have should not go down');
-
-    if (have > 0) {
-      var out = self._buffer.slice(self._offset, self._offset + have);
-      self._offset += have;
-      // serve some output to the consumer.
-      if (async) {
-        self.push(out);
-      } else {
-        buffers.push(out);
-        nread += out.length;
-      }
-    }
-
-    // exhausted the output buffer, or used all the input create a new one.
-    if (availOutAfter === 0 || self._offset >= self._chunkSize) {
-      availOutBefore = self._chunkSize;
-      self._offset = 0;
-      self._buffer = new Buffer(self._chunkSize);
-    }
-
-    if (availOutAfter === 0) {
-      // Not actually done.  Need to reprocess.
-      // Also, update the availInBefore to the availInAfter value,
-      // so that if we have to hit it a third (fourth, etc.) time,
-      // it'll have the correct byte counts.
-      inOff += (availInBefore - availInAfter);
-      availInBefore = availInAfter;
-
-      if (!async)
-        return true;
-
-      var newReq = self._binding.write(flushFlag,
-                                       chunk,
-                                       inOff,
-                                       availInBefore,
-                                       self._buffer,
-                                       self._offset,
-                                       self._chunkSize);
-      newReq.callback = callback; // this same function
-      newReq.buffer = chunk;
-      return;
-    }
-
-    if (!async)
-      return false;
-
-    // finished with the chunk.
-    cb();
-  }
-};
-
-util.inherits(Deflate, Zlib);
-util.inherits(Inflate, Zlib);
-util.inherits(Gzip, Zlib);
-util.inherits(Gunzip, Zlib);
-util.inherits(DeflateRaw, Zlib);
-util.inherits(InflateRaw, Zlib);
-util.inherits(Unzip, Zlib);
-
-}).call(this,require('_process'),require("buffer").Buffer)
-},{"./binding":15,"_process":44,"_stream_transform":58,"assert":2,"buffer":17,"util":64}],17:[function(require,module,exports){
+},{"/home/micke/repo/resource-fiddle/node_modules/grunt-browserify/node_modules/browserify/lib/_empty.js":1}],4:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -7664,7 +1416,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":18,"ieee754":19,"is-array":20}],18:[function(require,module,exports){
+},{"base64-js":5,"ieee754":6,"is-array":7}],5:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -7786,7 +1538,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],19:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -7872,7 +1624,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],20:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 
 /**
  * isArray
@@ -7907,7 +1659,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],21:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (Buffer){
 var createHash = require('sha.js')
 
@@ -7941,7 +1693,7 @@ module.exports = function (alg) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./md5":25,"buffer":17,"ripemd160":28,"sha.js":30}],22:[function(require,module,exports){
+},{"./md5":12,"buffer":4,"ripemd160":14,"sha.js":16}],9:[function(require,module,exports){
 (function (Buffer){
 var createHash = require('./create-hash')
 
@@ -7988,7 +1740,7 @@ Hmac.prototype.digest = function (enc) {
 
 
 }).call(this,require("buffer").Buffer)
-},{"./create-hash":21,"buffer":17}],23:[function(require,module,exports){
+},{"./create-hash":8,"buffer":4}],10:[function(require,module,exports){
 (function (Buffer){
 var intSize = 4;
 var zeroBuffer = new Buffer(intSize); zeroBuffer.fill(0);
@@ -8026,7 +1778,7 @@ function hash(buf, fn, hashSize, bigEndian) {
 module.exports = { hash: hash };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":17}],24:[function(require,module,exports){
+},{"buffer":4}],11:[function(require,module,exports){
 (function (Buffer){
 var rng = require('./rng')
 
@@ -8083,7 +1835,7 @@ each(['createCredentials'
 })
 
 }).call(this,require("buffer").Buffer)
-},{"./create-hash":21,"./create-hmac":22,"./pbkdf2":34,"./rng":35,"buffer":17}],25:[function(require,module,exports){
+},{"./create-hash":8,"./create-hmac":9,"./pbkdf2":20,"./rng":21,"buffer":4}],12:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
  * Digest Algorithm, as defined in RFC 1321.
@@ -8240,21 +1992,7 @@ module.exports = function md5(buf) {
   return helpers.hash(buf, core_md5, 16);
 };
 
-},{"./helpers":23}],26:[function(require,module,exports){
-var crypto = require('crypto')
-
-var exportFn = require('./pbkdf2')
-var exported = exportFn(crypto)
-
-module.exports = {
-  pbkdf2: exported.pbkdf2,
-  pbkdf2Sync: exported.pbkdf2Sync,
-
-  // for crypto-browserify
-  __pbkdf2Export: exportFn
-}
-
-},{"./pbkdf2":27,"crypto":24}],27:[function(require,module,exports){
+},{"./helpers":10}],13:[function(require,module,exports){
 (function (Buffer){
 module.exports = function(crypto) {
   function pbkdf2(password, salt, iterations, keylen, digest, callback) {
@@ -8342,7 +2080,7 @@ module.exports = function(crypto) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":17}],28:[function(require,module,exports){
+},{"buffer":4}],14:[function(require,module,exports){
 (function (Buffer){
 
 module.exports = ripemd160
@@ -8551,7 +2289,7 @@ function ripemd160(message) {
 
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":17}],29:[function(require,module,exports){
+},{"buffer":4}],15:[function(require,module,exports){
 module.exports = function (Buffer) {
 
   //prototype class for hash functions
@@ -8630,7 +2368,7 @@ module.exports = function (Buffer) {
   return Hash
 }
 
-},{}],30:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var exports = module.exports = function (alg) {
   var Alg = exports[alg]
   if(!Alg) throw new Error(alg + ' is not supported (we accept pull requests)')
@@ -8644,7 +2382,7 @@ exports.sha1 = require('./sha1')(Buffer, Hash)
 exports.sha256 = require('./sha256')(Buffer, Hash)
 exports.sha512 = require('./sha512')(Buffer, Hash)
 
-},{"./hash":29,"./sha1":31,"./sha256":32,"./sha512":33,"buffer":17}],31:[function(require,module,exports){
+},{"./hash":15,"./sha1":17,"./sha256":18,"./sha512":19,"buffer":4}],17:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -8784,7 +2522,7 @@ module.exports = function (Buffer, Hash) {
   return Sha1
 }
 
-},{"util":64}],32:[function(require,module,exports){
+},{"util":50}],18:[function(require,module,exports){
 
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
@@ -8933,7 +2671,7 @@ module.exports = function (Buffer, Hash) {
 
 }
 
-},{"util":64}],33:[function(require,module,exports){
+},{"util":50}],19:[function(require,module,exports){
 var inherits = require('util').inherits
 
 module.exports = function (Buffer, Hash) {
@@ -9179,8 +2917,8 @@ module.exports = function (Buffer, Hash) {
 
 }
 
-},{"util":64}],34:[function(require,module,exports){
-var pbkdf2Export = require('pbkdf2-compat').__pbkdf2Export
+},{"util":50}],20:[function(require,module,exports){
+var pbkdf2Export = require('pbkdf2-compat/pbkdf2')
 
 module.exports = function (crypto, exports) {
   exports = exports || {}
@@ -9193,7 +2931,7 @@ module.exports = function (crypto, exports) {
   return exports
 }
 
-},{"pbkdf2-compat":26}],35:[function(require,module,exports){
+},{"pbkdf2-compat/pbkdf2":13}],21:[function(require,module,exports){
 (function (global,Buffer){
 (function() {
   var g = ('undefined' === typeof window ? global : window) || {}
@@ -9223,7 +2961,7 @@ module.exports = function (crypto, exports) {
 }())
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"buffer":17,"crypto":3}],36:[function(require,module,exports){
+},{"buffer":4,"crypto":3}],22:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9526,7 +3264,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],37:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var http = module.exports;
 var EventEmitter = require('events').EventEmitter;
 var Request = require('./lib/request');
@@ -9672,7 +3410,7 @@ http.STATUS_CODES = {
     510 : 'Not Extended',               // RFC 2774
     511 : 'Network Authentication Required' // RFC 6585
 };
-},{"./lib/request":38,"events":36,"url":62}],38:[function(require,module,exports){
+},{"./lib/request":24,"events":22,"url":48}],24:[function(require,module,exports){
 var Stream = require('stream');
 var Response = require('./response');
 var Base64 = require('Base64');
@@ -9883,7 +3621,7 @@ var isXHR2Compatible = function (obj) {
     if (typeof FormData !== 'undefined' && obj instanceof FormData) return true;
 };
 
-},{"./response":39,"Base64":40,"inherits":42,"stream":60}],39:[function(require,module,exports){
+},{"./response":25,"Base64":26,"inherits":28,"stream":46}],25:[function(require,module,exports){
 var Stream = require('stream');
 var util = require('util');
 
@@ -10005,7 +3743,7 @@ var isArray = Array.isArray || function (xs) {
     return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{"stream":60,"util":64}],40:[function(require,module,exports){
+},{"stream":46,"util":50}],26:[function(require,module,exports){
 ;(function () {
 
   var object = typeof exports != 'undefined' ? exports : this; // #8: web workers
@@ -10067,7 +3805,7 @@ var isArray = Array.isArray || function (xs) {
 
 }());
 
-},{}],41:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var http = require('http');
 
 var https = module.exports;
@@ -10082,7 +3820,7 @@ https.request = function (params, cb) {
     return http.request.call(this, params, cb);
 }
 
-},{"http":37}],42:[function(require,module,exports){
+},{"http":23}],28:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -10107,12 +3845,12 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],43:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],44:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -10120,6 +3858,8 @@ var process = module.exports = {};
 process.nextTick = (function () {
     var canSetImmediate = typeof window !== 'undefined'
     && window.setImmediate;
+    var canMutationObserver = typeof window !== 'undefined'
+    && window.MutationObserver;
     var canPost = typeof window !== 'undefined'
     && window.postMessage && window.addEventListener
     ;
@@ -10128,8 +3868,29 @@ process.nextTick = (function () {
         return function (f) { return window.setImmediate(f) };
     }
 
+    var queue = [];
+
+    if (canMutationObserver) {
+        var hiddenDiv = document.createElement("div");
+        var observer = new MutationObserver(function () {
+            var queueList = queue.slice();
+            queue.length = 0;
+            queueList.forEach(function (fn) {
+                fn();
+            });
+        });
+
+        observer.observe(hiddenDiv, { attributes: true });
+
+        return function nextTick(fn) {
+            if (!queue.length) {
+                hiddenDiv.setAttribute('yes', 'no');
+            }
+            queue.push(fn);
+        };
+    }
+
     if (canPost) {
-        var queue = [];
         window.addEventListener('message', function (ev) {
             var source = ev.source;
             if ((source === window || source === null) && ev.data === 'process-tick') {
@@ -10169,7 +3930,7 @@ process.emit = noop;
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
-}
+};
 
 // TODO(shtylman)
 process.cwd = function () { return '/' };
@@ -10177,7 +3938,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],45:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -10688,7 +4449,7 @@ process.chdir = function (dir) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],46:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -10774,7 +4535,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],47:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -10861,16 +4622,16 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],48:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":46,"./encode":47}],49:[function(require,module,exports){
+},{"./decode":32,"./encode":33}],35:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":50}],50:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":36}],36:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -10963,7 +4724,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":52,"./_stream_writable":54,"_process":44,"core-util-is":55,"inherits":42}],51:[function(require,module,exports){
+},{"./_stream_readable":38,"./_stream_writable":40,"_process":30,"core-util-is":41,"inherits":28}],37:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -11011,7 +4772,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":53,"core-util-is":55,"inherits":42}],52:[function(require,module,exports){
+},{"./_stream_transform":39,"core-util-is":41,"inherits":28}],38:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -11997,7 +5758,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":44,"buffer":17,"core-util-is":55,"events":36,"inherits":42,"isarray":43,"stream":60,"string_decoder/":61}],53:[function(require,module,exports){
+},{"_process":30,"buffer":4,"core-util-is":41,"events":22,"inherits":28,"isarray":29,"stream":46,"string_decoder/":47}],39:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -12209,7 +5970,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":50,"core-util-is":55,"inherits":42}],54:[function(require,module,exports){
+},{"./_stream_duplex":36,"core-util-is":41,"inherits":28}],40:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -12599,7 +6360,7 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":50,"_process":44,"buffer":17,"core-util-is":55,"inherits":42,"stream":60}],55:[function(require,module,exports){
+},{"./_stream_duplex":36,"_process":30,"buffer":4,"core-util-is":41,"inherits":28,"stream":46}],41:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -12709,10 +6470,10 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":17}],56:[function(require,module,exports){
+},{"buffer":4}],42:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":51}],57:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":37}],43:[function(require,module,exports){
 require('stream'); // hack to fix a circular dependency issue when used with browserify
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Readable = exports;
@@ -12721,13 +6482,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":50,"./lib/_stream_passthrough.js":51,"./lib/_stream_readable.js":52,"./lib/_stream_transform.js":53,"./lib/_stream_writable.js":54,"stream":60}],58:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":36,"./lib/_stream_passthrough.js":37,"./lib/_stream_readable.js":38,"./lib/_stream_transform.js":39,"./lib/_stream_writable.js":40,"stream":46}],44:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":53}],59:[function(require,module,exports){
+},{"./lib/_stream_transform.js":39}],45:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":54}],60:[function(require,module,exports){
+},{"./lib/_stream_writable.js":40}],46:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -12856,7 +6617,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":36,"inherits":42,"readable-stream/duplex.js":49,"readable-stream/passthrough.js":56,"readable-stream/readable.js":57,"readable-stream/transform.js":58,"readable-stream/writable.js":59}],61:[function(require,module,exports){
+},{"events":22,"inherits":28,"readable-stream/duplex.js":35,"readable-stream/passthrough.js":42,"readable-stream/readable.js":43,"readable-stream/transform.js":44,"readable-stream/writable.js":45}],47:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -13079,7 +6840,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":17}],62:[function(require,module,exports){
+},{"buffer":4}],48:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -13788,14 +7549,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":45,"querystring":48}],63:[function(require,module,exports){
+},{"punycode":31,"querystring":34}],49:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],64:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -14385,5988 +8146,25 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":63,"_process":44,"inherits":42}],65:[function(require,module,exports){
+},{"./support/isBuffer":49,"_process":30,"inherits":28}],51:[function(require,module,exports){
 /**
  * @license
- * pixi.js - v1.6.0
+ * pixi.js - v1.6.1
  * Copyright (c) 2012-2014, Mat Groves
  * http://goodboydigital.com/
  *
- * Compiled: 2014-07-18
+ * Compiled: 2014-10-14
  *
  * pixi.js is licensed under the MIT License.
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function(){var a=this,b=b||{};b.WEBGL_RENDERER=0,b.CANVAS_RENDERER=1,b.VERSION="v1.6.1",b.blendModes={NORMAL:0,ADD:1,MULTIPLY:2,SCREEN:3,OVERLAY:4,DARKEN:5,LIGHTEN:6,COLOR_DODGE:7,COLOR_BURN:8,HARD_LIGHT:9,SOFT_LIGHT:10,DIFFERENCE:11,EXCLUSION:12,HUE:13,SATURATION:14,COLOR:15,LUMINOSITY:16},b.scaleModes={DEFAULT:0,LINEAR:0,NEAREST:1},b._UID=0,"undefined"!=typeof Float32Array?(b.Float32Array=Float32Array,b.Uint16Array=Uint16Array):(b.Float32Array=Array,b.Uint16Array=Array),b.INTERACTION_FREQUENCY=30,b.AUTO_PREVENT_DEFAULT=!0,b.RAD_TO_DEG=180/Math.PI,b.DEG_TO_RAD=Math.PI/180,b.dontSayHello=!1,b.sayHello=function(a){if(!b.dontSayHello){if(navigator.userAgent.toLowerCase().indexOf("chrome")>-1){var c=["%c %c %c Pixi.js "+b.VERSION+" - "+a+"  %c  %c  http://www.pixijs.com/  %c %c ♥%c♥%c♥ ","background: #ff66a5","background: #ff66a5","color: #ff66a5; background: #030307;","background: #ff66a5","background: #ffc3dc","background: #ff66a5","color: #ff2424; background: #fff","color: #ff2424; background: #fff","color: #ff2424; background: #fff"];console.log.apply(console,c)}else window.console&&console.log("Pixi.js "+b.VERSION+" - http://www.pixijs.com/");b.dontSayHello=!0}},b.Point=function(a,b){this.x=a||0,this.y=b||0},b.Point.prototype.clone=function(){return new b.Point(this.x,this.y)},b.Point.prototype.set=function(a,b){this.x=a||0,this.y=b||(0!==b?this.x:0)},b.Point.prototype.constructor=b.Point,b.Rectangle=function(a,b,c,d){this.x=a||0,this.y=b||0,this.width=c||0,this.height=d||0},b.Rectangle.prototype.clone=function(){return new b.Rectangle(this.x,this.y,this.width,this.height)},b.Rectangle.prototype.contains=function(a,b){if(this.width<=0||this.height<=0)return!1;var c=this.x;if(a>=c&&a<=c+this.width){var d=this.y;if(b>=d&&b<=d+this.height)return!0}return!1},b.Rectangle.prototype.constructor=b.Rectangle,b.EmptyRectangle=new b.Rectangle(0,0,0,0),b.Polygon=function(a){if(a instanceof Array||(a=Array.prototype.slice.call(arguments)),"number"==typeof a[0]){for(var c=[],d=0,e=a.length;e>d;d+=2)c.push(new b.Point(a[d],a[d+1]));a=c}this.points=a},b.Polygon.prototype.clone=function(){for(var a=[],c=0;c<this.points.length;c++)a.push(this.points[c].clone());return new b.Polygon(a)},b.Polygon.prototype.contains=function(a,b){for(var c=!1,d=0,e=this.points.length-1;d<this.points.length;e=d++){var f=this.points[d].x,g=this.points[d].y,h=this.points[e].x,i=this.points[e].y,j=g>b!=i>b&&(h-f)*(b-g)/(i-g)+f>a;j&&(c=!c)}return c},b.Polygon.prototype.constructor=b.Polygon,b.Circle=function(a,b,c){this.x=a||0,this.y=b||0,this.radius=c||0},b.Circle.prototype.clone=function(){return new b.Circle(this.x,this.y,this.radius)},b.Circle.prototype.contains=function(a,b){if(this.radius<=0)return!1;var c=this.x-a,d=this.y-b,e=this.radius*this.radius;return c*=c,d*=d,e>=c+d},b.Circle.prototype.getBounds=function(){return new b.Rectangle(this.x-this.radius,this.y-this.radius,this.width,this.height)},b.Circle.prototype.constructor=b.Circle,b.Ellipse=function(a,b,c,d){this.x=a||0,this.y=b||0,this.width=c||0,this.height=d||0},b.Ellipse.prototype.clone=function(){return new b.Ellipse(this.x,this.y,this.width,this.height)},b.Ellipse.prototype.contains=function(a,b){if(this.width<=0||this.height<=0)return!1;var c=(a-this.x)/this.width,d=(b-this.y)/this.height;return c*=c,d*=d,1>=c+d},b.Ellipse.prototype.getBounds=function(){return new b.Rectangle(this.x-this.width,this.y-this.height,this.width,this.height)},b.Ellipse.prototype.constructor=b.Ellipse,b.Matrix=function(){this.a=1,this.b=0,this.c=0,this.d=1,this.tx=0,this.ty=0},b.Matrix.prototype.fromArray=function(a){this.a=a[0],this.b=a[1],this.c=a[3],this.d=a[4],this.tx=a[2],this.ty=a[5]},b.Matrix.prototype.toArray=function(a){this.array||(this.array=new Float32Array(9));var b=this.array;return a?(b[0]=this.a,b[1]=this.c,b[2]=0,b[3]=this.b,b[4]=this.d,b[5]=0,b[6]=this.tx,b[7]=this.ty,b[8]=1):(b[0]=this.a,b[1]=this.b,b[2]=this.tx,b[3]=this.c,b[4]=this.d,b[5]=this.ty,b[6]=0,b[7]=0,b[8]=1),b},b.identityMatrix=new b.Matrix,b.determineMatrixArrayType=function(){return"undefined"!=typeof Float32Array?Float32Array:Array},b.Matrix2=b.determineMatrixArrayType(),b.DisplayObject=function(){this.position=new b.Point,this.scale=new b.Point(1,1),this.pivot=new b.Point(0,0),this.rotation=0,this.alpha=1,this.visible=!0,this.hitArea=null,this.buttonMode=!1,this.renderable=!1,this.parent=null,this.stage=null,this.worldAlpha=1,this._interactive=!1,this.defaultCursor="pointer",this.worldTransform=new b.Matrix,this.color=[],this.dynamic=!0,this._sr=0,this._cr=1,this.filterArea=null,this._bounds=new b.Rectangle(0,0,1,1),this._currentBounds=null,this._mask=null,this._cacheAsBitmap=!1,this._cacheIsDirty=!1},b.DisplayObject.prototype.constructor=b.DisplayObject,b.DisplayObject.prototype.setInteractive=function(a){this.interactive=a},Object.defineProperty(b.DisplayObject.prototype,"interactive",{get:function(){return this._interactive},set:function(a){this._interactive=a,this.stage&&(this.stage.dirty=!0)}}),Object.defineProperty(b.DisplayObject.prototype,"worldVisible",{get:function(){var a=this;do{if(!a.visible)return!1;a=a.parent}while(a);return!0}}),Object.defineProperty(b.DisplayObject.prototype,"mask",{get:function(){return this._mask},set:function(a){this._mask&&(this._mask.isMask=!1),this._mask=a,this._mask&&(this._mask.isMask=!0)}}),Object.defineProperty(b.DisplayObject.prototype,"filters",{get:function(){return this._filters},set:function(a){if(a){for(var b=[],c=0;c<a.length;c++)for(var d=a[c].passes,e=0;e<d.length;e++)b.push(d[e]);this._filterBlock={target:this,filterPasses:b}}this._filters=a}}),Object.defineProperty(b.DisplayObject.prototype,"cacheAsBitmap",{get:function(){return this._cacheAsBitmap},set:function(a){this._cacheAsBitmap!==a&&(a?this._generateCachedSprite():this._destroyCachedSprite(),this._cacheAsBitmap=a)}}),b.DisplayObject.prototype.updateTransform=function(){this.rotation!==this.rotationCache&&(this.rotationCache=this.rotation,this._sr=Math.sin(this.rotation),this._cr=Math.cos(this.rotation));var a=this.parent.worldTransform,b=this.worldTransform,c=this.pivot.x,d=this.pivot.y,e=this._cr*this.scale.x,f=-this._sr*this.scale.y,g=this._sr*this.scale.x,h=this._cr*this.scale.y,i=this.position.x-e*c-d*f,j=this.position.y-h*d-c*g,k=a.a,l=a.b,m=a.c,n=a.d;b.a=k*e+l*g,b.b=k*f+l*h,b.tx=k*i+l*j+a.tx,b.c=m*e+n*g,b.d=m*f+n*h,b.ty=m*i+n*j+a.ty,this.worldAlpha=this.alpha*this.parent.worldAlpha},b.DisplayObject.prototype.getBounds=function(a){return a=a,b.EmptyRectangle},b.DisplayObject.prototype.getLocalBounds=function(){return this.getBounds(b.identityMatrix)},b.DisplayObject.prototype.setStageReference=function(a){this.stage=a,this._interactive&&(this.stage.dirty=!0)},b.DisplayObject.prototype.generateTexture=function(a){var c=this.getLocalBounds(),d=new b.RenderTexture(0|c.width,0|c.height,a);return d.render(this,new b.Point(-c.x,-c.y)),d},b.DisplayObject.prototype.updateCache=function(){this._generateCachedSprite()},b.DisplayObject.prototype._renderCachedSprite=function(a){this._cachedSprite.worldAlpha=this.worldAlpha,a.gl?b.Sprite.prototype._renderWebGL.call(this._cachedSprite,a):b.Sprite.prototype._renderCanvas.call(this._cachedSprite,a)},b.DisplayObject.prototype._generateCachedSprite=function(){this._cacheAsBitmap=!1;var a=this.getLocalBounds();if(this._cachedSprite)this._cachedSprite.texture.resize(0|a.width,0|a.height);else{var c=new b.RenderTexture(0|a.width,0|a.height);this._cachedSprite=new b.Sprite(c),this._cachedSprite.worldTransform=this.worldTransform}var d=this._filters;this._filters=null,this._cachedSprite.filters=d,this._cachedSprite.texture.render(this,new b.Point(-a.x,-a.y)),this._cachedSprite.anchor.x=-(a.x/a.width),this._cachedSprite.anchor.y=-(a.y/a.height),this._filters=d,this._cacheAsBitmap=!0},b.DisplayObject.prototype._destroyCachedSprite=function(){this._cachedSprite&&(this._cachedSprite.texture.destroy(!0),this._cachedSprite=null)},b.DisplayObject.prototype._renderWebGL=function(a){a=a},b.DisplayObject.prototype._renderCanvas=function(a){a=a},Object.defineProperty(b.DisplayObject.prototype,"x",{get:function(){return this.position.x},set:function(a){this.position.x=a}}),Object.defineProperty(b.DisplayObject.prototype,"y",{get:function(){return this.position.y},set:function(a){this.position.y=a}}),b.DisplayObjectContainer=function(){b.DisplayObject.call(this),this.children=[]},b.DisplayObjectContainer.prototype=Object.create(b.DisplayObject.prototype),b.DisplayObjectContainer.prototype.constructor=b.DisplayObjectContainer,Object.defineProperty(b.DisplayObjectContainer.prototype,"width",{get:function(){return this.scale.x*this.getLocalBounds().width},set:function(a){var b=this.getLocalBounds().width;this.scale.x=0!==b?a/(b/this.scale.x):1,this._width=a}}),Object.defineProperty(b.DisplayObjectContainer.prototype,"height",{get:function(){return this.scale.y*this.getLocalBounds().height},set:function(a){var b=this.getLocalBounds().height;this.scale.y=0!==b?a/(b/this.scale.y):1,this._height=a}}),b.DisplayObjectContainer.prototype.addChild=function(a){return this.addChildAt(a,this.children.length)},b.DisplayObjectContainer.prototype.addChildAt=function(a,b){if(b>=0&&b<=this.children.length)return a.parent&&a.parent.removeChild(a),a.parent=this,this.children.splice(b,0,a),this.stage&&a.setStageReference(this.stage),a;throw new Error(a+" The index "+b+" supplied is out of bounds "+this.children.length)},b.DisplayObjectContainer.prototype.swapChildren=function(a,b){if(a!==b){var c=this.children.indexOf(a),d=this.children.indexOf(b);if(0>c||0>d)throw new Error("swapChildren: Both the supplied DisplayObjects must be a child of the caller.");this.children[c]=b,this.children[d]=a}},b.DisplayObjectContainer.prototype.getChildAt=function(a){if(a>=0&&a<this.children.length)return this.children[a];throw new Error("Supplied index does not exist in the child list, or the supplied DisplayObject must be a child of the caller")},b.DisplayObjectContainer.prototype.removeChild=function(a){return this.removeChildAt(this.children.indexOf(a))},b.DisplayObjectContainer.prototype.removeChildAt=function(a){var b=this.getChildAt(a);return this.stage&&b.removeStageReference(),b.parent=void 0,this.children.splice(a,1),b},b.DisplayObjectContainer.prototype.removeChildren=function(a,b){var c=a||0,d="number"==typeof b?b:this.children.length,e=d-c;if(e>0&&d>=e){for(var f=this.children.splice(c,e),g=0;g<f.length;g++){var h=f[g];this.stage&&h.removeStageReference(),h.parent=void 0}return f}throw new Error("Range Error, numeric values are outside the acceptable range")},b.DisplayObjectContainer.prototype.updateTransform=function(){if(this.visible&&(b.DisplayObject.prototype.updateTransform.call(this),!this._cacheAsBitmap))for(var a=0,c=this.children.length;c>a;a++)this.children[a].updateTransform()},b.DisplayObjectContainer.prototype.getBounds=function(a){if(0===this.children.length)return b.EmptyRectangle;if(a){var c=this.worldTransform;this.worldTransform=a,this.updateTransform(),this.worldTransform=c}for(var d,e,f,g=1/0,h=1/0,i=-1/0,j=-1/0,k=!1,l=0,m=this.children.length;m>l;l++){var n=this.children[l];n.visible&&(k=!0,d=this.children[l].getBounds(a),g=g<d.x?g:d.x,h=h<d.y?h:d.y,e=d.width+d.x,f=d.height+d.y,i=i>e?i:e,j=j>f?j:f)}if(!k)return b.EmptyRectangle;var o=this._bounds;return o.x=g,o.y=h,o.width=i-g,o.height=j-h,o},b.DisplayObjectContainer.prototype.getLocalBounds=function(){var a=this.worldTransform;this.worldTransform=b.identityMatrix;for(var c=0,d=this.children.length;d>c;c++)this.children[c].updateTransform();var e=this.getBounds();return this.worldTransform=a,e},b.DisplayObjectContainer.prototype.setStageReference=function(a){this.stage=a,this._interactive&&(this.stage.dirty=!0);for(var b=0,c=this.children.length;c>b;b++){var d=this.children[b];d.setStageReference(a)}},b.DisplayObjectContainer.prototype.removeStageReference=function(){for(var a=0,b=this.children.length;b>a;a++){var c=this.children[a];c.removeStageReference()}this._interactive&&(this.stage.dirty=!0),this.stage=null},b.DisplayObjectContainer.prototype._renderWebGL=function(a){if(this.visible&&!(this.alpha<=0)){if(this._cacheAsBitmap)return this._renderCachedSprite(a),void 0;var b,c;if(this._mask||this._filters){for(this._filters&&(a.spriteBatch.flush(),a.filterManager.pushFilter(this._filterBlock)),this._mask&&(a.spriteBatch.stop(),a.maskManager.pushMask(this.mask,a),a.spriteBatch.start()),b=0,c=this.children.length;c>b;b++)this.children[b]._renderWebGL(a);a.spriteBatch.stop(),this._mask&&a.maskManager.popMask(this._mask,a),this._filters&&a.filterManager.popFilter(),a.spriteBatch.start()}else for(b=0,c=this.children.length;c>b;b++)this.children[b]._renderWebGL(a)}},b.DisplayObjectContainer.prototype._renderCanvas=function(a){if(this.visible!==!1&&0!==this.alpha){if(this._cacheAsBitmap)return this._renderCachedSprite(a),void 0;this._mask&&a.maskManager.pushMask(this._mask,a.context);for(var b=0,c=this.children.length;c>b;b++){var d=this.children[b];d._renderCanvas(a)}this._mask&&a.maskManager.popMask(a.context)}},b.Sprite=function(a){b.DisplayObjectContainer.call(this),this.anchor=new b.Point,this.texture=a,this._width=0,this._height=0,this.tint=16777215,this.blendMode=b.blendModes.NORMAL,a.baseTexture.hasLoaded?this.onTextureUpdate():(this.onTextureUpdateBind=this.onTextureUpdate.bind(this),this.texture.addEventListener("update",this.onTextureUpdateBind)),this.renderable=!0},b.Sprite.prototype=Object.create(b.DisplayObjectContainer.prototype),b.Sprite.prototype.constructor=b.Sprite,Object.defineProperty(b.Sprite.prototype,"width",{get:function(){return this.scale.x*this.texture.frame.width},set:function(a){this.scale.x=a/this.texture.frame.width,this._width=a}}),Object.defineProperty(b.Sprite.prototype,"height",{get:function(){return this.scale.y*this.texture.frame.height},set:function(a){this.scale.y=a/this.texture.frame.height,this._height=a}}),b.Sprite.prototype.setTexture=function(a){this.texture=a,this.cachedTint=16777215},b.Sprite.prototype.onTextureUpdate=function(){this._width&&(this.scale.x=this._width/this.texture.frame.width),this._height&&(this.scale.y=this._height/this.texture.frame.height)},b.Sprite.prototype.getBounds=function(a){var b=this.texture.frame.width,c=this.texture.frame.height,d=b*(1-this.anchor.x),e=b*-this.anchor.x,f=c*(1-this.anchor.y),g=c*-this.anchor.y,h=a||this.worldTransform,i=h.a,j=h.c,k=h.b,l=h.d,m=h.tx,n=h.ty,o=i*e+k*g+m,p=l*g+j*e+n,q=i*d+k*g+m,r=l*g+j*d+n,s=i*d+k*f+m,t=l*f+j*d+n,u=i*e+k*f+m,v=l*f+j*e+n,w=-1/0,x=-1/0,y=1/0,z=1/0;y=y>o?o:y,y=y>q?q:y,y=y>s?s:y,y=y>u?u:y,z=z>p?p:z,z=z>r?r:z,z=z>t?t:z,z=z>v?v:z,w=o>w?o:w,w=q>w?q:w,w=s>w?s:w,w=u>w?u:w,x=p>x?p:x,x=r>x?r:x,x=t>x?t:x,x=v>x?v:x;var A=this._bounds;return A.x=y,A.width=w-y,A.y=z,A.height=x-z,this._currentBounds=A,A},b.Sprite.prototype._renderWebGL=function(a){if(this.visible&&!(this.alpha<=0)){var b,c;if(this._mask||this._filters){var d=a.spriteBatch;for(this._filters&&(d.flush(),a.filterManager.pushFilter(this._filterBlock)),this._mask&&(d.stop(),a.maskManager.pushMask(this.mask,a),d.start()),d.render(this),b=0,c=this.children.length;c>b;b++)this.children[b]._renderWebGL(a);d.stop(),this._mask&&a.maskManager.popMask(this._mask,a),this._filters&&a.filterManager.popFilter(),d.start()}else for(a.spriteBatch.render(this),b=0,c=this.children.length;c>b;b++)this.children[b]._renderWebGL(a)}},b.Sprite.prototype._renderCanvas=function(a){if(this.visible!==!1&&0!==this.alpha){if(this.blendMode!==a.currentBlendMode&&(a.currentBlendMode=this.blendMode,a.context.globalCompositeOperation=b.blendModesCanvas[a.currentBlendMode]),this._mask&&a.maskManager.pushMask(this._mask,a.context),this.texture.valid){a.context.globalAlpha=this.worldAlpha,a.roundPixels?a.context.setTransform(this.worldTransform.a,this.worldTransform.c,this.worldTransform.b,this.worldTransform.d,0|this.worldTransform.tx,0|this.worldTransform.ty):a.context.setTransform(this.worldTransform.a,this.worldTransform.c,this.worldTransform.b,this.worldTransform.d,this.worldTransform.tx,this.worldTransform.ty),a.smoothProperty&&a.scaleMode!==this.texture.baseTexture.scaleMode&&(a.scaleMode=this.texture.baseTexture.scaleMode,a.context[a.smoothProperty]=a.scaleMode===b.scaleModes.LINEAR);var c=this.texture.trim?this.texture.trim.x-this.anchor.x*this.texture.trim.width:this.anchor.x*-this.texture.frame.width,d=this.texture.trim?this.texture.trim.y-this.anchor.y*this.texture.trim.height:this.anchor.y*-this.texture.frame.height;16777215!==this.tint?(this.cachedTint!==this.tint&&(this.cachedTint=this.tint,this.tintedTexture=b.CanvasTinter.getTintedTexture(this,this.tint)),a.context.drawImage(this.tintedTexture,0,0,this.texture.crop.width,this.texture.crop.height,c,d,this.texture.crop.width,this.texture.crop.height)):a.context.drawImage(this.texture.baseTexture.source,this.texture.crop.x,this.texture.crop.y,this.texture.crop.width,this.texture.crop.height,c,d,this.texture.crop.width,this.texture.crop.height)}for(var e=0,f=this.children.length;f>e;e++)this.children[e]._renderCanvas(a);this._mask&&a.maskManager.popMask(a.context)}},b.Sprite.fromFrame=function(a){var c=b.TextureCache[a];if(!c)throw new Error('The frameId "'+a+'" does not exist in the texture cache'+this);return new b.Sprite(c)},b.Sprite.fromImage=function(a,c,d){var e=b.Texture.fromImage(a,c,d);return new b.Sprite(e)},b.SpriteBatch=function(a){b.DisplayObjectContainer.call(this),this.textureThing=a,this.ready=!1},b.SpriteBatch.prototype=Object.create(b.DisplayObjectContainer.prototype),b.SpriteBatch.constructor=b.SpriteBatch,b.SpriteBatch.prototype.initWebGL=function(a){this.fastSpriteBatch=new b.WebGLFastSpriteBatch(a),this.ready=!0},b.SpriteBatch.prototype.updateTransform=function(){b.DisplayObject.prototype.updateTransform.call(this)},b.SpriteBatch.prototype._renderWebGL=function(a){!this.visible||this.alpha<=0||!this.children.length||(this.ready||this.initWebGL(a.gl),a.spriteBatch.stop(),a.shaderManager.setShader(a.shaderManager.fastShader),this.fastSpriteBatch.begin(this,a),this.fastSpriteBatch.render(this),a.spriteBatch.start())},b.SpriteBatch.prototype._renderCanvas=function(a){var c=a.context;c.globalAlpha=this.worldAlpha,b.DisplayObject.prototype.updateTransform.call(this);for(var d=this.worldTransform,e=!0,f=0;f<this.children.length;f++){var g=this.children[f];if(g.visible){var h=g.texture,i=h.frame;if(c.globalAlpha=this.worldAlpha*g.alpha,g.rotation%(2*Math.PI)===0)e&&(c.setTransform(d.a,d.c,d.b,d.d,d.tx,d.ty),e=!1),c.drawImage(h.baseTexture.source,i.x,i.y,i.width,i.height,g.anchor.x*-i.width*g.scale.x+g.position.x+.5|0,g.anchor.y*-i.height*g.scale.y+g.position.y+.5|0,i.width*g.scale.x,i.height*g.scale.y);else{e||(e=!0),b.DisplayObject.prototype.updateTransform.call(g);var j=g.worldTransform;a.roundPixels?c.setTransform(j.a,j.c,j.b,j.d,0|j.tx,0|j.ty):c.setTransform(j.a,j.c,j.b,j.d,j.tx,j.ty),c.drawImage(h.baseTexture.source,i.x,i.y,i.width,i.height,g.anchor.x*-i.width+.5|0,g.anchor.y*-i.height+.5|0,i.width,i.height)}}}},b.MovieClip=function(a){b.Sprite.call(this,a[0]),this.textures=a,this.animationSpeed=1,this.loop=!0,this.onComplete=null,this.currentFrame=0,this.playing=!1},b.MovieClip.prototype=Object.create(b.Sprite.prototype),b.MovieClip.prototype.constructor=b.MovieClip,Object.defineProperty(b.MovieClip.prototype,"totalFrames",{get:function(){return this.textures.length}}),b.MovieClip.prototype.stop=function(){this.playing=!1},b.MovieClip.prototype.play=function(){this.playing=!0},b.MovieClip.prototype.gotoAndStop=function(a){this.playing=!1,this.currentFrame=a;var b=this.currentFrame+.5|0;this.setTexture(this.textures[b%this.textures.length])},b.MovieClip.prototype.gotoAndPlay=function(a){this.currentFrame=a,this.playing=!0},b.MovieClip.prototype.updateTransform=function(){if(b.Sprite.prototype.updateTransform.call(this),this.playing){this.currentFrame+=this.animationSpeed;var a=this.currentFrame+.5|0;this.currentFrame=this.currentFrame%this.textures.length,this.loop||a<this.textures.length?this.setTexture(this.textures[a%this.textures.length]):a>=this.textures.length&&(this.gotoAndStop(this.textures.length-1),this.onComplete&&this.onComplete())}},b.MovieClip.fromFrames=function(a){for(var c=[],d=0;d<a.length;d++)c.push(new b.Texture.fromFrame(a[d]));return new b.MovieClip(c)},b.MovieClip.fromImages=function(a){for(var c=[],d=0;d<a.length;d++)c.push(new b.Texture.fromImage(a[d]));return new b.MovieClip(c)},b.FilterBlock=function(){this.visible=!0,this.renderable=!0},b.Text=function(a,c){this.canvas=document.createElement("canvas"),this.context=this.canvas.getContext("2d"),b.Sprite.call(this,b.Texture.fromCanvas(this.canvas)),this.setText(a),this.setStyle(c)},b.Text.prototype=Object.create(b.Sprite.prototype),b.Text.prototype.constructor=b.Text,Object.defineProperty(b.Text.prototype,"width",{get:function(){return this.dirty&&(this.updateText(),this.dirty=!1),this.scale.x*this.texture.frame.width},set:function(a){this.scale.x=a/this.texture.frame.width,this._width=a}}),Object.defineProperty(b.Text.prototype,"height",{get:function(){return this.dirty&&(this.updateText(),this.dirty=!1),this.scale.y*this.texture.frame.height},set:function(a){this.scale.y=a/this.texture.frame.height,this._height=a}}),b.Text.prototype.setStyle=function(a){a=a||{},a.font=a.font||"bold 20pt Arial",a.fill=a.fill||"black",a.align=a.align||"left",a.stroke=a.stroke||"black",a.strokeThickness=a.strokeThickness||0,a.wordWrap=a.wordWrap||!1,a.wordWrapWidth=a.wordWrapWidth||100,a.wordWrapWidth=a.wordWrapWidth||100,a.dropShadow=a.dropShadow||!1,a.dropShadowAngle=a.dropShadowAngle||Math.PI/6,a.dropShadowDistance=a.dropShadowDistance||4,a.dropShadowColor=a.dropShadowColor||"black",this.style=a,this.dirty=!0},b.Text.prototype.setText=function(a){this.text=a.toString()||" ",this.dirty=!0},b.Text.prototype.updateText=function(){this.context.font=this.style.font;var a=this.text;this.style.wordWrap&&(a=this.wordWrap(this.text));for(var b=a.split(/(?:\r\n|\r|\n)/),c=[],d=0,e=0;e<b.length;e++){var f=this.context.measureText(b[e]).width;c[e]=f,d=Math.max(d,f)}var g=d+this.style.strokeThickness;this.style.dropShadow&&(g+=this.style.dropShadowDistance),this.canvas.width=g+this.context.lineWidth;var h=this.determineFontHeight("font: "+this.style.font+";")+this.style.strokeThickness,i=h*b.length;this.style.dropShadow&&(i+=this.style.dropShadowDistance),this.canvas.height=i,navigator.isCocoonJS&&this.context.clearRect(0,0,this.canvas.width,this.canvas.height),this.context.font=this.style.font,this.context.strokeStyle=this.style.stroke,this.context.lineWidth=this.style.strokeThickness,this.context.textBaseline="top";var j,k;if(this.style.dropShadow){this.context.fillStyle=this.style.dropShadowColor;var l=Math.sin(this.style.dropShadowAngle)*this.style.dropShadowDistance,m=Math.cos(this.style.dropShadowAngle)*this.style.dropShadowDistance;for(e=0;e<b.length;e++)j=this.style.strokeThickness/2,k=this.style.strokeThickness/2+e*h,"right"===this.style.align?j+=d-c[e]:"center"===this.style.align&&(j+=(d-c[e])/2),this.style.fill&&this.context.fillText(b[e],j+l,k+m)}for(this.context.fillStyle=this.style.fill,e=0;e<b.length;e++)j=this.style.strokeThickness/2,k=this.style.strokeThickness/2+e*h,"right"===this.style.align?j+=d-c[e]:"center"===this.style.align&&(j+=(d-c[e])/2),this.style.stroke&&this.style.strokeThickness&&this.context.strokeText(b[e],j,k),this.style.fill&&this.context.fillText(b[e],j,k);this.updateTexture()},b.Text.prototype.updateTexture=function(){this.texture.baseTexture.width=this.canvas.width,this.texture.baseTexture.height=this.canvas.height,this.texture.crop.width=this.texture.frame.width=this.canvas.width,this.texture.crop.height=this.texture.frame.height=this.canvas.height,this._width=this.canvas.width,this._height=this.canvas.height,this.requiresUpdate=!0},b.Text.prototype._renderWebGL=function(a){this.requiresUpdate&&(this.requiresUpdate=!1,b.updateWebGLTexture(this.texture.baseTexture,a.gl)),b.Sprite.prototype._renderWebGL.call(this,a)},b.Text.prototype.updateTransform=function(){this.dirty&&(this.updateText(),this.dirty=!1),b.Sprite.prototype.updateTransform.call(this)},b.Text.prototype.determineFontHeight=function(a){var c=b.Text.heightCache[a];if(!c){var d=document.getElementsByTagName("body")[0],e=document.createElement("div"),f=document.createTextNode("M");e.appendChild(f),e.setAttribute("style",a+";position:absolute;top:0;left:0"),d.appendChild(e),c=e.offsetHeight,b.Text.heightCache[a]=c,d.removeChild(e)}return c},b.Text.prototype.wordWrap=function(a){for(var b="",c=a.split("\n"),d=0;d<c.length;d++){for(var e=this.style.wordWrapWidth,f=c[d].split(" "),g=0;g<f.length;g++){var h=this.context.measureText(f[g]).width,i=h+this.context.measureText(" ").width;0===g||i>e?(g>0&&(b+="\n"),b+=f[g],e=this.style.wordWrapWidth-h):(e-=i,b+=" "+f[g])}d<c.length-1&&(b+="\n")}return b},b.Text.prototype.destroy=function(a){this.context=null,this.canvas=null,this.texture.destroy(void 0===a?!0:a)},b.Text.heightCache={},b.BitmapText=function(a,c){b.DisplayObjectContainer.call(this),this._pool=[],this.setText(a),this.setStyle(c),this.updateText(),this.dirty=!1},b.BitmapText.prototype=Object.create(b.DisplayObjectContainer.prototype),b.BitmapText.prototype.constructor=b.BitmapText,b.BitmapText.prototype.setText=function(a){this.text=a||" ",this.dirty=!0},b.BitmapText.prototype.setStyle=function(a){a=a||{},a.align=a.align||"left",this.style=a;var c=a.font.split(" ");this.fontName=c[c.length-1],this.fontSize=c.length>=2?parseInt(c[c.length-2],10):b.BitmapText.fonts[this.fontName].size,this.dirty=!0,this.tint=a.tint},b.BitmapText.prototype.updateText=function(){for(var a=b.BitmapText.fonts[this.fontName],c=new b.Point,d=null,e=[],f=0,g=[],h=0,i=this.fontSize/a.size,j=0;j<this.text.length;j++){var k=this.text.charCodeAt(j);if(/(?:\r\n|\r|\n)/.test(this.text.charAt(j)))g.push(c.x),f=Math.max(f,c.x),h++,c.x=0,c.y+=a.lineHeight,d=null;else{var l=a.chars[k];l&&(d&&l[d]&&(c.x+=l.kerning[d]),e.push({texture:l.texture,line:h,charCode:k,position:new b.Point(c.x+l.xOffset,c.y+l.yOffset)}),c.x+=l.xAdvance,d=k)}}g.push(c.x),f=Math.max(f,c.x);var m=[];for(j=0;h>=j;j++){var n=0;"right"===this.style.align?n=f-g[j]:"center"===this.style.align&&(n=(f-g[j])/2),m.push(n)}var o=this.children.length,p=e.length,q=this.tint||16777215;for(j=0;p>j;j++){var r=o>j?this.children[j]:this._pool.pop();r?r.setTexture(e[j].texture):r=new b.Sprite(e[j].texture),r.position.x=(e[j].position.x+m[e[j].line])*i,r.position.y=e[j].position.y*i,r.scale.x=r.scale.y=i,r.tint=q,r.parent||this.addChild(r)}for(;this.children.length>p;){var s=this.getChildAt(this.children.length-1);this._pool.push(s),this.removeChild(s)}this.textWidth=f*i,this.textHeight=(c.y+a.lineHeight)*i},b.BitmapText.prototype.updateTransform=function(){this.dirty&&(this.updateText(),this.dirty=!1),b.DisplayObjectContainer.prototype.updateTransform.call(this)},b.BitmapText.fonts={},b.InteractionData=function(){this.global=new b.Point,this.target=null,this.originalEvent=null},b.InteractionData.prototype.getLocalPosition=function(a){var c=a.worldTransform,d=this.global,e=c.a,f=c.b,g=c.tx,h=c.c,i=c.d,j=c.ty,k=1/(e*i+f*-h);return new b.Point(i*k*d.x+-f*k*d.y+(j*f-g*i)*k,e*k*d.y+-h*k*d.x+(-j*e+g*h)*k)},b.InteractionData.prototype.constructor=b.InteractionData,b.InteractionManager=function(a){this.stage=a,this.mouse=new b.InteractionData,this.touchs={},this.tempPoint=new b.Point,this.mouseoverEnabled=!0,this.pool=[],this.interactiveItems=[],this.interactionDOMElement=null,this.onMouseMove=this.onMouseMove.bind(this),this.onMouseDown=this.onMouseDown.bind(this),this.onMouseOut=this.onMouseOut.bind(this),this.onMouseUp=this.onMouseUp.bind(this),this.onTouchStart=this.onTouchStart.bind(this),this.onTouchEnd=this.onTouchEnd.bind(this),this.onTouchMove=this.onTouchMove.bind(this),this.last=0,this.currentCursorStyle="inherit",this.mouseOut=!1},b.InteractionManager.prototype.constructor=b.InteractionManager,b.InteractionManager.prototype.collectInteractiveSprite=function(a,b){for(var c=a.children,d=c.length,e=d-1;e>=0;e--){var f=c[e];f._interactive?(b.interactiveChildren=!0,this.interactiveItems.push(f),f.children.length>0&&this.collectInteractiveSprite(f,f)):(f.__iParent=null,f.children.length>0&&this.collectInteractiveSprite(f,b))}},b.InteractionManager.prototype.setTarget=function(a){this.target=a,null===this.interactionDOMElement&&this.setTargetDomElement(a.view)},b.InteractionManager.prototype.setTargetDomElement=function(a){this.removeEvents(),window.navigator.msPointerEnabled&&(a.style["-ms-content-zooming"]="none",a.style["-ms-touch-action"]="none"),this.interactionDOMElement=a,a.addEventListener("mousemove",this.onMouseMove,!0),a.addEventListener("mousedown",this.onMouseDown,!0),a.addEventListener("mouseout",this.onMouseOut,!0),a.addEventListener("touchstart",this.onTouchStart,!0),a.addEventListener("touchend",this.onTouchEnd,!0),a.addEventListener("touchmove",this.onTouchMove,!0),window.addEventListener("mouseup",this.onMouseUp,!0)},b.InteractionManager.prototype.removeEvents=function(){this.interactionDOMElement&&(this.interactionDOMElement.style["-ms-content-zooming"]="",this.interactionDOMElement.style["-ms-touch-action"]="",this.interactionDOMElement.removeEventListener("mousemove",this.onMouseMove,!0),this.interactionDOMElement.removeEventListener("mousedown",this.onMouseDown,!0),this.interactionDOMElement.removeEventListener("mouseout",this.onMouseOut,!0),this.interactionDOMElement.removeEventListener("touchstart",this.onTouchStart,!0),this.interactionDOMElement.removeEventListener("touchend",this.onTouchEnd,!0),this.interactionDOMElement.removeEventListener("touchmove",this.onTouchMove,!0),this.interactionDOMElement=null,window.removeEventListener("mouseup",this.onMouseUp,!0))},b.InteractionManager.prototype.update=function(){if(this.target){var a=Date.now(),c=a-this.last;if(c=c*b.INTERACTION_FREQUENCY/1e3,!(1>c)){this.last=a;var d=0;this.dirty&&this.rebuildInteractiveGraph();var e=this.interactiveItems.length,f="inherit",g=!1;for(d=0;e>d;d++){var h=this.interactiveItems[d];h.__hit=this.hitTest(h,this.mouse),this.mouse.target=h,h.__hit&&!g?(h.buttonMode&&(f=h.defaultCursor),h.interactiveChildren||(g=!0),h.__isOver||(h.mouseover&&h.mouseover(this.mouse),h.__isOver=!0)):h.__isOver&&(h.mouseout&&h.mouseout(this.mouse),h.__isOver=!1)}this.currentCursorStyle!==f&&(this.currentCursorStyle=f,this.interactionDOMElement.style.cursor=f)}}},b.InteractionManager.prototype.rebuildInteractiveGraph=function(){this.dirty=!1;for(var a=this.interactiveItems.length,b=0;a>b;b++)this.interactiveItems[b].interactiveChildren=!1;this.interactiveItems=[],this.stage.interactive&&this.interactiveItems.push(this.stage),this.collectInteractiveSprite(this.stage,this.stage)},b.InteractionManager.prototype.onMouseMove=function(a){this.dirty&&this.rebuildInteractiveGraph(),this.mouse.originalEvent=a||window.event;var b=this.interactionDOMElement.getBoundingClientRect();this.mouse.global.x=(a.clientX-b.left)*(this.target.width/b.width),this.mouse.global.y=(a.clientY-b.top)*(this.target.height/b.height);for(var c=this.interactiveItems.length,d=0;c>d;d++){var e=this.interactiveItems[d];e.mousemove&&e.mousemove(this.mouse)}},b.InteractionManager.prototype.onMouseDown=function(a){this.dirty&&this.rebuildInteractiveGraph(),this.mouse.originalEvent=a||window.event,b.AUTO_PREVENT_DEFAULT&&this.mouse.originalEvent.preventDefault();for(var c=this.interactiveItems.length,d=0;c>d;d++){var e=this.interactiveItems[d];if((e.mousedown||e.click)&&(e.__mouseIsDown=!0,e.__hit=this.hitTest(e,this.mouse),e.__hit&&(e.mousedown&&e.mousedown(this.mouse),e.__isDown=!0,!e.interactiveChildren)))break}},b.InteractionManager.prototype.onMouseOut=function(){this.dirty&&this.rebuildInteractiveGraph();var a=this.interactiveItems.length;this.interactionDOMElement.style.cursor="inherit";for(var b=0;a>b;b++){var c=this.interactiveItems[b];c.__isOver&&(this.mouse.target=c,c.mouseout&&c.mouseout(this.mouse),c.__isOver=!1)}this.mouseOut=!0,this.mouse.global.x=-1e4,this.mouse.global.y=-1e4},b.InteractionManager.prototype.onMouseUp=function(a){this.dirty&&this.rebuildInteractiveGraph(),this.mouse.originalEvent=a||window.event;
-for(var b=this.interactiveItems.length,c=!1,d=0;b>d;d++){var e=this.interactiveItems[d];e.__hit=this.hitTest(e,this.mouse),e.__hit&&!c?(e.mouseup&&e.mouseup(this.mouse),e.__isDown&&e.click&&e.click(this.mouse),e.interactiveChildren||(c=!0)):e.__isDown&&e.mouseupoutside&&e.mouseupoutside(this.mouse),e.__isDown=!1}},b.InteractionManager.prototype.hitTest=function(a,c){var d=c.global;if(!a.worldVisible)return!1;var e=a instanceof b.Sprite,f=a.worldTransform,g=f.a,h=f.b,i=f.tx,j=f.c,k=f.d,l=f.ty,m=1/(g*k+h*-j),n=k*m*d.x+-h*m*d.y+(l*h-i*k)*m,o=g*m*d.y+-j*m*d.x+(-l*g+i*j)*m;if(c.target=a,a.hitArea&&a.hitArea.contains)return a.hitArea.contains(n,o)?(c.target=a,!0):!1;if(e){var p,q=a.texture.frame.width,r=a.texture.frame.height,s=-q*a.anchor.x;if(n>s&&s+q>n&&(p=-r*a.anchor.y,o>p&&p+r>o))return c.target=a,!0}for(var t=a.children.length,u=0;t>u;u++){var v=a.children[u],w=this.hitTest(v,c);if(w)return c.target=a,!0}return!1},b.InteractionManager.prototype.onTouchMove=function(a){this.dirty&&this.rebuildInteractiveGraph();var b,c=this.interactionDOMElement.getBoundingClientRect(),d=a.changedTouches,e=0;for(e=0;e<d.length;e++){var f=d[e];b=this.touchs[f.identifier],b.originalEvent=a||window.event,b.global.x=(f.clientX-c.left)*(this.target.width/c.width),b.global.y=(f.clientY-c.top)*(this.target.height/c.height),navigator.isCocoonJS&&(b.global.x=f.clientX,b.global.y=f.clientY);for(var g=0;g<this.interactiveItems.length;g++){var h=this.interactiveItems[g];h.touchmove&&h.__touchData&&h.__touchData[f.identifier]&&h.touchmove(b)}}},b.InteractionManager.prototype.onTouchStart=function(a){this.dirty&&this.rebuildInteractiveGraph();var c=this.interactionDOMElement.getBoundingClientRect();b.AUTO_PREVENT_DEFAULT&&a.preventDefault();for(var d=a.changedTouches,e=0;e<d.length;e++){var f=d[e],g=this.pool.pop();g||(g=new b.InteractionData),g.originalEvent=a||window.event,this.touchs[f.identifier]=g,g.global.x=(f.clientX-c.left)*(this.target.width/c.width),g.global.y=(f.clientY-c.top)*(this.target.height/c.height),navigator.isCocoonJS&&(g.global.x=f.clientX,g.global.y=f.clientY);for(var h=this.interactiveItems.length,i=0;h>i;i++){var j=this.interactiveItems[i];if((j.touchstart||j.tap)&&(j.__hit=this.hitTest(j,g),j.__hit&&(j.touchstart&&j.touchstart(g),j.__isDown=!0,j.__touchData=j.__touchData||{},j.__touchData[f.identifier]=g,!j.interactiveChildren)))break}}},b.InteractionManager.prototype.onTouchEnd=function(a){this.dirty&&this.rebuildInteractiveGraph();for(var b=this.interactionDOMElement.getBoundingClientRect(),c=a.changedTouches,d=0;d<c.length;d++){var e=c[d],f=this.touchs[e.identifier],g=!1;f.global.x=(e.clientX-b.left)*(this.target.width/b.width),f.global.y=(e.clientY-b.top)*(this.target.height/b.height),navigator.isCocoonJS&&(f.global.x=e.clientX,f.global.y=e.clientY);for(var h=this.interactiveItems.length,i=0;h>i;i++){var j=this.interactiveItems[i];j.__touchData&&j.__touchData[e.identifier]&&(j.__hit=this.hitTest(j,j.__touchData[e.identifier]),f.originalEvent=a||window.event,(j.touchend||j.tap)&&(j.__hit&&!g?(j.touchend&&j.touchend(f),j.__isDown&&j.tap&&j.tap(f),j.interactiveChildren||(g=!0)):j.__isDown&&j.touchendoutside&&j.touchendoutside(f),j.__isDown=!1),j.__touchData[e.identifier]=null)}this.pool.push(f),this.touchs[e.identifier]=null}},b.Stage=function(a){b.DisplayObjectContainer.call(this),this.worldTransform=new b.Matrix,this.interactive=!0,this.interactionManager=new b.InteractionManager(this),this.dirty=!0,this.stage=this,this.stage.hitArea=new b.Rectangle(0,0,1e5,1e5),this.setBackgroundColor(a)},b.Stage.prototype=Object.create(b.DisplayObjectContainer.prototype),b.Stage.prototype.constructor=b.Stage,b.Stage.prototype.setInteractionDelegate=function(a){this.interactionManager.setTargetDomElement(a)},b.Stage.prototype.updateTransform=function(){this.worldAlpha=1;for(var a=0,b=this.children.length;b>a;a++)this.children[a].updateTransform();this.dirty&&(this.dirty=!1,this.interactionManager.dirty=!0),this.interactive&&this.interactionManager.update()},b.Stage.prototype.setBackgroundColor=function(a){this.backgroundColor=a||0,this.backgroundColorSplit=b.hex2rgb(this.backgroundColor);var c=this.backgroundColor.toString(16);c="000000".substr(0,6-c.length)+c,this.backgroundColorString="#"+c},b.Stage.prototype.getMousePosition=function(){return this.interactionManager.mouse.global};for(var c=0,d=["ms","moz","webkit","o"],e=0;e<d.length&&!window.requestAnimationFrame;++e)window.requestAnimationFrame=window[d[e]+"RequestAnimationFrame"],window.cancelAnimationFrame=window[d[e]+"CancelAnimationFrame"]||window[d[e]+"CancelRequestAnimationFrame"];window.requestAnimationFrame||(window.requestAnimationFrame=function(a){var b=(new Date).getTime(),d=Math.max(0,16-(b-c)),e=window.setTimeout(function(){a(b+d)},d);return c=b+d,e}),window.cancelAnimationFrame||(window.cancelAnimationFrame=function(a){clearTimeout(a)}),window.requestAnimFrame=window.requestAnimationFrame,b.hex2rgb=function(a){return[(a>>16&255)/255,(a>>8&255)/255,(255&a)/255]},b.rgb2hex=function(a){return(255*a[0]<<16)+(255*a[1]<<8)+255*a[2]},"function"!=typeof Function.prototype.bind&&(Function.prototype.bind=function(){var a=Array.prototype.slice;return function(b){function c(){var f=e.concat(a.call(arguments));d.apply(this instanceof c?this:b,f)}var d=this,e=a.call(arguments,1);if("function"!=typeof d)throw new TypeError;return c.prototype=function f(a){return a&&(f.prototype=a),this instanceof f?void 0:new f}(d.prototype),c}}()),b.AjaxRequest=function(){var a=["Msxml2.XMLHTTP.6.0","Msxml2.XMLHTTP.3.0","Microsoft.XMLHTTP"];if(!window.ActiveXObject)return window.XMLHttpRequest?new window.XMLHttpRequest:!1;for(var b=0;b<a.length;b++)try{return new window.ActiveXObject(a[b])}catch(c){}},b.canUseNewCanvasBlendModes=function(){var a=document.createElement("canvas");a.width=1,a.height=1;var b=a.getContext("2d");return b.fillStyle="#000",b.fillRect(0,0,1,1),b.globalCompositeOperation="multiply",b.fillStyle="#fff",b.fillRect(0,0,1,1),0===b.getImageData(0,0,1,1).data[0]},b.getNextPowerOfTwo=function(a){if(a>0&&0===(a&a-1))return a;for(var b=1;a>b;)b<<=1;return b},b.EventTarget=function(){var a={};this.addEventListener=this.on=function(b,c){void 0===a[b]&&(a[b]=[]),-1===a[b].indexOf(c)&&a[b].unshift(c)},this.dispatchEvent=this.emit=function(b){if(a[b.type]&&a[b.type].length)for(var c=a[b.type].length-1;c>=0;c--)a[b.type][c](b)},this.removeEventListener=this.off=function(b,c){if(void 0!==a[b]){var d=a[b].indexOf(c);-1!==d&&a[b].splice(d,1)}},this.removeAllEventListeners=function(b){var c=a[b];c&&(c.length=0)}},b.autoDetectRenderer=function(a,c,d,e,f){a||(a=800),c||(c=600);var g=function(){try{var a=document.createElement("canvas");return!!window.WebGLRenderingContext&&(a.getContext("webgl")||a.getContext("experimental-webgl"))}catch(b){return!1}}();return g?new b.WebGLRenderer(a,c,d,e,f):new b.CanvasRenderer(a,c,d,e)},b.autoDetectRecommendedRenderer=function(a,c,d,e,f){a||(a=800),c||(c=600);var g=function(){try{var a=document.createElement("canvas");return!!window.WebGLRenderingContext&&(a.getContext("webgl")||a.getContext("experimental-webgl"))}catch(b){return!1}}(),h=/Android/i.test(navigator.userAgent);return g&&!h?new b.WebGLRenderer(a,c,d,e,f):new b.CanvasRenderer(a,c,d,e)},b.PolyK={},b.PolyK.Triangulate=function(a){var c=!0,d=a.length>>1;if(3>d)return[];for(var e=[],f=[],g=0;d>g;g++)f.push(g);g=0;for(var h=d;h>3;){var i=f[(g+0)%h],j=f[(g+1)%h],k=f[(g+2)%h],l=a[2*i],m=a[2*i+1],n=a[2*j],o=a[2*j+1],p=a[2*k],q=a[2*k+1],r=!1;if(b.PolyK._convex(l,m,n,o,p,q,c)){r=!0;for(var s=0;h>s;s++){var t=f[s];if(t!==i&&t!==j&&t!==k&&b.PolyK._PointInTriangle(a[2*t],a[2*t+1],l,m,n,o,p,q)){r=!1;break}}}if(r)e.push(i,j,k),f.splice((g+1)%h,1),h--,g=0;else if(g++>3*h){if(!c)return window.console.log("PIXI Warning: shape too complex to fill"),[];for(e=[],f=[],g=0;d>g;g++)f.push(g);g=0,h=d,c=!1}}return e.push(f[0],f[1],f[2]),e},b.PolyK._PointInTriangle=function(a,b,c,d,e,f,g,h){var i=g-c,j=h-d,k=e-c,l=f-d,m=a-c,n=b-d,o=i*i+j*j,p=i*k+j*l,q=i*m+j*n,r=k*k+l*l,s=k*m+l*n,t=1/(o*r-p*p),u=(r*q-p*s)*t,v=(o*s-p*q)*t;return u>=0&&v>=0&&1>u+v},b.PolyK._convex=function(a,b,c,d,e,f,g){return(b-d)*(e-c)+(c-a)*(f-d)>=0===g},b.initDefaultShaders=function(){},b.CompileVertexShader=function(a,c){return b._CompileShader(a,c,a.VERTEX_SHADER)},b.CompileFragmentShader=function(a,c){return b._CompileShader(a,c,a.FRAGMENT_SHADER)},b._CompileShader=function(a,b,c){var d=b.join("\n"),e=a.createShader(c);return a.shaderSource(e,d),a.compileShader(e),a.getShaderParameter(e,a.COMPILE_STATUS)?e:(window.console.log(a.getShaderInfoLog(e)),null)},b.compileProgram=function(a,c,d){var e=b.CompileFragmentShader(a,d),f=b.CompileVertexShader(a,c),g=a.createProgram();return a.attachShader(g,f),a.attachShader(g,e),a.linkProgram(g),a.getProgramParameter(g,a.LINK_STATUS)||window.console.log("Could not initialise shaders"),g},b.PixiShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision lowp float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord) * vColor ;","}"],this.textureCount=0,this.attributes=[],this.init()},b.PixiShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc||b.PixiShader.defaultVertexSrc,this.fragmentSrc);a.useProgram(c),this.uSampler=a.getUniformLocation(c,"uSampler"),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.dimensions=a.getUniformLocation(c,"dimensions"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.aTextureCoord=a.getAttribLocation(c,"aTextureCoord"),this.colorAttribute=a.getAttribLocation(c,"aColor"),-1===this.colorAttribute&&(this.colorAttribute=2),this.attributes=[this.aVertexPosition,this.aTextureCoord,this.colorAttribute];for(var d in this.uniforms)this.uniforms[d].uniformLocation=a.getUniformLocation(c,d);this.initUniforms(),this.program=c},b.PixiShader.prototype.initUniforms=function(){this.textureCount=1;var a,b=this.gl;for(var c in this.uniforms){a=this.uniforms[c];var d=a.type;"sampler2D"===d?(a._init=!1,null!==a.value&&this.initSampler2D(a)):"mat2"===d||"mat3"===d||"mat4"===d?(a.glMatrix=!0,a.glValueLength=1,"mat2"===d?a.glFunc=b.uniformMatrix2fv:"mat3"===d?a.glFunc=b.uniformMatrix3fv:"mat4"===d&&(a.glFunc=b.uniformMatrix4fv)):(a.glFunc=b["uniform"+d],a.glValueLength="2f"===d||"2i"===d?2:"3f"===d||"3i"===d?3:"4f"===d||"4i"===d?4:1)}},b.PixiShader.prototype.initSampler2D=function(a){if(a.value&&a.value.baseTexture&&a.value.baseTexture.hasLoaded){var b=this.gl;if(b.activeTexture(b["TEXTURE"+this.textureCount]),b.bindTexture(b.TEXTURE_2D,a.value.baseTexture._glTextures[b.id]),a.textureData){var c=a.textureData,d=c.magFilter?c.magFilter:b.LINEAR,e=c.minFilter?c.minFilter:b.LINEAR,f=c.wrapS?c.wrapS:b.CLAMP_TO_EDGE,g=c.wrapT?c.wrapT:b.CLAMP_TO_EDGE,h=c.luminance?b.LUMINANCE:b.RGBA;if(c.repeat&&(f=b.REPEAT,g=b.REPEAT),b.pixelStorei(b.UNPACK_FLIP_Y_WEBGL,!!c.flipY),c.width){var i=c.width?c.width:512,j=c.height?c.height:2,k=c.border?c.border:0;b.texImage2D(b.TEXTURE_2D,0,h,i,j,k,h,b.UNSIGNED_BYTE,null)}else b.texImage2D(b.TEXTURE_2D,0,h,b.RGBA,b.UNSIGNED_BYTE,a.value.baseTexture.source);b.texParameteri(b.TEXTURE_2D,b.TEXTURE_MAG_FILTER,d),b.texParameteri(b.TEXTURE_2D,b.TEXTURE_MIN_FILTER,e),b.texParameteri(b.TEXTURE_2D,b.TEXTURE_WRAP_S,f),b.texParameteri(b.TEXTURE_2D,b.TEXTURE_WRAP_T,g)}b.uniform1i(a.uniformLocation,this.textureCount),a._init=!0,this.textureCount++}},b.PixiShader.prototype.syncUniforms=function(){this.textureCount=1;var a,c=this.gl;for(var d in this.uniforms)a=this.uniforms[d],1===a.glValueLength?a.glMatrix===!0?a.glFunc.call(c,a.uniformLocation,a.transpose,a.value):a.glFunc.call(c,a.uniformLocation,a.value):2===a.glValueLength?a.glFunc.call(c,a.uniformLocation,a.value.x,a.value.y):3===a.glValueLength?a.glFunc.call(c,a.uniformLocation,a.value.x,a.value.y,a.value.z):4===a.glValueLength?a.glFunc.call(c,a.uniformLocation,a.value.x,a.value.y,a.value.z,a.value.w):"sampler2D"===a.type&&(a._init?(c.activeTexture(c["TEXTURE"+this.textureCount]),c.bindTexture(c.TEXTURE_2D,a.value.baseTexture._glTextures[c.id]||b.createWebGLTexture(a.value.baseTexture,c)),c.uniform1i(a.uniformLocation,this.textureCount),this.textureCount++):this.initSampler2D(a))},b.PixiShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attributes=null},b.PixiShader.defaultVertexSrc=["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute vec2 aColor;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","varying vec2 vTextureCoord;","varying vec4 vColor;","const vec2 center = vec2(-1.0, 1.0);","void main(void) {","   gl_Position = vec4( ((aVertexPosition + offsetVector) / projectionVector) + center , 0.0, 1.0);","   vTextureCoord = aTextureCoord;","   vec3 color = mod(vec3(aColor.y/65536.0, aColor.y/256.0, aColor.y), 256.0) / 256.0;","   vColor = vec4(color * aColor.x, aColor.x);","}"],b.PixiFastShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision lowp float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord) * vColor ;","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","attribute vec2 aPositionCoord;","attribute vec2 aScale;","attribute float aRotation;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","uniform mat3 uMatrix;","varying vec2 vTextureCoord;","varying float vColor;","const vec2 center = vec2(-1.0, 1.0);","void main(void) {","   vec2 v;","   vec2 sv = aVertexPosition * aScale;","   v.x = (sv.x) * cos(aRotation) - (sv.y) * sin(aRotation);","   v.y = (sv.x) * sin(aRotation) + (sv.y) * cos(aRotation);","   v = ( uMatrix * vec3(v + aPositionCoord , 1.0) ).xy ;","   gl_Position = vec4( ( v / projectionVector) + center , 0.0, 1.0);","   vTextureCoord = aTextureCoord;","   vColor = aColor;","}"],this.textureCount=0,this.init()},b.PixiFastShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.uSampler=a.getUniformLocation(c,"uSampler"),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.dimensions=a.getUniformLocation(c,"dimensions"),this.uMatrix=a.getUniformLocation(c,"uMatrix"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.aPositionCoord=a.getAttribLocation(c,"aPositionCoord"),this.aScale=a.getAttribLocation(c,"aScale"),this.aRotation=a.getAttribLocation(c,"aRotation"),this.aTextureCoord=a.getAttribLocation(c,"aTextureCoord"),this.colorAttribute=a.getAttribLocation(c,"aColor"),-1===this.colorAttribute&&(this.colorAttribute=2),this.attributes=[this.aVertexPosition,this.aPositionCoord,this.aScale,this.aRotation,this.aTextureCoord,this.colorAttribute],this.program=c},b.PixiFastShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attributes=null},b.StripShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","uniform float alpha;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","uniform mat3 translationMatrix;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","varying vec2 vTextureCoord;","void main(void) {","   vec3 v = translationMatrix * vec3(aVertexPosition , 1.0);","   v -= offsetVector.xyx;","   gl_Position = vec4( v.x / projectionVector.x -1.0, v.y / -projectionVector.y + 1.0 , 0.0, 1.0);","   vTextureCoord = aTextureCoord;","}"],this.init()},b.StripShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.uSampler=a.getUniformLocation(c,"uSampler"),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.colorAttribute=a.getAttribLocation(c,"aColor"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.aTextureCoord=a.getAttribLocation(c,"aTextureCoord"),this.attributes=[this.aVertexPosition,this.aTextureCoord],this.translationMatrix=a.getUniformLocation(c,"translationMatrix"),this.alpha=a.getUniformLocation(c,"alpha"),this.program=c},b.PrimitiveShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision mediump float;","varying vec4 vColor;","void main(void) {","   gl_FragColor = vColor;","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","attribute vec4 aColor;","uniform mat3 translationMatrix;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","uniform float alpha;","uniform vec3 tint;","varying vec4 vColor;","void main(void) {","   vec3 v = translationMatrix * vec3(aVertexPosition , 1.0);","   v -= offsetVector.xyx;","   gl_Position = vec4( v.x / projectionVector.x -1.0, v.y / -projectionVector.y + 1.0 , 0.0, 1.0);","   vColor = aColor * vec4(tint * alpha, alpha);","}"],this.init()},b.PrimitiveShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.tintColor=a.getUniformLocation(c,"tint"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.colorAttribute=a.getAttribLocation(c,"aColor"),this.attributes=[this.aVertexPosition,this.colorAttribute],this.translationMatrix=a.getUniformLocation(c,"translationMatrix"),this.alpha=a.getUniformLocation(c,"alpha"),this.program=c},b.PrimitiveShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attribute=null},b.ComplexPrimitiveShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision mediump float;","varying vec4 vColor;","void main(void) {","   gl_FragColor = vColor;","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","uniform mat3 translationMatrix;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","uniform vec3 tint;","uniform float alpha;","uniform vec3 color;","varying vec4 vColor;","void main(void) {","   vec3 v = translationMatrix * vec3(aVertexPosition , 1.0);","   v -= offsetVector.xyx;","   gl_Position = vec4( v.x / projectionVector.x -1.0, v.y / -projectionVector.y + 1.0 , 0.0, 1.0);","   vColor = vec4(color * alpha * tint, alpha);","}"],this.init()},b.ComplexPrimitiveShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.tintColor=a.getUniformLocation(c,"tint"),this.color=a.getUniformLocation(c,"color"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.attributes=[this.aVertexPosition,this.colorAttribute],this.translationMatrix=a.getUniformLocation(c,"translationMatrix"),this.alpha=a.getUniformLocation(c,"alpha"),this.program=c},b.ComplexPrimitiveShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attribute=null},b.WebGLGraphics=function(){},b.WebGLGraphics.renderGraphics=function(a,c){var d,e=c.gl,f=c.projection,g=c.offset,h=c.shaderManager.primitiveShader;a.dirty&&b.WebGLGraphics.updateGraphics(a,e);for(var i=a._webGL[e.id],j=0;j<i.data.length;j++)1===i.data[j].mode?(d=i.data[j],c.stencilManager.pushStencil(a,d,c),e.drawElements(e.TRIANGLE_FAN,4,e.UNSIGNED_SHORT,2*(d.indices.length-4)),c.stencilManager.popStencil(a,d,c),this.last=d.mode):(d=i.data[j],c.shaderManager.setShader(h),h=c.shaderManager.primitiveShader,e.uniformMatrix3fv(h.translationMatrix,!1,a.worldTransform.toArray(!0)),e.uniform2f(h.projectionVector,f.x,-f.y),e.uniform2f(h.offsetVector,-g.x,-g.y),e.uniform3fv(h.tintColor,b.hex2rgb(a.tint)),e.uniform1f(h.alpha,a.worldAlpha),e.bindBuffer(e.ARRAY_BUFFER,d.buffer),e.vertexAttribPointer(h.aVertexPosition,2,e.FLOAT,!1,24,0),e.vertexAttribPointer(h.colorAttribute,4,e.FLOAT,!1,24,8),e.bindBuffer(e.ELEMENT_ARRAY_BUFFER,d.indexBuffer),e.drawElements(e.TRIANGLE_STRIP,d.indices.length,e.UNSIGNED_SHORT,0))},b.WebGLGraphics.updateGraphics=function(a,c){var d=a._webGL[c.id];d||(d=a._webGL[c.id]={lastIndex:0,data:[],gl:c}),a.dirty=!1;var e;if(a.clearDirty){for(a.clearDirty=!1,e=0;e<d.data.length;e++){var f=d.data[e];f.reset(),b.WebGLGraphics.graphicsDataPool.push(f)}d.data=[],d.lastIndex=0}var g;for(e=d.lastIndex;e<a.graphicsData.length;e++){var h=a.graphicsData[e];h.type===b.Graphics.POLY?(h.fill&&h.points.length>6&&(h.points.length>10?(g=b.WebGLGraphics.switchMode(d,1),b.WebGLGraphics.buildComplexPoly(h,g)):(g=b.WebGLGraphics.switchMode(d,0),b.WebGLGraphics.buildPoly(h,g))),h.lineWidth>0&&(g=b.WebGLGraphics.switchMode(d,0),b.WebGLGraphics.buildLine(h,g))):(g=b.WebGLGraphics.switchMode(d,0),h.type===b.Graphics.RECT?b.WebGLGraphics.buildRectangle(h,g):h.type===b.Graphics.CIRC||h.type===b.Graphics.ELIP?b.WebGLGraphics.buildCircle(h,g):h.type===b.Graphics.RREC&&b.WebGLGraphics.buildRoundedRectangle(h,g)),d.lastIndex++}for(e=0;e<d.data.length;e++)g=d.data[e],g.dirty&&g.upload()},b.WebGLGraphics.switchMode=function(a,c){var d;return a.data.length?(d=a.data[a.data.length-1],(d.mode!==c||1===c)&&(d=b.WebGLGraphics.graphicsDataPool.pop()||new b.WebGLGraphicsData(a.gl),d.mode=c,a.data.push(d))):(d=b.WebGLGraphics.graphicsDataPool.pop()||new b.WebGLGraphicsData(a.gl),d.mode=c,a.data.push(d)),d.dirty=!0,d},b.WebGLGraphics.buildRectangle=function(a,c){var d=a.points,e=d[0],f=d[1],g=d[2],h=d[3];if(a.fill){var i=b.hex2rgb(a.fillColor),j=a.fillAlpha,k=i[0]*j,l=i[1]*j,m=i[2]*j,n=c.points,o=c.indices,p=n.length/6;n.push(e,f),n.push(k,l,m,j),n.push(e+g,f),n.push(k,l,m,j),n.push(e,f+h),n.push(k,l,m,j),n.push(e+g,f+h),n.push(k,l,m,j),o.push(p,p,p+1,p+2,p+3,p+3)}if(a.lineWidth){var q=a.points;a.points=[e,f,e+g,f,e+g,f+h,e,f+h,e,f],b.WebGLGraphics.buildLine(a,c),a.points=q}},b.WebGLGraphics.buildRoundedRectangle=function(a,c){var d=a.points,e=d[0],f=d[1],g=d[2],h=d[3],i=d[4],j=[];if(j.push(e,f+i),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e,f+h-i,e,f+h,e+i,f+h)),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e+g-i,f+h,e+g,f+h,e+g,f+h-i)),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e+g,f+i,e+g,f,e+g-i,f)),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e+i,f,e,f,e,f+i)),a.fill){var k=b.hex2rgb(a.fillColor),l=a.fillAlpha,m=k[0]*l,n=k[1]*l,o=k[2]*l,p=c.points,q=c.indices,r=p.length/6,s=b.PolyK.Triangulate(j),t=0;for(t=0;t<s.length;t+=3)q.push(s[t]+r),q.push(s[t]+r),q.push(s[t+1]+r),q.push(s[t+2]+r),q.push(s[t+2]+r);for(t=0;t<j.length;t++)p.push(j[t],j[++t],m,n,o,l)}if(a.lineWidth){var u=a.points;a.points=j,b.WebGLGraphics.buildLine(a,c),a.points=u}},b.WebGLGraphics.quadraticBezierCurve=function(a,b,c,d,e,f){function g(a,b,c){var d=b-a;return a+d*c}for(var h,i,j,k,l,m,n=20,o=[],p=0,q=0;n>=q;q++)p=q/n,h=g(a,c,p),i=g(b,d,p),j=g(c,e,p),k=g(d,f,p),l=g(h,j,p),m=g(i,k,p),o.push(l,m);return o},b.WebGLGraphics.buildCircle=function(a,c){var d=a.points,e=d[0],f=d[1],g=d[2],h=d[3],i=40,j=2*Math.PI/i,k=0;if(a.fill){var l=b.hex2rgb(a.fillColor),m=a.fillAlpha,n=l[0]*m,o=l[1]*m,p=l[2]*m,q=c.points,r=c.indices,s=q.length/6;for(r.push(s),k=0;i+1>k;k++)q.push(e,f,n,o,p,m),q.push(e+Math.sin(j*k)*g,f+Math.cos(j*k)*h,n,o,p,m),r.push(s++,s++);r.push(s-1)}if(a.lineWidth){var t=a.points;for(a.points=[],k=0;i+1>k;k++)a.points.push(e+Math.sin(j*k)*g,f+Math.cos(j*k)*h);b.WebGLGraphics.buildLine(a,c),a.points=t}},b.WebGLGraphics.buildLine=function(a,c){var d=0,e=a.points;if(0!==e.length){if(a.lineWidth%2)for(d=0;d<e.length;d++)e[d]+=.5;var f=new b.Point(e[0],e[1]),g=new b.Point(e[e.length-2],e[e.length-1]);if(f.x===g.x&&f.y===g.y){e=e.slice(),e.pop(),e.pop(),g=new b.Point(e[e.length-2],e[e.length-1]);var h=g.x+.5*(f.x-g.x),i=g.y+.5*(f.y-g.y);e.unshift(h,i),e.push(h,i)}var j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G=c.points,H=c.indices,I=e.length/2,J=e.length,K=G.length/6,L=a.lineWidth/2,M=b.hex2rgb(a.lineColor),N=a.lineAlpha,O=M[0]*N,P=M[1]*N,Q=M[2]*N;for(l=e[0],m=e[1],n=e[2],o=e[3],r=-(m-o),s=l-n,F=Math.sqrt(r*r+s*s),r/=F,s/=F,r*=L,s*=L,G.push(l-r,m-s,O,P,Q,N),G.push(l+r,m+s,O,P,Q,N),d=1;I-1>d;d++)l=e[2*(d-1)],m=e[2*(d-1)+1],n=e[2*d],o=e[2*d+1],p=e[2*(d+1)],q=e[2*(d+1)+1],r=-(m-o),s=l-n,F=Math.sqrt(r*r+s*s),r/=F,s/=F,r*=L,s*=L,t=-(o-q),u=n-p,F=Math.sqrt(t*t+u*u),t/=F,u/=F,t*=L,u*=L,x=-s+m-(-s+o),y=-r+n-(-r+l),z=(-r+l)*(-s+o)-(-r+n)*(-s+m),A=-u+q-(-u+o),B=-t+n-(-t+p),C=(-t+p)*(-u+o)-(-t+n)*(-u+q),D=x*B-A*y,Math.abs(D)<.1?(D+=10.1,G.push(n-r,o-s,O,P,Q,N),G.push(n+r,o+s,O,P,Q,N)):(j=(y*C-B*z)/D,k=(A*z-x*C)/D,E=(j-n)*(j-n)+(k-o)+(k-o),E>19600?(v=r-t,w=s-u,F=Math.sqrt(v*v+w*w),v/=F,w/=F,v*=L,w*=L,G.push(n-v,o-w),G.push(O,P,Q,N),G.push(n+v,o+w),G.push(O,P,Q,N),G.push(n-v,o-w),G.push(O,P,Q,N),J++):(G.push(j,k),G.push(O,P,Q,N),G.push(n-(j-n),o-(k-o)),G.push(O,P,Q,N)));for(l=e[2*(I-2)],m=e[2*(I-2)+1],n=e[2*(I-1)],o=e[2*(I-1)+1],r=-(m-o),s=l-n,F=Math.sqrt(r*r+s*s),r/=F,s/=F,r*=L,s*=L,G.push(n-r,o-s),G.push(O,P,Q,N),G.push(n+r,o+s),G.push(O,P,Q,N),H.push(K),d=0;J>d;d++)H.push(K++);H.push(K-1)}},b.WebGLGraphics.buildComplexPoly=function(a,c){var d=a.points.slice();if(!(d.length<6)){var e=c.indices;c.points=d,c.alpha=a.fillAlpha,c.color=b.hex2rgb(a.fillColor);for(var f,g,h=1/0,i=-1/0,j=1/0,k=-1/0,l=0;l<d.length;l+=2)f=d[l],g=d[l+1],h=h>f?f:h,i=f>i?f:i,j=j>g?g:j,k=g>k?g:k;d.push(h,j,i,j,i,k,h,k);var m=d.length/2;for(l=0;m>l;l++)e.push(l)}},b.WebGLGraphics.buildPoly=function(a,c){var d=a.points;if(!(d.length<6)){var e=c.points,f=c.indices,g=d.length/2,h=b.hex2rgb(a.fillColor),i=a.fillAlpha,j=h[0]*i,k=h[1]*i,l=h[2]*i,m=b.PolyK.Triangulate(d),n=e.length/6,o=0;for(o=0;o<m.length;o+=3)f.push(m[o]+n),f.push(m[o]+n),f.push(m[o+1]+n),f.push(m[o+2]+n),f.push(m[o+2]+n);for(o=0;g>o;o++)e.push(d[2*o],d[2*o+1],j,k,l,i)}},b.WebGLGraphics.graphicsDataPool=[],b.WebGLGraphicsData=function(a){this.gl=a,this.color=[0,0,0],this.points=[],this.indices=[],this.lastIndex=0,this.buffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),this.mode=1,this.alpha=1,this.dirty=!0},b.WebGLGraphicsData.prototype.reset=function(){this.points=[],this.indices=[],this.lastIndex=0},b.WebGLGraphicsData.prototype.upload=function(){var a=this.gl;this.glPoints=new Float32Array(this.points),a.bindBuffer(a.ARRAY_BUFFER,this.buffer),a.bufferData(a.ARRAY_BUFFER,this.glPoints,a.STATIC_DRAW),this.glIndicies=new Uint16Array(this.indices),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,this.glIndicies,a.STATIC_DRAW),this.dirty=!1},b.glContexts=[],b.WebGLRenderer=function(a,c,d,e,f,g){b.defaultRenderer||(b.sayHello("webGL"),b.defaultRenderer=this),this.type=b.WEBGL_RENDERER,this.transparent=!!e,this.preserveDrawingBuffer=g,this.width=a||800,this.height=c||600,this.view=d||document.createElement("canvas"),this.view.width=this.width,this.view.height=this.height,this.contextLost=this.handleContextLost.bind(this),this.contextRestoredLost=this.handleContextRestored.bind(this),this.view.addEventListener("webglcontextlost",this.contextLost,!1),this.view.addEventListener("webglcontextrestored",this.contextRestoredLost,!1),this.options={alpha:this.transparent,antialias:!!f,premultipliedAlpha:!!e,stencil:!0,preserveDrawingBuffer:g};var h=null;if(["experimental-webgl","webgl"].forEach(function(a){try{h=h||this.view.getContext(a,this.options)}catch(b){}},this),!h)throw new Error("This browser does not support webGL. Try using the canvas renderer"+this);this.gl=h,this.glContextId=h.id=b.WebGLRenderer.glContextId++,b.glContexts[this.glContextId]=h,b.blendModesWebGL||(b.blendModesWebGL=[],b.blendModesWebGL[b.blendModes.NORMAL]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.ADD]=[h.SRC_ALPHA,h.DST_ALPHA],b.blendModesWebGL[b.blendModes.MULTIPLY]=[h.DST_COLOR,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.SCREEN]=[h.SRC_ALPHA,h.ONE],b.blendModesWebGL[b.blendModes.OVERLAY]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.DARKEN]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.LIGHTEN]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.COLOR_DODGE]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.COLOR_BURN]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.HARD_LIGHT]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.SOFT_LIGHT]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.DIFFERENCE]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.EXCLUSION]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.HUE]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.SATURATION]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.COLOR]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.LUMINOSITY]=[h.ONE,h.ONE_MINUS_SRC_ALPHA]),this.projection=new b.Point,this.projection.x=this.width/2,this.projection.y=-this.height/2,this.offset=new b.Point(0,0),this.resize(this.width,this.height),this.contextLost=!1,this.shaderManager=new b.WebGLShaderManager(h),this.spriteBatch=new b.WebGLSpriteBatch(h),this.maskManager=new b.WebGLMaskManager(h),this.filterManager=new b.WebGLFilterManager(h,this.transparent),this.stencilManager=new b.WebGLStencilManager(h),this.blendModeManager=new b.WebGLBlendModeManager(h),this.renderSession={},this.renderSession.gl=this.gl,this.renderSession.drawCount=0,this.renderSession.shaderManager=this.shaderManager,this.renderSession.maskManager=this.maskManager,this.renderSession.filterManager=this.filterManager,this.renderSession.blendModeManager=this.blendModeManager,this.renderSession.spriteBatch=this.spriteBatch,this.renderSession.stencilManager=this.stencilManager,this.renderSession.renderer=this,h.useProgram(this.shaderManager.defaultShader.program),h.disable(h.DEPTH_TEST),h.disable(h.CULL_FACE),h.enable(h.BLEND),h.colorMask(!0,!0,!0,this.transparent)},b.WebGLRenderer.prototype.constructor=b.WebGLRenderer,b.WebGLRenderer.prototype.render=function(a){if(!this.contextLost){this.__stage!==a&&(a.interactive&&a.interactionManager.removeEvents(),this.__stage=a),b.WebGLRenderer.updateTextures(),a.updateTransform(),a._interactive&&(a._interactiveEventsAdded||(a._interactiveEventsAdded=!0,a.interactionManager.setTarget(this)));var c=this.gl;c.viewport(0,0,this.width,this.height),c.bindFramebuffer(c.FRAMEBUFFER,null),this.transparent?c.clearColor(0,0,0,0):c.clearColor(a.backgroundColorSplit[0],a.backgroundColorSplit[1],a.backgroundColorSplit[2],1),c.clear(c.COLOR_BUFFER_BIT),this.renderDisplayObject(a,this.projection),a.interactive?a._interactiveEventsAdded||(a._interactiveEventsAdded=!0,a.interactionManager.setTarget(this)):a._interactiveEventsAdded&&(a._interactiveEventsAdded=!1,a.interactionManager.setTarget(this))}},b.WebGLRenderer.prototype.renderDisplayObject=function(a,c,d){this.renderSession.blendModeManager.setBlendMode(b.blendModes.NORMAL),this.renderSession.drawCount=0,this.renderSession.currentBlendMode=9999,this.renderSession.projection=c,this.renderSession.offset=this.offset,this.spriteBatch.begin(this.renderSession),this.filterManager.begin(this.renderSession,d),a._renderWebGL(this.renderSession),this.spriteBatch.end()},b.WebGLRenderer.updateTextures=function(){var a=0;for(a=0;a<b.Texture.frameUpdates.length;a++)b.WebGLRenderer.updateTextureFrame(b.Texture.frameUpdates[a]);for(a=0;a<b.texturesToDestroy.length;a++)b.WebGLRenderer.destroyTexture(b.texturesToDestroy[a]);b.texturesToUpdate.length=0,b.texturesToDestroy.length=0,b.Texture.frameUpdates.length=0},b.WebGLRenderer.destroyTexture=function(a){for(var c=a._glTextures.length-1;c>=0;c--){var d=a._glTextures[c],e=b.glContexts[c];
-e&&d&&e.deleteTexture(d)}a._glTextures.length=0},b.WebGLRenderer.updateTextureFrame=function(a){a._updateWebGLuvs()},b.WebGLRenderer.prototype.resize=function(a,b){this.width=a,this.height=b,this.view.width=a,this.view.height=b,this.gl.viewport(0,0,this.width,this.height),this.projection.x=this.width/2,this.projection.y=-this.height/2},b.createWebGLTexture=function(a,c){return a.hasLoaded&&(a._glTextures[c.id]=c.createTexture(),c.bindTexture(c.TEXTURE_2D,a._glTextures[c.id]),c.pixelStorei(c.UNPACK_PREMULTIPLY_ALPHA_WEBGL,a.premultipliedAlpha),c.texImage2D(c.TEXTURE_2D,0,c.RGBA,c.RGBA,c.UNSIGNED_BYTE,a.source),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MAG_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MIN_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),a._powerOf2?(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.REPEAT),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.REPEAT)):(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.CLAMP_TO_EDGE),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.CLAMP_TO_EDGE)),c.bindTexture(c.TEXTURE_2D,null),a._dirty[c.id]=!1),a._glTextures[c.id]},b.updateWebGLTexture=function(a,c){a._glTextures[c.id]&&(c.bindTexture(c.TEXTURE_2D,a._glTextures[c.id]),c.pixelStorei(c.UNPACK_PREMULTIPLY_ALPHA_WEBGL,a.premultipliedAlpha),c.texImage2D(c.TEXTURE_2D,0,c.RGBA,c.RGBA,c.UNSIGNED_BYTE,a.source),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MAG_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MIN_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),a._powerOf2?(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.REPEAT),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.REPEAT)):(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.CLAMP_TO_EDGE),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.CLAMP_TO_EDGE)),a._dirty[c.id]=!1)},b.WebGLRenderer.prototype.handleContextLost=function(a){a.preventDefault(),this.contextLost=!0},b.WebGLRenderer.prototype.handleContextRestored=function(){try{this.gl=this.view.getContext("experimental-webgl",this.options)}catch(a){try{this.gl=this.view.getContext("webgl",this.options)}catch(c){throw new Error(" This browser does not support webGL. Try using the canvas renderer"+this)}}var d=this.gl;d.id=b.WebGLRenderer.glContextId++,this.shaderManager.setContext(d),this.spriteBatch.setContext(d),this.primitiveBatch.setContext(d),this.maskManager.setContext(d),this.filterManager.setContext(d),this.renderSession.gl=this.gl,d.disable(d.DEPTH_TEST),d.disable(d.CULL_FACE),d.enable(d.BLEND),d.colorMask(!0,!0,!0,this.transparent),this.gl.viewport(0,0,this.width,this.height);for(var e in b.TextureCache){var f=b.TextureCache[e].baseTexture;f._glTextures=[]}this.contextLost=!1},b.WebGLRenderer.prototype.destroy=function(){this.view.removeEventListener("webglcontextlost",this.contextLost),this.view.removeEventListener("webglcontextrestored",this.contextRestoredLost),b.glContexts[this.glContextId]=null,this.projection=null,this.offset=null,this.shaderManager.destroy(),this.spriteBatch.destroy(),this.primitiveBatch.destroy(),this.maskManager.destroy(),this.filterManager.destroy(),this.shaderManager=null,this.spriteBatch=null,this.maskManager=null,this.filterManager=null,this.gl=null,this.renderSession=null},b.WebGLRenderer.glContextId=0,b.WebGLBlendModeManager=function(a){this.gl=a,this.currentBlendMode=99999},b.WebGLBlendModeManager.prototype.setBlendMode=function(a){if(this.currentBlendMode===a)return!1;this.currentBlendMode=a;var c=b.blendModesWebGL[this.currentBlendMode];return this.gl.blendFunc(c[0],c[1]),!0},b.WebGLBlendModeManager.prototype.destroy=function(){this.gl=null},b.WebGLMaskManager=function(a){this.maskStack=[],this.maskPosition=0,this.setContext(a),this.reverse=!1,this.count=0},b.WebGLMaskManager.prototype.setContext=function(a){this.gl=a},b.WebGLMaskManager.prototype.pushMask=function(a,c){var d=c.gl;a.dirty&&b.WebGLGraphics.updateGraphics(a,d),a._webGL[d.id].data.length&&c.stencilManager.pushStencil(a,a._webGL[d.id].data[0],c)},b.WebGLMaskManager.prototype.popMask=function(a,b){var c=this.gl;b.stencilManager.popStencil(a,a._webGL[c.id].data[0],b)},b.WebGLMaskManager.prototype.destroy=function(){this.maskStack=null,this.gl=null},b.WebGLStencilManager=function(a){this.stencilStack=[],this.setContext(a),this.reverse=!0,this.count=0},b.WebGLStencilManager.prototype.setContext=function(a){this.gl=a},b.WebGLStencilManager.prototype.pushStencil=function(a,b,c){var d=this.gl;this.bindGraphics(a,b,c),0===this.stencilStack.length&&(d.enable(d.STENCIL_TEST),d.clear(d.STENCIL_BUFFER_BIT),this.reverse=!0,this.count=0),this.stencilStack.push(b);var e=this.count;d.colorMask(!1,!1,!1,!1),d.stencilFunc(d.ALWAYS,0,255),d.stencilOp(d.KEEP,d.KEEP,d.INVERT),1===b.mode?(d.drawElements(d.TRIANGLE_FAN,b.indices.length-4,d.UNSIGNED_SHORT,0),this.reverse?(d.stencilFunc(d.EQUAL,255-e,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)):(d.stencilFunc(d.EQUAL,e,255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)),d.drawElements(d.TRIANGLE_FAN,4,d.UNSIGNED_SHORT,2*(b.indices.length-4)),this.reverse?d.stencilFunc(d.EQUAL,255-(e+1),255):d.stencilFunc(d.EQUAL,e+1,255),this.reverse=!this.reverse):(this.reverse?(d.stencilFunc(d.EQUAL,e,255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)):(d.stencilFunc(d.EQUAL,255-e,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)),d.drawElements(d.TRIANGLE_STRIP,b.indices.length,d.UNSIGNED_SHORT,0),this.reverse?d.stencilFunc(d.EQUAL,e+1,255):d.stencilFunc(d.EQUAL,255-(e+1),255)),d.colorMask(!0,!0,!0,!0),d.stencilOp(d.KEEP,d.KEEP,d.KEEP),this.count++},b.WebGLStencilManager.prototype.bindGraphics=function(a,c,d){this._currentGraphics=a;var e,f=this.gl,g=d.projection,h=d.offset;1===c.mode?(e=d.shaderManager.complexPrimativeShader,d.shaderManager.setShader(e),f.uniformMatrix3fv(e.translationMatrix,!1,a.worldTransform.toArray(!0)),f.uniform2f(e.projectionVector,g.x,-g.y),f.uniform2f(e.offsetVector,-h.x,-h.y),f.uniform3fv(e.tintColor,b.hex2rgb(a.tint)),f.uniform3fv(e.color,c.color),f.uniform1f(e.alpha,a.worldAlpha*c.alpha),f.bindBuffer(f.ARRAY_BUFFER,c.buffer),f.vertexAttribPointer(e.aVertexPosition,2,f.FLOAT,!1,8,0),f.bindBuffer(f.ELEMENT_ARRAY_BUFFER,c.indexBuffer)):(e=d.shaderManager.primitiveShader,d.shaderManager.setShader(e),f.uniformMatrix3fv(e.translationMatrix,!1,a.worldTransform.toArray(!0)),f.uniform2f(e.projectionVector,g.x,-g.y),f.uniform2f(e.offsetVector,-h.x,-h.y),f.uniform3fv(e.tintColor,b.hex2rgb(a.tint)),f.uniform1f(e.alpha,a.worldAlpha),f.bindBuffer(f.ARRAY_BUFFER,c.buffer),f.vertexAttribPointer(e.aVertexPosition,2,f.FLOAT,!1,24,0),f.vertexAttribPointer(e.colorAttribute,4,f.FLOAT,!1,24,8),f.bindBuffer(f.ELEMENT_ARRAY_BUFFER,c.indexBuffer))},b.WebGLStencilManager.prototype.popStencil=function(a,b,c){var d=this.gl;if(this.stencilStack.pop(),this.count--,0===this.stencilStack.length)d.disable(d.STENCIL_TEST);else{var e=this.count;this.bindGraphics(a,b,c),d.colorMask(!1,!1,!1,!1),1===b.mode?(this.reverse=!this.reverse,this.reverse?(d.stencilFunc(d.EQUAL,255-(e+1),255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)):(d.stencilFunc(d.EQUAL,e+1,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)),d.drawElements(d.TRIANGLE_FAN,4,d.UNSIGNED_SHORT,2*(b.indices.length-4)),d.stencilFunc(d.ALWAYS,0,255),d.stencilOp(d.KEEP,d.KEEP,d.INVERT),d.drawElements(d.TRIANGLE_FAN,b.indices.length-4,d.UNSIGNED_SHORT,0),this.reverse?d.stencilFunc(d.EQUAL,e,255):d.stencilFunc(d.EQUAL,255-e,255)):(this.reverse?(d.stencilFunc(d.EQUAL,e+1,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)):(d.stencilFunc(d.EQUAL,255-(e+1),255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)),d.drawElements(d.TRIANGLE_STRIP,b.indices.length,d.UNSIGNED_SHORT,0),this.reverse?d.stencilFunc(d.EQUAL,e,255):d.stencilFunc(d.EQUAL,255-e,255)),d.colorMask(!0,!0,!0,!0),d.stencilOp(d.KEEP,d.KEEP,d.KEEP)}},b.WebGLStencilManager.prototype.destroy=function(){this.maskStack=null,this.gl=null},b.WebGLShaderManager=function(a){this.maxAttibs=10,this.attribState=[],this.tempAttribState=[],this.shaderMap=[];for(var b=0;b<this.maxAttibs;b++)this.attribState[b]=!1;this.setContext(a)},b.WebGLShaderManager.prototype.setContext=function(a){this.gl=a,this.primitiveShader=new b.PrimitiveShader(a),this.complexPrimativeShader=new b.ComplexPrimitiveShader(a),this.defaultShader=new b.PixiShader(a),this.fastShader=new b.PixiFastShader(a),this.stripShader=new b.StripShader(a),this.setShader(this.defaultShader)},b.WebGLShaderManager.prototype.setAttribs=function(a){var b;for(b=0;b<this.tempAttribState.length;b++)this.tempAttribState[b]=!1;for(b=0;b<a.length;b++){var c=a[b];this.tempAttribState[c]=!0}var d=this.gl;for(b=0;b<this.attribState.length;b++)this.attribState[b]!==this.tempAttribState[b]&&(this.attribState[b]=this.tempAttribState[b],this.tempAttribState[b]?d.enableVertexAttribArray(b):d.disableVertexAttribArray(b))},b.WebGLShaderManager.prototype.setShader=function(a){return this._currentId===a._UID?!1:(this._currentId=a._UID,this.currentShader=a,this.gl.useProgram(a.program),this.setAttribs(a.attributes),!0)},b.WebGLShaderManager.prototype.destroy=function(){this.attribState=null,this.tempAttribState=null,this.primitiveShader.destroy(),this.defaultShader.destroy(),this.fastShader.destroy(),this.stripShader.destroy(),this.gl=null},b.WebGLSpriteBatch=function(a){this.vertSize=6,this.size=2e3;var b=4*this.size*this.vertSize,c=6*this.size;this.vertices=new Float32Array(b),this.indices=new Uint16Array(c),this.lastIndexCount=0;for(var d=0,e=0;c>d;d+=6,e+=4)this.indices[d+0]=e+0,this.indices[d+1]=e+1,this.indices[d+2]=e+2,this.indices[d+3]=e+0,this.indices[d+4]=e+2,this.indices[d+5]=e+3;this.drawing=!1,this.currentBatchSize=0,this.currentBaseTexture=null,this.setContext(a),this.dirty=!0,this.textures=[],this.blendModes=[]},b.WebGLSpriteBatch.prototype.setContext=function(a){this.gl=a,this.vertexBuffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,this.indices,a.STATIC_DRAW),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bufferData(a.ARRAY_BUFFER,this.vertices,a.DYNAMIC_DRAW),this.currentBlendMode=99999},b.WebGLSpriteBatch.prototype.begin=function(a){this.renderSession=a,this.shader=this.renderSession.shaderManager.defaultShader,this.start()},b.WebGLSpriteBatch.prototype.end=function(){this.flush()},b.WebGLSpriteBatch.prototype.render=function(a){var b=a.texture;this.currentBatchSize>=this.size&&(this.flush(),this.currentBaseTexture=b.baseTexture);var c=b._uvs;if(c){var d,e,f,g,h=a.worldAlpha,i=a.tint,j=this.vertices,k=a.anchor.x,l=a.anchor.y;if(b.trim){var m=b.trim;e=m.x-k*m.width,d=e+b.crop.width,g=m.y-l*m.height,f=g+b.crop.height}else d=b.frame.width*(1-k),e=b.frame.width*-k,f=b.frame.height*(1-l),g=b.frame.height*-l;var n=4*this.currentBatchSize*this.vertSize,o=a.worldTransform,p=o.a,q=o.c,r=o.b,s=o.d,t=o.tx,u=o.ty;j[n++]=p*e+r*g+t,j[n++]=s*g+q*e+u,j[n++]=c.x0,j[n++]=c.y0,j[n++]=h,j[n++]=i,j[n++]=p*d+r*g+t,j[n++]=s*g+q*d+u,j[n++]=c.x1,j[n++]=c.y1,j[n++]=h,j[n++]=i,j[n++]=p*d+r*f+t,j[n++]=s*f+q*d+u,j[n++]=c.x2,j[n++]=c.y2,j[n++]=h,j[n++]=i,j[n++]=p*e+r*f+t,j[n++]=s*f+q*e+u,j[n++]=c.x3,j[n++]=c.y3,j[n++]=h,j[n++]=i,this.textures[this.currentBatchSize]=a.texture.baseTexture,this.blendModes[this.currentBatchSize]=a.blendMode,this.currentBatchSize++}},b.WebGLSpriteBatch.prototype.renderTilingSprite=function(a){var c=a.tilingTexture;this.currentBatchSize>=this.size&&(this.flush(),this.currentBaseTexture=c.baseTexture),a._uvs||(a._uvs=new b.TextureUvs);var d=a._uvs;a.tilePosition.x%=c.baseTexture.width*a.tileScaleOffset.x,a.tilePosition.y%=c.baseTexture.height*a.tileScaleOffset.y;var e=a.tilePosition.x/(c.baseTexture.width*a.tileScaleOffset.x),f=a.tilePosition.y/(c.baseTexture.height*a.tileScaleOffset.y),g=a.width/c.baseTexture.width/(a.tileScale.x*a.tileScaleOffset.x),h=a.height/c.baseTexture.height/(a.tileScale.y*a.tileScaleOffset.y);d.x0=0-e,d.y0=0-f,d.x1=1*g-e,d.y1=0-f,d.x2=1*g-e,d.y2=1*h-f,d.x3=0-e,d.y3=1*h-f;var i=a.worldAlpha,j=a.tint,k=this.vertices,l=a.width,m=a.height,n=a.anchor.x,o=a.anchor.y,p=l*(1-n),q=l*-n,r=m*(1-o),s=m*-o,t=4*this.currentBatchSize*this.vertSize,u=a.worldTransform,v=u.a,w=u.c,x=u.b,y=u.d,z=u.tx,A=u.ty;k[t++]=v*q+x*s+z,k[t++]=y*s+w*q+A,k[t++]=d.x0,k[t++]=d.y0,k[t++]=i,k[t++]=j,k[t++]=v*p+x*s+z,k[t++]=y*s+w*p+A,k[t++]=d.x1,k[t++]=d.y1,k[t++]=i,k[t++]=j,k[t++]=v*p+x*r+z,k[t++]=y*r+w*p+A,k[t++]=d.x2,k[t++]=d.y2,k[t++]=i,k[t++]=j,k[t++]=v*q+x*r+z,k[t++]=y*r+w*q+A,k[t++]=d.x3,k[t++]=d.y3,k[t++]=i,k[t++]=j,this.textures[this.currentBatchSize]=c.baseTexture,this.blendModes[this.currentBatchSize]=a.blendMode,this.currentBatchSize++},b.WebGLSpriteBatch.prototype.flush=function(){if(0!==this.currentBatchSize){var a=this.gl;if(this.renderSession.shaderManager.setShader(this.renderSession.shaderManager.defaultShader),this.dirty){this.dirty=!1,a.activeTexture(a.TEXTURE0),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer);var b=this.renderSession.projection;a.uniform2f(this.shader.projectionVector,b.x,b.y);var c=4*this.vertSize;a.vertexAttribPointer(this.shader.aVertexPosition,2,a.FLOAT,!1,c,0),a.vertexAttribPointer(this.shader.aTextureCoord,2,a.FLOAT,!1,c,8),a.vertexAttribPointer(this.shader.colorAttribute,2,a.FLOAT,!1,c,16)}if(this.currentBatchSize>.5*this.size)a.bufferSubData(a.ARRAY_BUFFER,0,this.vertices);else{var d=this.vertices.subarray(0,4*this.currentBatchSize*this.vertSize);a.bufferSubData(a.ARRAY_BUFFER,0,d)}for(var e,f,g=0,h=0,i=null,j=this.renderSession.blendModeManager.currentBlendMode,k=0,l=this.currentBatchSize;l>k;k++)e=this.textures[k],f=this.blendModes[k],(i!==e||j!==f)&&(this.renderBatch(i,g,h),h=k,g=0,i=e,j=f,this.renderSession.blendModeManager.setBlendMode(j)),g++;this.renderBatch(i,g,h),this.currentBatchSize=0}},b.WebGLSpriteBatch.prototype.renderBatch=function(a,c,d){if(0!==c){var e=this.gl;e.bindTexture(e.TEXTURE_2D,a._glTextures[e.id]||b.createWebGLTexture(a,e)),a._dirty[e.id]&&b.updateWebGLTexture(this.currentBaseTexture,e),e.drawElements(e.TRIANGLES,6*c,e.UNSIGNED_SHORT,6*d*2),this.renderSession.drawCount++}},b.WebGLSpriteBatch.prototype.stop=function(){this.flush()},b.WebGLSpriteBatch.prototype.start=function(){this.dirty=!0},b.WebGLSpriteBatch.prototype.destroy=function(){this.vertices=null,this.indices=null,this.gl.deleteBuffer(this.vertexBuffer),this.gl.deleteBuffer(this.indexBuffer),this.currentBaseTexture=null,this.gl=null},b.WebGLFastSpriteBatch=function(a){this.vertSize=10,this.maxSize=6e3,this.size=this.maxSize;var b=4*this.size*this.vertSize,c=6*this.maxSize;this.vertices=new Float32Array(b),this.indices=new Uint16Array(c),this.vertexBuffer=null,this.indexBuffer=null,this.lastIndexCount=0;for(var d=0,e=0;c>d;d+=6,e+=4)this.indices[d+0]=e+0,this.indices[d+1]=e+1,this.indices[d+2]=e+2,this.indices[d+3]=e+0,this.indices[d+4]=e+2,this.indices[d+5]=e+3;this.drawing=!1,this.currentBatchSize=0,this.currentBaseTexture=null,this.currentBlendMode=0,this.renderSession=null,this.shader=null,this.matrix=null,this.setContext(a)},b.WebGLFastSpriteBatch.prototype.setContext=function(a){this.gl=a,this.vertexBuffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,this.indices,a.STATIC_DRAW),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bufferData(a.ARRAY_BUFFER,this.vertices,a.DYNAMIC_DRAW)},b.WebGLFastSpriteBatch.prototype.begin=function(a,b){this.renderSession=b,this.shader=this.renderSession.shaderManager.fastShader,this.matrix=a.worldTransform.toArray(!0),this.start()},b.WebGLFastSpriteBatch.prototype.end=function(){this.flush()},b.WebGLFastSpriteBatch.prototype.render=function(a){var b=a.children,c=b[0];if(c.texture._uvs){this.currentBaseTexture=c.texture.baseTexture,c.blendMode!==this.renderSession.blendModeManager.currentBlendMode&&(this.flush(),this.renderSession.blendModeManager.setBlendMode(c.blendMode));for(var d=0,e=b.length;e>d;d++)this.renderSprite(b[d]);this.flush()}},b.WebGLFastSpriteBatch.prototype.renderSprite=function(a){if(a.visible&&(a.texture.baseTexture===this.currentBaseTexture||(this.flush(),this.currentBaseTexture=a.texture.baseTexture,a.texture._uvs))){var b,c,d,e,f,g,h,i,j=this.vertices;if(b=a.texture._uvs,c=a.texture.frame.width,d=a.texture.frame.height,a.texture.trim){var k=a.texture.trim;f=k.x-a.anchor.x*k.width,e=f+a.texture.crop.width,h=k.y-a.anchor.y*k.height,g=h+a.texture.crop.height}else e=a.texture.frame.width*(1-a.anchor.x),f=a.texture.frame.width*-a.anchor.x,g=a.texture.frame.height*(1-a.anchor.y),h=a.texture.frame.height*-a.anchor.y;i=4*this.currentBatchSize*this.vertSize,j[i++]=f,j[i++]=h,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x0,j[i++]=b.y1,j[i++]=a.alpha,j[i++]=e,j[i++]=h,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x1,j[i++]=b.y1,j[i++]=a.alpha,j[i++]=e,j[i++]=g,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x2,j[i++]=b.y2,j[i++]=a.alpha,j[i++]=f,j[i++]=g,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x3,j[i++]=b.y3,j[i++]=a.alpha,this.currentBatchSize++,this.currentBatchSize>=this.size&&this.flush()}},b.WebGLFastSpriteBatch.prototype.flush=function(){if(0!==this.currentBatchSize){var a=this.gl;if(this.currentBaseTexture._glTextures[a.id]||b.createWebGLTexture(this.currentBaseTexture,a),a.bindTexture(a.TEXTURE_2D,this.currentBaseTexture._glTextures[a.id]),this.currentBatchSize>.5*this.size)a.bufferSubData(a.ARRAY_BUFFER,0,this.vertices);else{var c=this.vertices.subarray(0,4*this.currentBatchSize*this.vertSize);a.bufferSubData(a.ARRAY_BUFFER,0,c)}a.drawElements(a.TRIANGLES,6*this.currentBatchSize,a.UNSIGNED_SHORT,0),this.currentBatchSize=0,this.renderSession.drawCount++}},b.WebGLFastSpriteBatch.prototype.stop=function(){this.flush()},b.WebGLFastSpriteBatch.prototype.start=function(){var a=this.gl;a.activeTexture(a.TEXTURE0),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer);var b=this.renderSession.projection;a.uniform2f(this.shader.projectionVector,b.x,b.y),a.uniformMatrix3fv(this.shader.uMatrix,!1,this.matrix);var c=4*this.vertSize;a.vertexAttribPointer(this.shader.aVertexPosition,2,a.FLOAT,!1,c,0),a.vertexAttribPointer(this.shader.aPositionCoord,2,a.FLOAT,!1,c,8),a.vertexAttribPointer(this.shader.aScale,2,a.FLOAT,!1,c,16),a.vertexAttribPointer(this.shader.aRotation,1,a.FLOAT,!1,c,24),a.vertexAttribPointer(this.shader.aTextureCoord,2,a.FLOAT,!1,c,28),a.vertexAttribPointer(this.shader.colorAttribute,1,a.FLOAT,!1,c,36)},b.WebGLFilterManager=function(a,b){this.transparent=b,this.filterStack=[],this.offsetX=0,this.offsetY=0,this.setContext(a)},b.WebGLFilterManager.prototype.setContext=function(a){this.gl=a,this.texturePool=[],this.initShaderBuffers()},b.WebGLFilterManager.prototype.begin=function(a,b){this.renderSession=a,this.defaultShader=a.shaderManager.defaultShader;var c=this.renderSession.projection;this.width=2*c.x,this.height=2*-c.y,this.buffer=b},b.WebGLFilterManager.prototype.pushFilter=function(a){var c=this.gl,d=this.renderSession.projection,e=this.renderSession.offset;a._filterArea=a.target.filterArea||a.target.getBounds(),this.filterStack.push(a);var f=a.filterPasses[0];this.offsetX+=a._filterArea.x,this.offsetY+=a._filterArea.y;var g=this.texturePool.pop();g?g.resize(this.width,this.height):g=new b.FilterTexture(this.gl,this.width,this.height),c.bindTexture(c.TEXTURE_2D,g.texture);var h=a._filterArea,i=f.padding;h.x-=i,h.y-=i,h.width+=2*i,h.height+=2*i,h.x<0&&(h.x=0),h.width>this.width&&(h.width=this.width),h.y<0&&(h.y=0),h.height>this.height&&(h.height=this.height),c.bindFramebuffer(c.FRAMEBUFFER,g.frameBuffer),c.viewport(0,0,h.width,h.height),d.x=h.width/2,d.y=-h.height/2,e.x=-h.x,e.y=-h.y,this.renderSession.shaderManager.setShader(this.defaultShader),c.uniform2f(this.defaultShader.projectionVector,h.width/2,-h.height/2),c.uniform2f(this.defaultShader.offsetVector,-h.x,-h.y),c.colorMask(!0,!0,!0,!0),c.clearColor(0,0,0,0),c.clear(c.COLOR_BUFFER_BIT),a._glFilterTexture=g},b.WebGLFilterManager.prototype.popFilter=function(){var a=this.gl,c=this.filterStack.pop(),d=c._filterArea,e=c._glFilterTexture,f=this.renderSession.projection,g=this.renderSession.offset;if(c.filterPasses.length>1){a.viewport(0,0,d.width,d.height),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),this.vertexArray[0]=0,this.vertexArray[1]=d.height,this.vertexArray[2]=d.width,this.vertexArray[3]=d.height,this.vertexArray[4]=0,this.vertexArray[5]=0,this.vertexArray[6]=d.width,this.vertexArray[7]=0,a.bufferSubData(a.ARRAY_BUFFER,0,this.vertexArray),a.bindBuffer(a.ARRAY_BUFFER,this.uvBuffer),this.uvArray[2]=d.width/this.width,this.uvArray[5]=d.height/this.height,this.uvArray[6]=d.width/this.width,this.uvArray[7]=d.height/this.height,a.bufferSubData(a.ARRAY_BUFFER,0,this.uvArray);var h=e,i=this.texturePool.pop();i||(i=new b.FilterTexture(this.gl,this.width,this.height)),i.resize(this.width,this.height),a.bindFramebuffer(a.FRAMEBUFFER,i.frameBuffer),a.clear(a.COLOR_BUFFER_BIT),a.disable(a.BLEND);for(var j=0;j<c.filterPasses.length-1;j++){var k=c.filterPasses[j];a.bindFramebuffer(a.FRAMEBUFFER,i.frameBuffer),a.activeTexture(a.TEXTURE0),a.bindTexture(a.TEXTURE_2D,h.texture),this.applyFilterPass(k,d,d.width,d.height);var l=h;h=i,i=l}a.enable(a.BLEND),e=h,this.texturePool.push(i)}var m=c.filterPasses[c.filterPasses.length-1];this.offsetX-=d.x,this.offsetY-=d.y;var n=this.width,o=this.height,p=0,q=0,r=this.buffer;if(0===this.filterStack.length)a.colorMask(!0,!0,!0,!0);else{var s=this.filterStack[this.filterStack.length-1];d=s._filterArea,n=d.width,o=d.height,p=d.x,q=d.y,r=s._glFilterTexture.frameBuffer}f.x=n/2,f.y=-o/2,g.x=p,g.y=q,d=c._filterArea;var t=d.x-p,u=d.y-q;a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),this.vertexArray[0]=t,this.vertexArray[1]=u+d.height,this.vertexArray[2]=t+d.width,this.vertexArray[3]=u+d.height,this.vertexArray[4]=t,this.vertexArray[5]=u,this.vertexArray[6]=t+d.width,this.vertexArray[7]=u,a.bufferSubData(a.ARRAY_BUFFER,0,this.vertexArray),a.bindBuffer(a.ARRAY_BUFFER,this.uvBuffer),this.uvArray[2]=d.width/this.width,this.uvArray[5]=d.height/this.height,this.uvArray[6]=d.width/this.width,this.uvArray[7]=d.height/this.height,a.bufferSubData(a.ARRAY_BUFFER,0,this.uvArray),a.viewport(0,0,n,o),a.bindFramebuffer(a.FRAMEBUFFER,r),a.activeTexture(a.TEXTURE0),a.bindTexture(a.TEXTURE_2D,e.texture),this.applyFilterPass(m,d,n,o),this.renderSession.shaderManager.setShader(this.defaultShader),a.uniform2f(this.defaultShader.projectionVector,n/2,-o/2),a.uniform2f(this.defaultShader.offsetVector,-p,-q),this.texturePool.push(e),c._glFilterTexture=null},b.WebGLFilterManager.prototype.applyFilterPass=function(a,c,d,e){var f=this.gl,g=a.shaders[f.id];g||(g=new b.PixiShader(f),g.fragmentSrc=a.fragmentSrc,g.uniforms=a.uniforms,g.init(),a.shaders[f.id]=g),this.renderSession.shaderManager.setShader(g),f.uniform2f(g.projectionVector,d/2,-e/2),f.uniform2f(g.offsetVector,0,0),a.uniforms.dimensions&&(a.uniforms.dimensions.value[0]=this.width,a.uniforms.dimensions.value[1]=this.height,a.uniforms.dimensions.value[2]=this.vertexArray[0],a.uniforms.dimensions.value[3]=this.vertexArray[5]),g.syncUniforms(),f.bindBuffer(f.ARRAY_BUFFER,this.vertexBuffer),f.vertexAttribPointer(g.aVertexPosition,2,f.FLOAT,!1,0,0),f.bindBuffer(f.ARRAY_BUFFER,this.uvBuffer),f.vertexAttribPointer(g.aTextureCoord,2,f.FLOAT,!1,0,0),f.bindBuffer(f.ARRAY_BUFFER,this.colorBuffer),f.vertexAttribPointer(g.colorAttribute,2,f.FLOAT,!1,0,0),f.bindBuffer(f.ELEMENT_ARRAY_BUFFER,this.indexBuffer),f.drawElements(f.TRIANGLES,6,f.UNSIGNED_SHORT,0),this.renderSession.drawCount++},b.WebGLFilterManager.prototype.initShaderBuffers=function(){var a=this.gl;this.vertexBuffer=a.createBuffer(),this.uvBuffer=a.createBuffer(),this.colorBuffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),this.vertexArray=new Float32Array([0,0,1,0,0,1,1,1]),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bufferData(a.ARRAY_BUFFER,this.vertexArray,a.STATIC_DRAW),this.uvArray=new Float32Array([0,0,1,0,0,1,1,1]),a.bindBuffer(a.ARRAY_BUFFER,this.uvBuffer),a.bufferData(a.ARRAY_BUFFER,this.uvArray,a.STATIC_DRAW),this.colorArray=new Float32Array([1,16777215,1,16777215,1,16777215,1,16777215]),a.bindBuffer(a.ARRAY_BUFFER,this.colorBuffer),a.bufferData(a.ARRAY_BUFFER,this.colorArray,a.STATIC_DRAW),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,new Uint16Array([0,1,2,1,3,2]),a.STATIC_DRAW)},b.WebGLFilterManager.prototype.destroy=function(){var a=this.gl;this.filterStack=null,this.offsetX=0,this.offsetY=0;for(var b=0;b<this.texturePool.length;b++)this.texturePool[b].destroy();this.texturePool=null,a.deleteBuffer(this.vertexBuffer),a.deleteBuffer(this.uvBuffer),a.deleteBuffer(this.colorBuffer),a.deleteBuffer(this.indexBuffer)},b.FilterTexture=function(a,c,d,e){this.gl=a,this.frameBuffer=a.createFramebuffer(),this.texture=a.createTexture(),e=e||b.scaleModes.DEFAULT,a.bindTexture(a.TEXTURE_2D,this.texture),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_MAG_FILTER,e===b.scaleModes.LINEAR?a.LINEAR:a.NEAREST),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_MIN_FILTER,e===b.scaleModes.LINEAR?a.LINEAR:a.NEAREST),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_WRAP_S,a.CLAMP_TO_EDGE),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_WRAP_T,a.CLAMP_TO_EDGE),a.bindFramebuffer(a.FRAMEBUFFER,this.framebuffer),a.bindFramebuffer(a.FRAMEBUFFER,this.frameBuffer),a.framebufferTexture2D(a.FRAMEBUFFER,a.COLOR_ATTACHMENT0,a.TEXTURE_2D,this.texture,0),this.renderBuffer=a.createRenderbuffer(),a.bindRenderbuffer(a.RENDERBUFFER,this.renderBuffer),a.framebufferRenderbuffer(a.FRAMEBUFFER,a.DEPTH_STENCIL_ATTACHMENT,a.RENDERBUFFER,this.renderBuffer),this.resize(c,d)},b.FilterTexture.prototype.clear=function(){var a=this.gl;a.clearColor(0,0,0,0),a.clear(a.COLOR_BUFFER_BIT)},b.FilterTexture.prototype.resize=function(a,b){if(this.width!==a||this.height!==b){this.width=a,this.height=b;var c=this.gl;c.bindTexture(c.TEXTURE_2D,this.texture),c.texImage2D(c.TEXTURE_2D,0,c.RGBA,a,b,0,c.RGBA,c.UNSIGNED_BYTE,null),c.bindRenderbuffer(c.RENDERBUFFER,this.renderBuffer),c.renderbufferStorage(c.RENDERBUFFER,c.DEPTH_STENCIL,a,b)}},b.FilterTexture.prototype.destroy=function(){var a=this.gl;a.deleteFramebuffer(this.frameBuffer),a.deleteTexture(this.texture),this.frameBuffer=null,this.texture=null},b.CanvasMaskManager=function(){},b.CanvasMaskManager.prototype.pushMask=function(a,c){c.save();var d=a.alpha,e=a.worldTransform;c.setTransform(e.a,e.c,e.b,e.d,e.tx,e.ty),b.CanvasGraphics.renderGraphicsMask(a,c),c.clip(),a.worldAlpha=d},b.CanvasMaskManager.prototype.popMask=function(a){a.restore()},b.CanvasTinter=function(){},b.CanvasTinter.getTintedTexture=function(a,c){var d=a.texture;c=b.CanvasTinter.roundColor(c);var e="#"+("00000"+(0|c).toString(16)).substr(-6);if(d.tintCache=d.tintCache||{},d.tintCache[e])return d.tintCache[e];var f=b.CanvasTinter.canvas||document.createElement("canvas");if(b.CanvasTinter.tintMethod(d,c,f),b.CanvasTinter.convertTintToImage){var g=new Image;g.src=f.toDataURL(),d.tintCache[e]=g}else d.tintCache[e]=f,b.CanvasTinter.canvas=null;return f},b.CanvasTinter.tintWithMultiply=function(a,b,c){var d=c.getContext("2d"),e=a.frame;c.width=e.width,c.height=e.height,d.fillStyle="#"+("00000"+(0|b).toString(16)).substr(-6),d.fillRect(0,0,e.width,e.height),d.globalCompositeOperation="multiply",d.drawImage(a.baseTexture.source,e.x,e.y,e.width,e.height,0,0,e.width,e.height),d.globalCompositeOperation="destination-atop",d.drawImage(a.baseTexture.source,e.x,e.y,e.width,e.height,0,0,e.width,e.height)},b.CanvasTinter.tintWithOverlay=function(a,b,c){var d=c.getContext("2d"),e=a.frame;c.width=e.width,c.height=e.height,d.globalCompositeOperation="copy",d.fillStyle="#"+("00000"+(0|b).toString(16)).substr(-6),d.fillRect(0,0,e.width,e.height),d.globalCompositeOperation="destination-atop",d.drawImage(a.baseTexture.source,e.x,e.y,e.width,e.height,0,0,e.width,e.height)},b.CanvasTinter.tintWithPerPixel=function(a,c,d){var e=d.getContext("2d"),f=a.frame;d.width=f.width,d.height=f.height,e.globalCompositeOperation="copy",e.drawImage(a.baseTexture.source,f.x,f.y,f.width,f.height,0,0,f.width,f.height);for(var g=b.hex2rgb(c),h=g[0],i=g[1],j=g[2],k=e.getImageData(0,0,f.width,f.height),l=k.data,m=0;m<l.length;m+=4)l[m+0]*=h,l[m+1]*=i,l[m+2]*=j;e.putImageData(k,0,0)},b.CanvasTinter.roundColor=function(a){var c=b.CanvasTinter.cacheStepsPerColorChannel,d=b.hex2rgb(a);return d[0]=Math.min(255,d[0]/c*c),d[1]=Math.min(255,d[1]/c*c),d[2]=Math.min(255,d[2]/c*c),b.rgb2hex(d)},b.CanvasTinter.cacheStepsPerColorChannel=8,b.CanvasTinter.convertTintToImage=!1,b.CanvasTinter.canUseMultiply=b.canUseNewCanvasBlendModes(),b.CanvasTinter.tintMethod=b.CanvasTinter.canUseMultiply?b.CanvasTinter.tintWithMultiply:b.CanvasTinter.tintWithPerPixel,b.CanvasRenderer=function(a,c,d,e){b.defaultRenderer||(b.sayHello("Canvas"),b.defaultRenderer=this),this.type=b.CANVAS_RENDERER,this.clearBeforeRender=!0,this.transparent=!!e,b.blendModesCanvas||(b.blendModesCanvas=[],b.canUseNewCanvasBlendModes()?(b.blendModesCanvas[b.blendModes.NORMAL]="source-over",b.blendModesCanvas[b.blendModes.ADD]="lighter",b.blendModesCanvas[b.blendModes.MULTIPLY]="multiply",b.blendModesCanvas[b.blendModes.SCREEN]="screen",b.blendModesCanvas[b.blendModes.OVERLAY]="overlay",b.blendModesCanvas[b.blendModes.DARKEN]="darken",b.blendModesCanvas[b.blendModes.LIGHTEN]="lighten",b.blendModesCanvas[b.blendModes.COLOR_DODGE]="color-dodge",b.blendModesCanvas[b.blendModes.COLOR_BURN]="color-burn",b.blendModesCanvas[b.blendModes.HARD_LIGHT]="hard-light",b.blendModesCanvas[b.blendModes.SOFT_LIGHT]="soft-light",b.blendModesCanvas[b.blendModes.DIFFERENCE]="difference",b.blendModesCanvas[b.blendModes.EXCLUSION]="exclusion",b.blendModesCanvas[b.blendModes.HUE]="hue",b.blendModesCanvas[b.blendModes.SATURATION]="saturation",b.blendModesCanvas[b.blendModes.COLOR]="color",b.blendModesCanvas[b.blendModes.LUMINOSITY]="luminosity"):(b.blendModesCanvas[b.blendModes.NORMAL]="source-over",b.blendModesCanvas[b.blendModes.ADD]="lighter",b.blendModesCanvas[b.blendModes.MULTIPLY]="source-over",b.blendModesCanvas[b.blendModes.SCREEN]="source-over",b.blendModesCanvas[b.blendModes.OVERLAY]="source-over",b.blendModesCanvas[b.blendModes.DARKEN]="source-over",b.blendModesCanvas[b.blendModes.LIGHTEN]="source-over",b.blendModesCanvas[b.blendModes.COLOR_DODGE]="source-over",b.blendModesCanvas[b.blendModes.COLOR_BURN]="source-over",b.blendModesCanvas[b.blendModes.HARD_LIGHT]="source-over",b.blendModesCanvas[b.blendModes.SOFT_LIGHT]="source-over",b.blendModesCanvas[b.blendModes.DIFFERENCE]="source-over",b.blendModesCanvas[b.blendModes.EXCLUSION]="source-over",b.blendModesCanvas[b.blendModes.HUE]="source-over",b.blendModesCanvas[b.blendModes.SATURATION]="source-over",b.blendModesCanvas[b.blendModes.COLOR]="source-over",b.blendModesCanvas[b.blendModes.LUMINOSITY]="source-over")),this.width=a||800,this.height=c||600,this.view=d||document.createElement("canvas"),this.context=this.view.getContext("2d",{alpha:this.transparent}),this.refresh=!0,this.view.width=this.width,this.view.height=this.height,this.count=0,this.maskManager=new b.CanvasMaskManager,this.renderSession={context:this.context,maskManager:this.maskManager,scaleMode:null,smoothProperty:null,roundPixels:!1},"imageSmoothingEnabled"in this.context?this.renderSession.smoothProperty="imageSmoothingEnabled":"webkitImageSmoothingEnabled"in this.context?this.renderSession.smoothProperty="webkitImageSmoothingEnabled":"mozImageSmoothingEnabled"in this.context?this.renderSession.smoothProperty="mozImageSmoothingEnabled":"oImageSmoothingEnabled"in this.context&&(this.renderSession.smoothProperty="oImageSmoothingEnabled")},b.CanvasRenderer.prototype.constructor=b.CanvasRenderer,b.CanvasRenderer.prototype.render=function(a){b.texturesToUpdate.length=0,b.texturesToDestroy.length=0,a.updateTransform(),this.context.setTransform(1,0,0,1,0,0),this.context.globalAlpha=1,navigator.isCocoonJS&&this.view.screencanvas&&(this.context.fillStyle="black",this.context.clear()),!this.transparent&&this.clearBeforeRender?(this.context.fillStyle=a.backgroundColorString,this.context.fillRect(0,0,this.width,this.height)):this.transparent&&this.clearBeforeRender&&this.context.clearRect(0,0,this.width,this.height),this.renderDisplayObject(a),a.interactive&&(a._interactiveEventsAdded||(a._interactiveEventsAdded=!0,a.interactionManager.setTarget(this))),b.Texture.frameUpdates.length>0&&(b.Texture.frameUpdates.length=0)
+for(var b=this.interactiveItems.length,c=!1,d=0;b>d;d++){var e=this.interactiveItems[d];e.__hit=this.hitTest(e,this.mouse),e.__hit&&!c?(e.mouseup&&e.mouseup(this.mouse),e.__isDown&&e.click&&e.click(this.mouse),e.interactiveChildren||(c=!0)):e.__isDown&&e.mouseupoutside&&e.mouseupoutside(this.mouse),e.__isDown=!1}},b.InteractionManager.prototype.hitTest=function(a,c){var d=c.global;if(!a.worldVisible)return!1;var e=a instanceof b.Sprite,f=a.worldTransform,g=f.a,h=f.b,i=f.tx,j=f.c,k=f.d,l=f.ty,m=1/(g*k+h*-j),n=k*m*d.x+-h*m*d.y+(l*h-i*k)*m,o=g*m*d.y+-j*m*d.x+(-l*g+i*j)*m;if(c.target=a,a.hitArea&&a.hitArea.contains)return a.hitArea.contains(n,o)?(c.target=a,!0):!1;if(e){var p,q=a.texture.frame.width,r=a.texture.frame.height,s=-q*a.anchor.x;if(n>s&&s+q>n&&(p=-r*a.anchor.y,o>p&&p+r>o))return c.target=a,!0}for(var t=a.children.length,u=0;t>u;u++){var v=a.children[u],w=this.hitTest(v,c);if(w)return c.target=a,!0}return!1},b.InteractionManager.prototype.onTouchMove=function(a){this.dirty&&this.rebuildInteractiveGraph();var b,c=this.interactionDOMElement.getBoundingClientRect(),d=a.changedTouches,e=0;for(e=0;e<d.length;e++){var f=d[e];b=this.touchs[f.identifier],b.originalEvent=a||window.event,b.global.x=(f.clientX-c.left)*(this.target.width/c.width),b.global.y=(f.clientY-c.top)*(this.target.height/c.height),navigator.isCocoonJS&&(b.global.x=f.clientX,b.global.y=f.clientY);for(var g=0;g<this.interactiveItems.length;g++){var h=this.interactiveItems[g];h.touchmove&&h.__touchData&&h.__touchData[f.identifier]&&h.touchmove(b)}}},b.InteractionManager.prototype.onTouchStart=function(a){this.dirty&&this.rebuildInteractiveGraph();var c=this.interactionDOMElement.getBoundingClientRect();b.AUTO_PREVENT_DEFAULT&&a.preventDefault();for(var d=a.changedTouches,e=0;e<d.length;e++){var f=d[e],g=this.pool.pop();g||(g=new b.InteractionData),g.originalEvent=a||window.event,this.touchs[f.identifier]=g,g.global.x=(f.clientX-c.left)*(this.target.width/c.width),g.global.y=(f.clientY-c.top)*(this.target.height/c.height),navigator.isCocoonJS&&(g.global.x=f.clientX,g.global.y=f.clientY);for(var h=this.interactiveItems.length,i=0;h>i;i++){var j=this.interactiveItems[i];if((j.touchstart||j.tap)&&(j.__hit=this.hitTest(j,g),j.__hit&&(j.touchstart&&j.touchstart(g),j.__isDown=!0,j.__touchData=j.__touchData||{},j.__touchData[f.identifier]=g,!j.interactiveChildren)))break}}},b.InteractionManager.prototype.onTouchEnd=function(a){this.dirty&&this.rebuildInteractiveGraph();for(var b=this.interactionDOMElement.getBoundingClientRect(),c=a.changedTouches,d=0;d<c.length;d++){var e=c[d],f=this.touchs[e.identifier],g=!1;f.global.x=(e.clientX-b.left)*(this.target.width/b.width),f.global.y=(e.clientY-b.top)*(this.target.height/b.height),navigator.isCocoonJS&&(f.global.x=e.clientX,f.global.y=e.clientY);for(var h=this.interactiveItems.length,i=0;h>i;i++){var j=this.interactiveItems[i];j.__touchData&&j.__touchData[e.identifier]&&(j.__hit=this.hitTest(j,j.__touchData[e.identifier]),f.originalEvent=a||window.event,(j.touchend||j.tap)&&(j.__hit&&!g?(j.touchend&&j.touchend(f),j.__isDown&&j.tap&&j.tap(f),j.interactiveChildren||(g=!0)):j.__isDown&&j.touchendoutside&&j.touchendoutside(f),j.__isDown=!1),j.__touchData[e.identifier]=null)}this.pool.push(f),this.touchs[e.identifier]=null}},b.Stage=function(a){b.DisplayObjectContainer.call(this),this.worldTransform=new b.Matrix,this.interactive=!0,this.interactionManager=new b.InteractionManager(this),this.dirty=!0,this.stage=this,this.stage.hitArea=new b.Rectangle(0,0,1e5,1e5),this.setBackgroundColor(a)},b.Stage.prototype=Object.create(b.DisplayObjectContainer.prototype),b.Stage.prototype.constructor=b.Stage,b.Stage.prototype.setInteractionDelegate=function(a){this.interactionManager.setTargetDomElement(a)},b.Stage.prototype.updateTransform=function(){this.worldAlpha=1;for(var a=0,b=this.children.length;b>a;a++)this.children[a].updateTransform();this.dirty&&(this.dirty=!1,this.interactionManager.dirty=!0),this.interactive&&this.interactionManager.update()},b.Stage.prototype.setBackgroundColor=function(a){this.backgroundColor=a||0,this.backgroundColorSplit=b.hex2rgb(this.backgroundColor);var c=this.backgroundColor.toString(16);c="000000".substr(0,6-c.length)+c,this.backgroundColorString="#"+c},b.Stage.prototype.getMousePosition=function(){return this.interactionManager.mouse.global};for(var c=0,d=["ms","moz","webkit","o"],e=0;e<d.length&&!window.requestAnimationFrame;++e)window.requestAnimationFrame=window[d[e]+"RequestAnimationFrame"],window.cancelAnimationFrame=window[d[e]+"CancelAnimationFrame"]||window[d[e]+"CancelRequestAnimationFrame"];window.requestAnimationFrame||(window.requestAnimationFrame=function(a){var b=(new Date).getTime(),d=Math.max(0,16-(b-c)),e=window.setTimeout(function(){a(b+d)},d);return c=b+d,e}),window.cancelAnimationFrame||(window.cancelAnimationFrame=function(a){clearTimeout(a)}),window.requestAnimFrame=window.requestAnimationFrame,b.hex2rgb=function(a){return[(a>>16&255)/255,(a>>8&255)/255,(255&a)/255]},b.rgb2hex=function(a){return(255*a[0]<<16)+(255*a[1]<<8)+255*a[2]},"function"!=typeof Function.prototype.bind&&(Function.prototype.bind=function(){var a=Array.prototype.slice;return function(b){function c(){var f=e.concat(a.call(arguments));d.apply(this instanceof c?this:b,f)}var d=this,e=a.call(arguments,1);if("function"!=typeof d)throw new TypeError;return c.prototype=function f(a){return a&&(f.prototype=a),this instanceof f?void 0:new f}(d.prototype),c}}()),b.AjaxRequest=function(){var a=["Msxml2.XMLHTTP.6.0","Msxml2.XMLHTTP.3.0","Microsoft.XMLHTTP"];if(!window.ActiveXObject)return window.XMLHttpRequest?new window.XMLHttpRequest:!1;for(var b=0;b<a.length;b++)try{return new window.ActiveXObject(a[b])}catch(c){}},b.canUseNewCanvasBlendModes=function(){var a=document.createElement("canvas");a.width=1,a.height=1;var b=a.getContext("2d");return b.fillStyle="#000",b.fillRect(0,0,1,1),b.globalCompositeOperation="multiply",b.fillStyle="#fff",b.fillRect(0,0,1,1),0===b.getImageData(0,0,1,1).data[0]},b.getNextPowerOfTwo=function(a){if(a>0&&0===(a&a-1))return a;for(var b=1;a>b;)b<<=1;return b},b.EventTarget=function(){var a={};this.addEventListener=this.on=function(b,c){void 0===a[b]&&(a[b]=[]),-1===a[b].indexOf(c)&&a[b].unshift(c)},this.dispatchEvent=this.emit=function(b){if(a[b.type]&&a[b.type].length)for(var c=a[b.type].length-1;c>=0;c--)a[b.type][c](b)},this.removeEventListener=this.off=function(b,c){if(void 0!==a[b]){var d=a[b].indexOf(c);-1!==d&&a[b].splice(d,1)}},this.removeAllEventListeners=function(b){var c=a[b];c&&(c.length=0)}},b.autoDetectRenderer=function(a,c,d,e,f){a||(a=800),c||(c=600);var g=function(){try{var a=document.createElement("canvas");return!!window.WebGLRenderingContext&&(a.getContext("webgl")||a.getContext("experimental-webgl"))}catch(b){return!1}}();return g?new b.WebGLRenderer(a,c,d,e,f):new b.CanvasRenderer(a,c,d,e)},b.autoDetectRecommendedRenderer=function(a,c,d,e,f){a||(a=800),c||(c=600);var g=function(){try{var a=document.createElement("canvas");return!!window.WebGLRenderingContext&&(a.getContext("webgl")||a.getContext("experimental-webgl"))}catch(b){return!1}}(),h=/Android/i.test(navigator.userAgent);return g&&!h?new b.WebGLRenderer(a,c,d,e,f):new b.CanvasRenderer(a,c,d,e)},b.PolyK={},b.PolyK.Triangulate=function(a){var c=!0,d=a.length>>1;if(3>d)return[];for(var e=[],f=[],g=0;d>g;g++)f.push(g);g=0;for(var h=d;h>3;){var i=f[(g+0)%h],j=f[(g+1)%h],k=f[(g+2)%h],l=a[2*i],m=a[2*i+1],n=a[2*j],o=a[2*j+1],p=a[2*k],q=a[2*k+1],r=!1;if(b.PolyK._convex(l,m,n,o,p,q,c)){r=!0;for(var s=0;h>s;s++){var t=f[s];if(t!==i&&t!==j&&t!==k&&b.PolyK._PointInTriangle(a[2*t],a[2*t+1],l,m,n,o,p,q)){r=!1;break}}}if(r)e.push(i,j,k),f.splice((g+1)%h,1),h--,g=0;else if(g++>3*h){if(!c)return window.console.log("PIXI Warning: shape too complex to fill"),[];for(e=[],f=[],g=0;d>g;g++)f.push(g);g=0,h=d,c=!1}}return e.push(f[0],f[1],f[2]),e},b.PolyK._PointInTriangle=function(a,b,c,d,e,f,g,h){var i=g-c,j=h-d,k=e-c,l=f-d,m=a-c,n=b-d,o=i*i+j*j,p=i*k+j*l,q=i*m+j*n,r=k*k+l*l,s=k*m+l*n,t=1/(o*r-p*p),u=(r*q-p*s)*t,v=(o*s-p*q)*t;return u>=0&&v>=0&&1>u+v},b.PolyK._convex=function(a,b,c,d,e,f,g){return(b-d)*(e-c)+(c-a)*(f-d)>=0===g},b.initDefaultShaders=function(){},b.CompileVertexShader=function(a,c){return b._CompileShader(a,c,a.VERTEX_SHADER)},b.CompileFragmentShader=function(a,c){return b._CompileShader(a,c,a.FRAGMENT_SHADER)},b._CompileShader=function(a,b,c){var d=b.join("\n"),e=a.createShader(c);return a.shaderSource(e,d),a.compileShader(e),a.getShaderParameter(e,a.COMPILE_STATUS)?e:(window.console.log(a.getShaderInfoLog(e)),null)},b.compileProgram=function(a,c,d){var e=b.CompileFragmentShader(a,d),f=b.CompileVertexShader(a,c),g=a.createProgram();return a.attachShader(g,f),a.attachShader(g,e),a.linkProgram(g),a.getProgramParameter(g,a.LINK_STATUS)||window.console.log("Could not initialise shaders"),g},b.PixiShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision lowp float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord) * vColor ;","}"],this.textureCount=0,this.attributes=[],this.init()},b.PixiShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc||b.PixiShader.defaultVertexSrc,this.fragmentSrc);a.useProgram(c),this.uSampler=a.getUniformLocation(c,"uSampler"),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.dimensions=a.getUniformLocation(c,"dimensions"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.aTextureCoord=a.getAttribLocation(c,"aTextureCoord"),this.colorAttribute=a.getAttribLocation(c,"aColor"),-1===this.colorAttribute&&(this.colorAttribute=2),this.attributes=[this.aVertexPosition,this.aTextureCoord,this.colorAttribute];for(var d in this.uniforms)this.uniforms[d].uniformLocation=a.getUniformLocation(c,d);this.initUniforms(),this.program=c},b.PixiShader.prototype.initUniforms=function(){this.textureCount=1;var a,b=this.gl;for(var c in this.uniforms){a=this.uniforms[c];var d=a.type;"sampler2D"===d?(a._init=!1,null!==a.value&&this.initSampler2D(a)):"mat2"===d||"mat3"===d||"mat4"===d?(a.glMatrix=!0,a.glValueLength=1,"mat2"===d?a.glFunc=b.uniformMatrix2fv:"mat3"===d?a.glFunc=b.uniformMatrix3fv:"mat4"===d&&(a.glFunc=b.uniformMatrix4fv)):(a.glFunc=b["uniform"+d],a.glValueLength="2f"===d||"2i"===d?2:"3f"===d||"3i"===d?3:"4f"===d||"4i"===d?4:1)}},b.PixiShader.prototype.initSampler2D=function(a){if(a.value&&a.value.baseTexture&&a.value.baseTexture.hasLoaded){var b=this.gl;if(b.activeTexture(b["TEXTURE"+this.textureCount]),b.bindTexture(b.TEXTURE_2D,a.value.baseTexture._glTextures[b.id]),a.textureData){var c=a.textureData,d=c.magFilter?c.magFilter:b.LINEAR,e=c.minFilter?c.minFilter:b.LINEAR,f=c.wrapS?c.wrapS:b.CLAMP_TO_EDGE,g=c.wrapT?c.wrapT:b.CLAMP_TO_EDGE,h=c.luminance?b.LUMINANCE:b.RGBA;if(c.repeat&&(f=b.REPEAT,g=b.REPEAT),b.pixelStorei(b.UNPACK_FLIP_Y_WEBGL,!!c.flipY),c.width){var i=c.width?c.width:512,j=c.height?c.height:2,k=c.border?c.border:0;b.texImage2D(b.TEXTURE_2D,0,h,i,j,k,h,b.UNSIGNED_BYTE,null)}else b.texImage2D(b.TEXTURE_2D,0,h,b.RGBA,b.UNSIGNED_BYTE,a.value.baseTexture.source);b.texParameteri(b.TEXTURE_2D,b.TEXTURE_MAG_FILTER,d),b.texParameteri(b.TEXTURE_2D,b.TEXTURE_MIN_FILTER,e),b.texParameteri(b.TEXTURE_2D,b.TEXTURE_WRAP_S,f),b.texParameteri(b.TEXTURE_2D,b.TEXTURE_WRAP_T,g)}b.uniform1i(a.uniformLocation,this.textureCount),a._init=!0,this.textureCount++}},b.PixiShader.prototype.syncUniforms=function(){this.textureCount=1;var a,c=this.gl;for(var d in this.uniforms)a=this.uniforms[d],1===a.glValueLength?a.glMatrix===!0?a.glFunc.call(c,a.uniformLocation,a.transpose,a.value):a.glFunc.call(c,a.uniformLocation,a.value):2===a.glValueLength?a.glFunc.call(c,a.uniformLocation,a.value.x,a.value.y):3===a.glValueLength?a.glFunc.call(c,a.uniformLocation,a.value.x,a.value.y,a.value.z):4===a.glValueLength?a.glFunc.call(c,a.uniformLocation,a.value.x,a.value.y,a.value.z,a.value.w):"sampler2D"===a.type&&(a._init?(c.activeTexture(c["TEXTURE"+this.textureCount]),c.bindTexture(c.TEXTURE_2D,a.value.baseTexture._glTextures[c.id]||b.createWebGLTexture(a.value.baseTexture,c)),c.uniform1i(a.uniformLocation,this.textureCount),this.textureCount++):this.initSampler2D(a))},b.PixiShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attributes=null},b.PixiShader.defaultVertexSrc=["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","attribute vec2 aColor;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","varying vec2 vTextureCoord;","varying vec4 vColor;","const vec2 center = vec2(-1.0, 1.0);","void main(void) {","   gl_Position = vec4( ((aVertexPosition + offsetVector) / projectionVector) + center , 0.0, 1.0);","   vTextureCoord = aTextureCoord;","   vec3 color = mod(vec3(aColor.y/65536.0, aColor.y/256.0, aColor.y), 256.0) / 256.0;","   vColor = vec4(color * aColor.x, aColor.x);","}"],b.PixiFastShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision lowp float;","varying vec2 vTextureCoord;","varying float vColor;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord) * vColor ;","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","attribute vec2 aPositionCoord;","attribute vec2 aScale;","attribute float aRotation;","attribute vec2 aTextureCoord;","attribute float aColor;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","uniform mat3 uMatrix;","varying vec2 vTextureCoord;","varying float vColor;","const vec2 center = vec2(-1.0, 1.0);","void main(void) {","   vec2 v;","   vec2 sv = aVertexPosition * aScale;","   v.x = (sv.x) * cos(aRotation) - (sv.y) * sin(aRotation);","   v.y = (sv.x) * sin(aRotation) + (sv.y) * cos(aRotation);","   v = ( uMatrix * vec3(v + aPositionCoord , 1.0) ).xy ;","   gl_Position = vec4( ( v / projectionVector) + center , 0.0, 1.0);","   vTextureCoord = aTextureCoord;","   vColor = aColor;","}"],this.textureCount=0,this.init()},b.PixiFastShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.uSampler=a.getUniformLocation(c,"uSampler"),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.dimensions=a.getUniformLocation(c,"dimensions"),this.uMatrix=a.getUniformLocation(c,"uMatrix"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.aPositionCoord=a.getAttribLocation(c,"aPositionCoord"),this.aScale=a.getAttribLocation(c,"aScale"),this.aRotation=a.getAttribLocation(c,"aRotation"),this.aTextureCoord=a.getAttribLocation(c,"aTextureCoord"),this.colorAttribute=a.getAttribLocation(c,"aColor"),-1===this.colorAttribute&&(this.colorAttribute=2),this.attributes=[this.aVertexPosition,this.aPositionCoord,this.aScale,this.aRotation,this.aTextureCoord,this.colorAttribute],this.program=c},b.PixiFastShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attributes=null},b.StripShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","uniform float alpha;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","attribute vec2 aTextureCoord;","uniform mat3 translationMatrix;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","varying vec2 vTextureCoord;","void main(void) {","   vec3 v = translationMatrix * vec3(aVertexPosition , 1.0);","   v -= offsetVector.xyx;","   gl_Position = vec4( v.x / projectionVector.x -1.0, v.y / -projectionVector.y + 1.0 , 0.0, 1.0);","   vTextureCoord = aTextureCoord;","}"],this.init()},b.StripShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.uSampler=a.getUniformLocation(c,"uSampler"),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.colorAttribute=a.getAttribLocation(c,"aColor"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.aTextureCoord=a.getAttribLocation(c,"aTextureCoord"),this.attributes=[this.aVertexPosition,this.aTextureCoord],this.translationMatrix=a.getUniformLocation(c,"translationMatrix"),this.alpha=a.getUniformLocation(c,"alpha"),this.program=c},b.PrimitiveShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision mediump float;","varying vec4 vColor;","void main(void) {","   gl_FragColor = vColor;","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","attribute vec4 aColor;","uniform mat3 translationMatrix;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","uniform float alpha;","uniform vec3 tint;","varying vec4 vColor;","void main(void) {","   vec3 v = translationMatrix * vec3(aVertexPosition , 1.0);","   v -= offsetVector.xyx;","   gl_Position = vec4( v.x / projectionVector.x -1.0, v.y / -projectionVector.y + 1.0 , 0.0, 1.0);","   vColor = aColor * vec4(tint * alpha, alpha);","}"],this.init()},b.PrimitiveShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.tintColor=a.getUniformLocation(c,"tint"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.colorAttribute=a.getAttribLocation(c,"aColor"),this.attributes=[this.aVertexPosition,this.colorAttribute],this.translationMatrix=a.getUniformLocation(c,"translationMatrix"),this.alpha=a.getUniformLocation(c,"alpha"),this.program=c},b.PrimitiveShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attribute=null},b.ComplexPrimitiveShader=function(a){this._UID=b._UID++,this.gl=a,this.program=null,this.fragmentSrc=["precision mediump float;","varying vec4 vColor;","void main(void) {","   gl_FragColor = vColor;","}"],this.vertexSrc=["attribute vec2 aVertexPosition;","uniform mat3 translationMatrix;","uniform vec2 projectionVector;","uniform vec2 offsetVector;","uniform vec3 tint;","uniform float alpha;","uniform vec3 color;","varying vec4 vColor;","void main(void) {","   vec3 v = translationMatrix * vec3(aVertexPosition , 1.0);","   v -= offsetVector.xyx;","   gl_Position = vec4( v.x / projectionVector.x -1.0, v.y / -projectionVector.y + 1.0 , 0.0, 1.0);","   vColor = vec4(color * alpha * tint, alpha);","}"],this.init()},b.ComplexPrimitiveShader.prototype.init=function(){var a=this.gl,c=b.compileProgram(a,this.vertexSrc,this.fragmentSrc);a.useProgram(c),this.projectionVector=a.getUniformLocation(c,"projectionVector"),this.offsetVector=a.getUniformLocation(c,"offsetVector"),this.tintColor=a.getUniformLocation(c,"tint"),this.color=a.getUniformLocation(c,"color"),this.aVertexPosition=a.getAttribLocation(c,"aVertexPosition"),this.attributes=[this.aVertexPosition,this.colorAttribute],this.translationMatrix=a.getUniformLocation(c,"translationMatrix"),this.alpha=a.getUniformLocation(c,"alpha"),this.program=c},b.ComplexPrimitiveShader.prototype.destroy=function(){this.gl.deleteProgram(this.program),this.uniforms=null,this.gl=null,this.attribute=null},b.WebGLGraphics=function(){},b.WebGLGraphics.renderGraphics=function(a,c){var d,e=c.gl,f=c.projection,g=c.offset,h=c.shaderManager.primitiveShader;a.dirty&&b.WebGLGraphics.updateGraphics(a,e);for(var i=a._webGL[e.id],j=0;j<i.data.length;j++)1===i.data[j].mode?(d=i.data[j],c.stencilManager.pushStencil(a,d,c),e.drawElements(e.TRIANGLE_FAN,4,e.UNSIGNED_SHORT,2*(d.indices.length-4)),c.stencilManager.popStencil(a,d,c),this.last=d.mode):(d=i.data[j],c.shaderManager.setShader(h),h=c.shaderManager.primitiveShader,e.uniformMatrix3fv(h.translationMatrix,!1,a.worldTransform.toArray(!0)),e.uniform2f(h.projectionVector,f.x,-f.y),e.uniform2f(h.offsetVector,-g.x,-g.y),e.uniform3fv(h.tintColor,b.hex2rgb(a.tint)),e.uniform1f(h.alpha,a.worldAlpha),e.bindBuffer(e.ARRAY_BUFFER,d.buffer),e.vertexAttribPointer(h.aVertexPosition,2,e.FLOAT,!1,24,0),e.vertexAttribPointer(h.colorAttribute,4,e.FLOAT,!1,24,8),e.bindBuffer(e.ELEMENT_ARRAY_BUFFER,d.indexBuffer),e.drawElements(e.TRIANGLE_STRIP,d.indices.length,e.UNSIGNED_SHORT,0))},b.WebGLGraphics.updateGraphics=function(a,c){var d=a._webGL[c.id];d||(d=a._webGL[c.id]={lastIndex:0,data:[],gl:c}),a.dirty=!1;var e;if(a.clearDirty){for(a.clearDirty=!1,e=0;e<d.data.length;e++){var f=d.data[e];f.reset(),b.WebGLGraphics.graphicsDataPool.push(f)}d.data=[],d.lastIndex=0}var g;for(e=d.lastIndex;e<a.graphicsData.length;e++){var h=a.graphicsData[e];h.type===b.Graphics.POLY?(h.fill&&h.points.length>6&&(h.points.length>10?(g=b.WebGLGraphics.switchMode(d,1),b.WebGLGraphics.buildComplexPoly(h,g)):(g=b.WebGLGraphics.switchMode(d,0),b.WebGLGraphics.buildPoly(h,g))),h.lineWidth>0&&(g=b.WebGLGraphics.switchMode(d,0),b.WebGLGraphics.buildLine(h,g))):(g=b.WebGLGraphics.switchMode(d,0),h.type===b.Graphics.RECT?b.WebGLGraphics.buildRectangle(h,g):h.type===b.Graphics.CIRC||h.type===b.Graphics.ELIP?b.WebGLGraphics.buildCircle(h,g):h.type===b.Graphics.RREC&&b.WebGLGraphics.buildRoundedRectangle(h,g)),d.lastIndex++}for(e=0;e<d.data.length;e++)g=d.data[e],g.dirty&&g.upload()},b.WebGLGraphics.switchMode=function(a,c){var d;return a.data.length?(d=a.data[a.data.length-1],(d.mode!==c||1===c)&&(d=b.WebGLGraphics.graphicsDataPool.pop()||new b.WebGLGraphicsData(a.gl),d.mode=c,a.data.push(d))):(d=b.WebGLGraphics.graphicsDataPool.pop()||new b.WebGLGraphicsData(a.gl),d.mode=c,a.data.push(d)),d.dirty=!0,d},b.WebGLGraphics.buildRectangle=function(a,c){var d=a.points,e=d[0],f=d[1],g=d[2],h=d[3];if(a.fill){var i=b.hex2rgb(a.fillColor),j=a.fillAlpha,k=i[0]*j,l=i[1]*j,m=i[2]*j,n=c.points,o=c.indices,p=n.length/6;n.push(e,f),n.push(k,l,m,j),n.push(e+g,f),n.push(k,l,m,j),n.push(e,f+h),n.push(k,l,m,j),n.push(e+g,f+h),n.push(k,l,m,j),o.push(p,p,p+1,p+2,p+3,p+3)}if(a.lineWidth){var q=a.points;a.points=[e,f,e+g,f,e+g,f+h,e,f+h,e,f],b.WebGLGraphics.buildLine(a,c),a.points=q}},b.WebGLGraphics.buildRoundedRectangle=function(a,c){var d=a.points,e=d[0],f=d[1],g=d[2],h=d[3],i=d[4],j=[];if(j.push(e,f+i),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e,f+h-i,e,f+h,e+i,f+h)),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e+g-i,f+h,e+g,f+h,e+g,f+h-i)),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e+g,f+i,e+g,f,e+g-i,f)),j=j.concat(b.WebGLGraphics.quadraticBezierCurve(e+i,f,e,f,e,f+i)),a.fill){var k=b.hex2rgb(a.fillColor),l=a.fillAlpha,m=k[0]*l,n=k[1]*l,o=k[2]*l,p=c.points,q=c.indices,r=p.length/6,s=b.PolyK.Triangulate(j),t=0;for(t=0;t<s.length;t+=3)q.push(s[t]+r),q.push(s[t]+r),q.push(s[t+1]+r),q.push(s[t+2]+r),q.push(s[t+2]+r);for(t=0;t<j.length;t++)p.push(j[t],j[++t],m,n,o,l)}if(a.lineWidth){var u=a.points;a.points=j,b.WebGLGraphics.buildLine(a,c),a.points=u}},b.WebGLGraphics.quadraticBezierCurve=function(a,b,c,d,e,f){function g(a,b,c){var d=b-a;return a+d*c}for(var h,i,j,k,l,m,n=20,o=[],p=0,q=0;n>=q;q++)p=q/n,h=g(a,c,p),i=g(b,d,p),j=g(c,e,p),k=g(d,f,p),l=g(h,j,p),m=g(i,k,p),o.push(l,m);return o},b.WebGLGraphics.buildCircle=function(a,c){var d=a.points,e=d[0],f=d[1],g=d[2],h=d[3],i=40,j=2*Math.PI/i,k=0;if(a.fill){var l=b.hex2rgb(a.fillColor),m=a.fillAlpha,n=l[0]*m,o=l[1]*m,p=l[2]*m,q=c.points,r=c.indices,s=q.length/6;for(r.push(s),k=0;i+1>k;k++)q.push(e,f,n,o,p,m),q.push(e+Math.sin(j*k)*g,f+Math.cos(j*k)*h,n,o,p,m),r.push(s++,s++);r.push(s-1)}if(a.lineWidth){var t=a.points;for(a.points=[],k=0;i+1>k;k++)a.points.push(e+Math.sin(j*k)*g,f+Math.cos(j*k)*h);b.WebGLGraphics.buildLine(a,c),a.points=t}},b.WebGLGraphics.buildLine=function(a,c){var d=0,e=a.points;if(0!==e.length){if(a.lineWidth%2)for(d=0;d<e.length;d++)e[d]+=.5;var f=new b.Point(e[0],e[1]),g=new b.Point(e[e.length-2],e[e.length-1]);if(f.x===g.x&&f.y===g.y){e=e.slice(),e.pop(),e.pop(),g=new b.Point(e[e.length-2],e[e.length-1]);var h=g.x+.5*(f.x-g.x),i=g.y+.5*(f.y-g.y);e.unshift(h,i),e.push(h,i)}var j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G=c.points,H=c.indices,I=e.length/2,J=e.length,K=G.length/6,L=a.lineWidth/2,M=b.hex2rgb(a.lineColor),N=a.lineAlpha,O=M[0]*N,P=M[1]*N,Q=M[2]*N;for(l=e[0],m=e[1],n=e[2],o=e[3],r=-(m-o),s=l-n,F=Math.sqrt(r*r+s*s),r/=F,s/=F,r*=L,s*=L,G.push(l-r,m-s,O,P,Q,N),G.push(l+r,m+s,O,P,Q,N),d=1;I-1>d;d++)l=e[2*(d-1)],m=e[2*(d-1)+1],n=e[2*d],o=e[2*d+1],p=e[2*(d+1)],q=e[2*(d+1)+1],r=-(m-o),s=l-n,F=Math.sqrt(r*r+s*s),r/=F,s/=F,r*=L,s*=L,t=-(o-q),u=n-p,F=Math.sqrt(t*t+u*u),t/=F,u/=F,t*=L,u*=L,x=-s+m-(-s+o),y=-r+n-(-r+l),z=(-r+l)*(-s+o)-(-r+n)*(-s+m),A=-u+q-(-u+o),B=-t+n-(-t+p),C=(-t+p)*(-u+o)-(-t+n)*(-u+q),D=x*B-A*y,Math.abs(D)<.1?(D+=10.1,G.push(n-r,o-s,O,P,Q,N),G.push(n+r,o+s,O,P,Q,N)):(j=(y*C-B*z)/D,k=(A*z-x*C)/D,E=(j-n)*(j-n)+(k-o)+(k-o),E>19600?(v=r-t,w=s-u,F=Math.sqrt(v*v+w*w),v/=F,w/=F,v*=L,w*=L,G.push(n-v,o-w),G.push(O,P,Q,N),G.push(n+v,o+w),G.push(O,P,Q,N),G.push(n-v,o-w),G.push(O,P,Q,N),J++):(G.push(j,k),G.push(O,P,Q,N),G.push(n-(j-n),o-(k-o)),G.push(O,P,Q,N)));for(l=e[2*(I-2)],m=e[2*(I-2)+1],n=e[2*(I-1)],o=e[2*(I-1)+1],r=-(m-o),s=l-n,F=Math.sqrt(r*r+s*s),r/=F,s/=F,r*=L,s*=L,G.push(n-r,o-s),G.push(O,P,Q,N),G.push(n+r,o+s),G.push(O,P,Q,N),H.push(K),d=0;J>d;d++)H.push(K++);H.push(K-1)}},b.WebGLGraphics.buildComplexPoly=function(a,c){var d=a.points.slice();if(!(d.length<6)){var e=c.indices;c.points=d,c.alpha=a.fillAlpha,c.color=b.hex2rgb(a.fillColor);for(var f,g,h=1/0,i=-1/0,j=1/0,k=-1/0,l=0;l<d.length;l+=2)f=d[l],g=d[l+1],h=h>f?f:h,i=f>i?f:i,j=j>g?g:j,k=g>k?g:k;d.push(h,j,i,j,i,k,h,k);var m=d.length/2;for(l=0;m>l;l++)e.push(l)}},b.WebGLGraphics.buildPoly=function(a,c){var d=a.points;if(!(d.length<6)){var e=c.points,f=c.indices,g=d.length/2,h=b.hex2rgb(a.fillColor),i=a.fillAlpha,j=h[0]*i,k=h[1]*i,l=h[2]*i,m=b.PolyK.Triangulate(d),n=e.length/6,o=0;for(o=0;o<m.length;o+=3)f.push(m[o]+n),f.push(m[o]+n),f.push(m[o+1]+n),f.push(m[o+2]+n),f.push(m[o+2]+n);for(o=0;g>o;o++)e.push(d[2*o],d[2*o+1],j,k,l,i)}},b.WebGLGraphics.graphicsDataPool=[],b.WebGLGraphicsData=function(a){this.gl=a,this.color=[0,0,0],this.points=[],this.indices=[],this.lastIndex=0,this.buffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),this.mode=1,this.alpha=1,this.dirty=!0},b.WebGLGraphicsData.prototype.reset=function(){this.points=[],this.indices=[],this.lastIndex=0},b.WebGLGraphicsData.prototype.upload=function(){var a=this.gl;this.glPoints=new Float32Array(this.points),a.bindBuffer(a.ARRAY_BUFFER,this.buffer),a.bufferData(a.ARRAY_BUFFER,this.glPoints,a.STATIC_DRAW),this.glIndicies=new Uint16Array(this.indices),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,this.glIndicies,a.STATIC_DRAW),this.dirty=!1},b.glContexts=[],b.WebGLRenderer=function(a,c,d,e,f,g){b.defaultRenderer||(b.sayHello("webGL"),b.defaultRenderer=this),this.type=b.WEBGL_RENDERER,this.transparent=!!e,this.preserveDrawingBuffer=g,this.width=a||800,this.height=c||600,this.view=d||document.createElement("canvas"),this.view.width=this.width,this.view.height=this.height,this.contextLost=this.handleContextLost.bind(this),this.contextRestoredLost=this.handleContextRestored.bind(this),this.view.addEventListener("webglcontextlost",this.contextLost,!1),this.view.addEventListener("webglcontextrestored",this.contextRestoredLost,!1),this.options={alpha:this.transparent,antialias:!!f,premultipliedAlpha:!!e,stencil:!0,preserveDrawingBuffer:g};var h=null;if(["experimental-webgl","webgl"].forEach(function(a){try{h=h||this.view.getContext(a,this.options)}catch(b){}},this),!h)throw new Error("This browser does not support webGL. Try using the canvas renderer"+this);this.gl=h,this.glContextId=h.id=b.WebGLRenderer.glContextId++,b.glContexts[this.glContextId]=h,b.blendModesWebGL||(b.blendModesWebGL=[],b.blendModesWebGL[b.blendModes.NORMAL]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.ADD]=[h.SRC_ALPHA,h.DST_ALPHA],b.blendModesWebGL[b.blendModes.MULTIPLY]=[h.DST_COLOR,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.SCREEN]=[h.SRC_ALPHA,h.ONE],b.blendModesWebGL[b.blendModes.OVERLAY]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.DARKEN]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.LIGHTEN]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.COLOR_DODGE]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.COLOR_BURN]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.HARD_LIGHT]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.SOFT_LIGHT]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.DIFFERENCE]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.EXCLUSION]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.HUE]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.SATURATION]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.COLOR]=[h.ONE,h.ONE_MINUS_SRC_ALPHA],b.blendModesWebGL[b.blendModes.LUMINOSITY]=[h.ONE,h.ONE_MINUS_SRC_ALPHA]),this.projection=new b.Point,this.projection.x=this.width/2,this.projection.y=-this.height/2,this.offset=new b.Point(0,0),this.resize(this.width,this.height),this.contextLost=!1,this.shaderManager=new b.WebGLShaderManager(h),this.spriteBatch=new b.WebGLSpriteBatch(h),this.maskManager=new b.WebGLMaskManager(h),this.filterManager=new b.WebGLFilterManager(h,this.transparent),this.stencilManager=new b.WebGLStencilManager(h),this.blendModeManager=new b.WebGLBlendModeManager(h),this.renderSession={},this.renderSession.gl=this.gl,this.renderSession.drawCount=0,this.renderSession.shaderManager=this.shaderManager,this.renderSession.maskManager=this.maskManager,this.renderSession.filterManager=this.filterManager,this.renderSession.blendModeManager=this.blendModeManager,this.renderSession.spriteBatch=this.spriteBatch,this.renderSession.stencilManager=this.stencilManager,this.renderSession.renderer=this,h.useProgram(this.shaderManager.defaultShader.program),h.disable(h.DEPTH_TEST),h.disable(h.CULL_FACE),h.enable(h.BLEND),h.colorMask(!0,!0,!0,!0)},b.WebGLRenderer.prototype.constructor=b.WebGLRenderer,b.WebGLRenderer.prototype.render=function(a){if(!this.contextLost){this.__stage!==a&&(a.interactive&&a.interactionManager.removeEvents(),this.__stage=a),b.WebGLRenderer.updateTextures(),a.updateTransform(),a._interactive&&(a._interactiveEventsAdded||(a._interactiveEventsAdded=!0,a.interactionManager.setTarget(this)));var c=this.gl;c.viewport(0,0,this.width,this.height),c.bindFramebuffer(c.FRAMEBUFFER,null),this.transparent?c.clearColor(0,0,0,0):c.clearColor(a.backgroundColorSplit[0],a.backgroundColorSplit[1],a.backgroundColorSplit[2],1),c.clear(c.COLOR_BUFFER_BIT),this.renderDisplayObject(a,this.projection),a.interactive?a._interactiveEventsAdded||(a._interactiveEventsAdded=!0,a.interactionManager.setTarget(this)):a._interactiveEventsAdded&&(a._interactiveEventsAdded=!1,a.interactionManager.setTarget(this))}},b.WebGLRenderer.prototype.renderDisplayObject=function(a,c,d){this.renderSession.blendModeManager.setBlendMode(b.blendModes.NORMAL),this.renderSession.drawCount=0,this.renderSession.currentBlendMode=9999,this.renderSession.projection=c,this.renderSession.offset=this.offset,this.spriteBatch.begin(this.renderSession),this.filterManager.begin(this.renderSession,d),a._renderWebGL(this.renderSession),this.spriteBatch.end()},b.WebGLRenderer.updateTextures=function(){var a=0;for(a=0;a<b.Texture.frameUpdates.length;a++)b.WebGLRenderer.updateTextureFrame(b.Texture.frameUpdates[a]);for(a=0;a<b.texturesToDestroy.length;a++)b.WebGLRenderer.destroyTexture(b.texturesToDestroy[a]);b.texturesToUpdate.length=0,b.texturesToDestroy.length=0,b.Texture.frameUpdates.length=0},b.WebGLRenderer.destroyTexture=function(a){for(var c=a._glTextures.length-1;c>=0;c--){var d=a._glTextures[c],e=b.glContexts[c];
+e&&d&&e.deleteTexture(d)}a._glTextures.length=0},b.WebGLRenderer.updateTextureFrame=function(a){a._updateWebGLuvs()},b.WebGLRenderer.prototype.resize=function(a,b){this.width=a,this.height=b,this.view.width=a,this.view.height=b,this.gl.viewport(0,0,this.width,this.height),this.projection.x=this.width/2,this.projection.y=-this.height/2},b.createWebGLTexture=function(a,c){return a.hasLoaded&&(a._glTextures[c.id]=c.createTexture(),c.bindTexture(c.TEXTURE_2D,a._glTextures[c.id]),c.pixelStorei(c.UNPACK_PREMULTIPLY_ALPHA_WEBGL,a.premultipliedAlpha),c.texImage2D(c.TEXTURE_2D,0,c.RGBA,c.RGBA,c.UNSIGNED_BYTE,a.source),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MAG_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MIN_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),a._powerOf2?(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.REPEAT),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.REPEAT)):(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.CLAMP_TO_EDGE),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.CLAMP_TO_EDGE)),c.bindTexture(c.TEXTURE_2D,null),a._dirty[c.id]=!1),a._glTextures[c.id]},b.updateWebGLTexture=function(a,c){a._glTextures[c.id]&&(c.bindTexture(c.TEXTURE_2D,a._glTextures[c.id]),c.pixelStorei(c.UNPACK_PREMULTIPLY_ALPHA_WEBGL,a.premultipliedAlpha),c.texImage2D(c.TEXTURE_2D,0,c.RGBA,c.RGBA,c.UNSIGNED_BYTE,a.source),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MAG_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_MIN_FILTER,a.scaleMode===b.scaleModes.LINEAR?c.LINEAR:c.NEAREST),a._powerOf2?(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.REPEAT),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.REPEAT)):(c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_S,c.CLAMP_TO_EDGE),c.texParameteri(c.TEXTURE_2D,c.TEXTURE_WRAP_T,c.CLAMP_TO_EDGE)),a._dirty[c.id]=!1)},b.WebGLRenderer.prototype.handleContextLost=function(a){a.preventDefault(),this.contextLost=!0},b.WebGLRenderer.prototype.handleContextRestored=function(){try{this.gl=this.view.getContext("experimental-webgl",this.options)}catch(a){try{this.gl=this.view.getContext("webgl",this.options)}catch(c){throw new Error(" This browser does not support webGL. Try using the canvas renderer"+this)}}var d=this.gl;d.id=b.WebGLRenderer.glContextId++,this.shaderManager.setContext(d),this.spriteBatch.setContext(d),this.primitiveBatch.setContext(d),this.maskManager.setContext(d),this.filterManager.setContext(d),this.renderSession.gl=this.gl,d.disable(d.DEPTH_TEST),d.disable(d.CULL_FACE),d.enable(d.BLEND),d.colorMask(!0,!0,!0,!0),this.gl.viewport(0,0,this.width,this.height);for(var e in b.TextureCache){var f=b.TextureCache[e].baseTexture;f._glTextures=[]}this.contextLost=!1},b.WebGLRenderer.prototype.destroy=function(){this.view.removeEventListener("webglcontextlost",this.contextLost),this.view.removeEventListener("webglcontextrestored",this.contextRestoredLost),b.glContexts[this.glContextId]=null,this.projection=null,this.offset=null,this.shaderManager.destroy(),this.spriteBatch.destroy(),this.primitiveBatch.destroy(),this.maskManager.destroy(),this.filterManager.destroy(),this.shaderManager=null,this.spriteBatch=null,this.maskManager=null,this.filterManager=null,this.gl=null,this.renderSession=null},b.WebGLRenderer.glContextId=0,b.WebGLBlendModeManager=function(a){this.gl=a,this.currentBlendMode=99999},b.WebGLBlendModeManager.prototype.setBlendMode=function(a){if(this.currentBlendMode===a)return!1;this.currentBlendMode=a;var c=b.blendModesWebGL[this.currentBlendMode];return this.gl.blendFunc(c[0],c[1]),!0},b.WebGLBlendModeManager.prototype.destroy=function(){this.gl=null},b.WebGLMaskManager=function(a){this.maskStack=[],this.maskPosition=0,this.setContext(a),this.reverse=!1,this.count=0},b.WebGLMaskManager.prototype.setContext=function(a){this.gl=a},b.WebGLMaskManager.prototype.pushMask=function(a,c){var d=c.gl;a.dirty&&b.WebGLGraphics.updateGraphics(a,d),a._webGL[d.id].data.length&&c.stencilManager.pushStencil(a,a._webGL[d.id].data[0],c)},b.WebGLMaskManager.prototype.popMask=function(a,b){var c=this.gl;b.stencilManager.popStencil(a,a._webGL[c.id].data[0],b)},b.WebGLMaskManager.prototype.destroy=function(){this.maskStack=null,this.gl=null},b.WebGLStencilManager=function(a){this.stencilStack=[],this.setContext(a),this.reverse=!0,this.count=0},b.WebGLStencilManager.prototype.setContext=function(a){this.gl=a},b.WebGLStencilManager.prototype.pushStencil=function(a,b,c){var d=this.gl;this.bindGraphics(a,b,c),0===this.stencilStack.length&&(d.enable(d.STENCIL_TEST),d.clear(d.STENCIL_BUFFER_BIT),this.reverse=!0,this.count=0),this.stencilStack.push(b);var e=this.count;d.colorMask(!1,!1,!1,!1),d.stencilFunc(d.ALWAYS,0,255),d.stencilOp(d.KEEP,d.KEEP,d.INVERT),1===b.mode?(d.drawElements(d.TRIANGLE_FAN,b.indices.length-4,d.UNSIGNED_SHORT,0),this.reverse?(d.stencilFunc(d.EQUAL,255-e,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)):(d.stencilFunc(d.EQUAL,e,255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)),d.drawElements(d.TRIANGLE_FAN,4,d.UNSIGNED_SHORT,2*(b.indices.length-4)),this.reverse?d.stencilFunc(d.EQUAL,255-(e+1),255):d.stencilFunc(d.EQUAL,e+1,255),this.reverse=!this.reverse):(this.reverse?(d.stencilFunc(d.EQUAL,e,255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)):(d.stencilFunc(d.EQUAL,255-e,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)),d.drawElements(d.TRIANGLE_STRIP,b.indices.length,d.UNSIGNED_SHORT,0),this.reverse?d.stencilFunc(d.EQUAL,e+1,255):d.stencilFunc(d.EQUAL,255-(e+1),255)),d.colorMask(!0,!0,!0,!0),d.stencilOp(d.KEEP,d.KEEP,d.KEEP),this.count++},b.WebGLStencilManager.prototype.bindGraphics=function(a,c,d){this._currentGraphics=a;var e,f=this.gl,g=d.projection,h=d.offset;1===c.mode?(e=d.shaderManager.complexPrimativeShader,d.shaderManager.setShader(e),f.uniformMatrix3fv(e.translationMatrix,!1,a.worldTransform.toArray(!0)),f.uniform2f(e.projectionVector,g.x,-g.y),f.uniform2f(e.offsetVector,-h.x,-h.y),f.uniform3fv(e.tintColor,b.hex2rgb(a.tint)),f.uniform3fv(e.color,c.color),f.uniform1f(e.alpha,a.worldAlpha*c.alpha),f.bindBuffer(f.ARRAY_BUFFER,c.buffer),f.vertexAttribPointer(e.aVertexPosition,2,f.FLOAT,!1,8,0),f.bindBuffer(f.ELEMENT_ARRAY_BUFFER,c.indexBuffer)):(e=d.shaderManager.primitiveShader,d.shaderManager.setShader(e),f.uniformMatrix3fv(e.translationMatrix,!1,a.worldTransform.toArray(!0)),f.uniform2f(e.projectionVector,g.x,-g.y),f.uniform2f(e.offsetVector,-h.x,-h.y),f.uniform3fv(e.tintColor,b.hex2rgb(a.tint)),f.uniform1f(e.alpha,a.worldAlpha),f.bindBuffer(f.ARRAY_BUFFER,c.buffer),f.vertexAttribPointer(e.aVertexPosition,2,f.FLOAT,!1,24,0),f.vertexAttribPointer(e.colorAttribute,4,f.FLOAT,!1,24,8),f.bindBuffer(f.ELEMENT_ARRAY_BUFFER,c.indexBuffer))},b.WebGLStencilManager.prototype.popStencil=function(a,b,c){var d=this.gl;if(this.stencilStack.pop(),this.count--,0===this.stencilStack.length)d.disable(d.STENCIL_TEST);else{var e=this.count;this.bindGraphics(a,b,c),d.colorMask(!1,!1,!1,!1),1===b.mode?(this.reverse=!this.reverse,this.reverse?(d.stencilFunc(d.EQUAL,255-(e+1),255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)):(d.stencilFunc(d.EQUAL,e+1,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)),d.drawElements(d.TRIANGLE_FAN,4,d.UNSIGNED_SHORT,2*(b.indices.length-4)),d.stencilFunc(d.ALWAYS,0,255),d.stencilOp(d.KEEP,d.KEEP,d.INVERT),d.drawElements(d.TRIANGLE_FAN,b.indices.length-4,d.UNSIGNED_SHORT,0),this.reverse?d.stencilFunc(d.EQUAL,e,255):d.stencilFunc(d.EQUAL,255-e,255)):(this.reverse?(d.stencilFunc(d.EQUAL,e+1,255),d.stencilOp(d.KEEP,d.KEEP,d.DECR)):(d.stencilFunc(d.EQUAL,255-(e+1),255),d.stencilOp(d.KEEP,d.KEEP,d.INCR)),d.drawElements(d.TRIANGLE_STRIP,b.indices.length,d.UNSIGNED_SHORT,0),this.reverse?d.stencilFunc(d.EQUAL,e,255):d.stencilFunc(d.EQUAL,255-e,255)),d.colorMask(!0,!0,!0,!0),d.stencilOp(d.KEEP,d.KEEP,d.KEEP)}},b.WebGLStencilManager.prototype.destroy=function(){this.maskStack=null,this.gl=null},b.WebGLShaderManager=function(a){this.maxAttibs=10,this.attribState=[],this.tempAttribState=[],this.shaderMap=[];for(var b=0;b<this.maxAttibs;b++)this.attribState[b]=!1;this.setContext(a)},b.WebGLShaderManager.prototype.setContext=function(a){this.gl=a,this.primitiveShader=new b.PrimitiveShader(a),this.complexPrimativeShader=new b.ComplexPrimitiveShader(a),this.defaultShader=new b.PixiShader(a),this.fastShader=new b.PixiFastShader(a),this.stripShader=new b.StripShader(a),this.setShader(this.defaultShader)},b.WebGLShaderManager.prototype.setAttribs=function(a){var b;for(b=0;b<this.tempAttribState.length;b++)this.tempAttribState[b]=!1;for(b=0;b<a.length;b++){var c=a[b];this.tempAttribState[c]=!0}var d=this.gl;for(b=0;b<this.attribState.length;b++)this.attribState[b]!==this.tempAttribState[b]&&(this.attribState[b]=this.tempAttribState[b],this.tempAttribState[b]?d.enableVertexAttribArray(b):d.disableVertexAttribArray(b))},b.WebGLShaderManager.prototype.setShader=function(a){return this._currentId===a._UID?!1:(this._currentId=a._UID,this.currentShader=a,this.gl.useProgram(a.program),this.setAttribs(a.attributes),!0)},b.WebGLShaderManager.prototype.destroy=function(){this.attribState=null,this.tempAttribState=null,this.primitiveShader.destroy(),this.defaultShader.destroy(),this.fastShader.destroy(),this.stripShader.destroy(),this.gl=null},b.WebGLSpriteBatch=function(a){this.vertSize=6,this.size=2e3;var b=4*this.size*this.vertSize,c=6*this.size;this.vertices=new Float32Array(b),this.indices=new Uint16Array(c),this.lastIndexCount=0;for(var d=0,e=0;c>d;d+=6,e+=4)this.indices[d+0]=e+0,this.indices[d+1]=e+1,this.indices[d+2]=e+2,this.indices[d+3]=e+0,this.indices[d+4]=e+2,this.indices[d+5]=e+3;this.drawing=!1,this.currentBatchSize=0,this.currentBaseTexture=null,this.setContext(a),this.dirty=!0,this.textures=[],this.blendModes=[]},b.WebGLSpriteBatch.prototype.setContext=function(a){this.gl=a,this.vertexBuffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,this.indices,a.STATIC_DRAW),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bufferData(a.ARRAY_BUFFER,this.vertices,a.DYNAMIC_DRAW),this.currentBlendMode=99999},b.WebGLSpriteBatch.prototype.begin=function(a){this.renderSession=a,this.shader=this.renderSession.shaderManager.defaultShader,this.start()},b.WebGLSpriteBatch.prototype.end=function(){this.flush()},b.WebGLSpriteBatch.prototype.render=function(a){var b=a.texture;this.currentBatchSize>=this.size&&(this.flush(),this.currentBaseTexture=b.baseTexture);var c=b._uvs;if(c){var d,e,f,g,h=a.worldAlpha,i=a.tint,j=this.vertices,k=a.anchor.x,l=a.anchor.y;if(b.trim){var m=b.trim;e=m.x-k*m.width,d=e+b.crop.width,g=m.y-l*m.height,f=g+b.crop.height}else d=b.frame.width*(1-k),e=b.frame.width*-k,f=b.frame.height*(1-l),g=b.frame.height*-l;var n=4*this.currentBatchSize*this.vertSize,o=a.worldTransform,p=o.a,q=o.c,r=o.b,s=o.d,t=o.tx,u=o.ty;j[n++]=p*e+r*g+t,j[n++]=s*g+q*e+u,j[n++]=c.x0,j[n++]=c.y0,j[n++]=h,j[n++]=i,j[n++]=p*d+r*g+t,j[n++]=s*g+q*d+u,j[n++]=c.x1,j[n++]=c.y1,j[n++]=h,j[n++]=i,j[n++]=p*d+r*f+t,j[n++]=s*f+q*d+u,j[n++]=c.x2,j[n++]=c.y2,j[n++]=h,j[n++]=i,j[n++]=p*e+r*f+t,j[n++]=s*f+q*e+u,j[n++]=c.x3,j[n++]=c.y3,j[n++]=h,j[n++]=i,this.textures[this.currentBatchSize]=a.texture.baseTexture,this.blendModes[this.currentBatchSize]=a.blendMode,this.currentBatchSize++}},b.WebGLSpriteBatch.prototype.renderTilingSprite=function(a){var c=a.tilingTexture;this.currentBatchSize>=this.size&&(this.flush(),this.currentBaseTexture=c.baseTexture),a._uvs||(a._uvs=new b.TextureUvs);var d=a._uvs;a.tilePosition.x%=c.baseTexture.width*a.tileScaleOffset.x,a.tilePosition.y%=c.baseTexture.height*a.tileScaleOffset.y;var e=a.tilePosition.x/(c.baseTexture.width*a.tileScaleOffset.x),f=a.tilePosition.y/(c.baseTexture.height*a.tileScaleOffset.y),g=a.width/c.baseTexture.width/(a.tileScale.x*a.tileScaleOffset.x),h=a.height/c.baseTexture.height/(a.tileScale.y*a.tileScaleOffset.y);d.x0=0-e,d.y0=0-f,d.x1=1*g-e,d.y1=0-f,d.x2=1*g-e,d.y2=1*h-f,d.x3=0-e,d.y3=1*h-f;var i=a.worldAlpha,j=a.tint,k=this.vertices,l=a.width,m=a.height,n=a.anchor.x,o=a.anchor.y,p=l*(1-n),q=l*-n,r=m*(1-o),s=m*-o,t=4*this.currentBatchSize*this.vertSize,u=a.worldTransform,v=u.a,w=u.c,x=u.b,y=u.d,z=u.tx,A=u.ty;k[t++]=v*q+x*s+z,k[t++]=y*s+w*q+A,k[t++]=d.x0,k[t++]=d.y0,k[t++]=i,k[t++]=j,k[t++]=v*p+x*s+z,k[t++]=y*s+w*p+A,k[t++]=d.x1,k[t++]=d.y1,k[t++]=i,k[t++]=j,k[t++]=v*p+x*r+z,k[t++]=y*r+w*p+A,k[t++]=d.x2,k[t++]=d.y2,k[t++]=i,k[t++]=j,k[t++]=v*q+x*r+z,k[t++]=y*r+w*q+A,k[t++]=d.x3,k[t++]=d.y3,k[t++]=i,k[t++]=j,this.textures[this.currentBatchSize]=c.baseTexture,this.blendModes[this.currentBatchSize]=a.blendMode,this.currentBatchSize++},b.WebGLSpriteBatch.prototype.flush=function(){if(0!==this.currentBatchSize){var a=this.gl;if(this.renderSession.shaderManager.setShader(this.renderSession.shaderManager.defaultShader),this.dirty){this.dirty=!1,a.activeTexture(a.TEXTURE0),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer);var b=this.renderSession.projection;a.uniform2f(this.shader.projectionVector,b.x,b.y);var c=4*this.vertSize;a.vertexAttribPointer(this.shader.aVertexPosition,2,a.FLOAT,!1,c,0),a.vertexAttribPointer(this.shader.aTextureCoord,2,a.FLOAT,!1,c,8),a.vertexAttribPointer(this.shader.colorAttribute,2,a.FLOAT,!1,c,16)}if(this.currentBatchSize>.5*this.size)a.bufferSubData(a.ARRAY_BUFFER,0,this.vertices);else{var d=this.vertices.subarray(0,4*this.currentBatchSize*this.vertSize);a.bufferSubData(a.ARRAY_BUFFER,0,d)}for(var e,f,g=0,h=0,i=null,j=this.renderSession.blendModeManager.currentBlendMode,k=0,l=this.currentBatchSize;l>k;k++)e=this.textures[k],f=this.blendModes[k],(i!==e||j!==f)&&(this.renderBatch(i,g,h),h=k,g=0,i=e,j=f,this.renderSession.blendModeManager.setBlendMode(j)),g++;this.renderBatch(i,g,h),this.currentBatchSize=0}},b.WebGLSpriteBatch.prototype.renderBatch=function(a,c,d){if(0!==c){var e=this.gl;e.bindTexture(e.TEXTURE_2D,a._glTextures[e.id]||b.createWebGLTexture(a,e)),a._dirty[e.id]&&b.updateWebGLTexture(this.currentBaseTexture,e),e.drawElements(e.TRIANGLES,6*c,e.UNSIGNED_SHORT,6*d*2),this.renderSession.drawCount++}},b.WebGLSpriteBatch.prototype.stop=function(){this.flush()},b.WebGLSpriteBatch.prototype.start=function(){this.dirty=!0},b.WebGLSpriteBatch.prototype.destroy=function(){this.vertices=null,this.indices=null,this.gl.deleteBuffer(this.vertexBuffer),this.gl.deleteBuffer(this.indexBuffer),this.currentBaseTexture=null,this.gl=null},b.WebGLFastSpriteBatch=function(a){this.vertSize=10,this.maxSize=6e3,this.size=this.maxSize;var b=4*this.size*this.vertSize,c=6*this.maxSize;this.vertices=new Float32Array(b),this.indices=new Uint16Array(c),this.vertexBuffer=null,this.indexBuffer=null,this.lastIndexCount=0;for(var d=0,e=0;c>d;d+=6,e+=4)this.indices[d+0]=e+0,this.indices[d+1]=e+1,this.indices[d+2]=e+2,this.indices[d+3]=e+0,this.indices[d+4]=e+2,this.indices[d+5]=e+3;this.drawing=!1,this.currentBatchSize=0,this.currentBaseTexture=null,this.currentBlendMode=0,this.renderSession=null,this.shader=null,this.matrix=null,this.setContext(a)},b.WebGLFastSpriteBatch.prototype.setContext=function(a){this.gl=a,this.vertexBuffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,this.indices,a.STATIC_DRAW),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bufferData(a.ARRAY_BUFFER,this.vertices,a.DYNAMIC_DRAW)},b.WebGLFastSpriteBatch.prototype.begin=function(a,b){this.renderSession=b,this.shader=this.renderSession.shaderManager.fastShader,this.matrix=a.worldTransform.toArray(!0),this.start()},b.WebGLFastSpriteBatch.prototype.end=function(){this.flush()},b.WebGLFastSpriteBatch.prototype.render=function(a){var b=a.children,c=b[0];if(c.texture._uvs){this.currentBaseTexture=c.texture.baseTexture,c.blendMode!==this.renderSession.blendModeManager.currentBlendMode&&(this.flush(),this.renderSession.blendModeManager.setBlendMode(c.blendMode));for(var d=0,e=b.length;e>d;d++)this.renderSprite(b[d]);this.flush()}},b.WebGLFastSpriteBatch.prototype.renderSprite=function(a){if(a.visible&&(a.texture.baseTexture===this.currentBaseTexture||(this.flush(),this.currentBaseTexture=a.texture.baseTexture,a.texture._uvs))){var b,c,d,e,f,g,h,i,j=this.vertices;if(b=a.texture._uvs,c=a.texture.frame.width,d=a.texture.frame.height,a.texture.trim){var k=a.texture.trim;f=k.x-a.anchor.x*k.width,e=f+a.texture.crop.width,h=k.y-a.anchor.y*k.height,g=h+a.texture.crop.height}else e=a.texture.frame.width*(1-a.anchor.x),f=a.texture.frame.width*-a.anchor.x,g=a.texture.frame.height*(1-a.anchor.y),h=a.texture.frame.height*-a.anchor.y;i=4*this.currentBatchSize*this.vertSize,j[i++]=f,j[i++]=h,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x0,j[i++]=b.y1,j[i++]=a.alpha,j[i++]=e,j[i++]=h,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x1,j[i++]=b.y1,j[i++]=a.alpha,j[i++]=e,j[i++]=g,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x2,j[i++]=b.y2,j[i++]=a.alpha,j[i++]=f,j[i++]=g,j[i++]=a.position.x,j[i++]=a.position.y,j[i++]=a.scale.x,j[i++]=a.scale.y,j[i++]=a.rotation,j[i++]=b.x3,j[i++]=b.y3,j[i++]=a.alpha,this.currentBatchSize++,this.currentBatchSize>=this.size&&this.flush()}},b.WebGLFastSpriteBatch.prototype.flush=function(){if(0!==this.currentBatchSize){var a=this.gl;if(this.currentBaseTexture._glTextures[a.id]||b.createWebGLTexture(this.currentBaseTexture,a),a.bindTexture(a.TEXTURE_2D,this.currentBaseTexture._glTextures[a.id]),this.currentBatchSize>.5*this.size)a.bufferSubData(a.ARRAY_BUFFER,0,this.vertices);else{var c=this.vertices.subarray(0,4*this.currentBatchSize*this.vertSize);a.bufferSubData(a.ARRAY_BUFFER,0,c)}a.drawElements(a.TRIANGLES,6*this.currentBatchSize,a.UNSIGNED_SHORT,0),this.currentBatchSize=0,this.renderSession.drawCount++}},b.WebGLFastSpriteBatch.prototype.stop=function(){this.flush()},b.WebGLFastSpriteBatch.prototype.start=function(){var a=this.gl;a.activeTexture(a.TEXTURE0),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer);var b=this.renderSession.projection;a.uniform2f(this.shader.projectionVector,b.x,b.y),a.uniformMatrix3fv(this.shader.uMatrix,!1,this.matrix);var c=4*this.vertSize;a.vertexAttribPointer(this.shader.aVertexPosition,2,a.FLOAT,!1,c,0),a.vertexAttribPointer(this.shader.aPositionCoord,2,a.FLOAT,!1,c,8),a.vertexAttribPointer(this.shader.aScale,2,a.FLOAT,!1,c,16),a.vertexAttribPointer(this.shader.aRotation,1,a.FLOAT,!1,c,24),a.vertexAttribPointer(this.shader.aTextureCoord,2,a.FLOAT,!1,c,28),a.vertexAttribPointer(this.shader.colorAttribute,1,a.FLOAT,!1,c,36)},b.WebGLFilterManager=function(a,b){this.transparent=b,this.filterStack=[],this.offsetX=0,this.offsetY=0,this.setContext(a)},b.WebGLFilterManager.prototype.setContext=function(a){this.gl=a,this.texturePool=[],this.initShaderBuffers()},b.WebGLFilterManager.prototype.begin=function(a,b){this.renderSession=a,this.defaultShader=a.shaderManager.defaultShader;var c=this.renderSession.projection;this.width=2*c.x,this.height=2*-c.y,this.buffer=b},b.WebGLFilterManager.prototype.pushFilter=function(a){var c=this.gl,d=this.renderSession.projection,e=this.renderSession.offset;a._filterArea=a.target.filterArea||a.target.getBounds(),this.filterStack.push(a);var f=a.filterPasses[0];this.offsetX+=a._filterArea.x,this.offsetY+=a._filterArea.y;var g=this.texturePool.pop();g?g.resize(this.width,this.height):g=new b.FilterTexture(this.gl,this.width,this.height),c.bindTexture(c.TEXTURE_2D,g.texture);var h=a._filterArea,i=f.padding;h.x-=i,h.y-=i,h.width+=2*i,h.height+=2*i,h.x<0&&(h.x=0),h.width>this.width&&(h.width=this.width),h.y<0&&(h.y=0),h.height>this.height&&(h.height=this.height),c.bindFramebuffer(c.FRAMEBUFFER,g.frameBuffer),c.viewport(0,0,h.width,h.height),d.x=h.width/2,d.y=-h.height/2,e.x=-h.x,e.y=-h.y,this.renderSession.shaderManager.setShader(this.defaultShader),c.uniform2f(this.defaultShader.projectionVector,h.width/2,-h.height/2),c.uniform2f(this.defaultShader.offsetVector,-h.x,-h.y),c.colorMask(!0,!0,!0,!0),c.clearColor(0,0,0,0),c.clear(c.COLOR_BUFFER_BIT),a._glFilterTexture=g},b.WebGLFilterManager.prototype.popFilter=function(){var a=this.gl,c=this.filterStack.pop(),d=c._filterArea,e=c._glFilterTexture,f=this.renderSession.projection,g=this.renderSession.offset;if(c.filterPasses.length>1){a.viewport(0,0,d.width,d.height),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),this.vertexArray[0]=0,this.vertexArray[1]=d.height,this.vertexArray[2]=d.width,this.vertexArray[3]=d.height,this.vertexArray[4]=0,this.vertexArray[5]=0,this.vertexArray[6]=d.width,this.vertexArray[7]=0,a.bufferSubData(a.ARRAY_BUFFER,0,this.vertexArray),a.bindBuffer(a.ARRAY_BUFFER,this.uvBuffer),this.uvArray[2]=d.width/this.width,this.uvArray[5]=d.height/this.height,this.uvArray[6]=d.width/this.width,this.uvArray[7]=d.height/this.height,a.bufferSubData(a.ARRAY_BUFFER,0,this.uvArray);var h=e,i=this.texturePool.pop();i||(i=new b.FilterTexture(this.gl,this.width,this.height)),i.resize(this.width,this.height),a.bindFramebuffer(a.FRAMEBUFFER,i.frameBuffer),a.clear(a.COLOR_BUFFER_BIT),a.disable(a.BLEND);for(var j=0;j<c.filterPasses.length-1;j++){var k=c.filterPasses[j];a.bindFramebuffer(a.FRAMEBUFFER,i.frameBuffer),a.activeTexture(a.TEXTURE0),a.bindTexture(a.TEXTURE_2D,h.texture),this.applyFilterPass(k,d,d.width,d.height);var l=h;h=i,i=l}a.enable(a.BLEND),e=h,this.texturePool.push(i)}var m=c.filterPasses[c.filterPasses.length-1];this.offsetX-=d.x,this.offsetY-=d.y;var n=this.width,o=this.height,p=0,q=0,r=this.buffer;if(0===this.filterStack.length)a.colorMask(!0,!0,!0,!0);else{var s=this.filterStack[this.filterStack.length-1];d=s._filterArea,n=d.width,o=d.height,p=d.x,q=d.y,r=s._glFilterTexture.frameBuffer}f.x=n/2,f.y=-o/2,g.x=p,g.y=q,d=c._filterArea;var t=d.x-p,u=d.y-q;a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),this.vertexArray[0]=t,this.vertexArray[1]=u+d.height,this.vertexArray[2]=t+d.width,this.vertexArray[3]=u+d.height,this.vertexArray[4]=t,this.vertexArray[5]=u,this.vertexArray[6]=t+d.width,this.vertexArray[7]=u,a.bufferSubData(a.ARRAY_BUFFER,0,this.vertexArray),a.bindBuffer(a.ARRAY_BUFFER,this.uvBuffer),this.uvArray[2]=d.width/this.width,this.uvArray[5]=d.height/this.height,this.uvArray[6]=d.width/this.width,this.uvArray[7]=d.height/this.height,a.bufferSubData(a.ARRAY_BUFFER,0,this.uvArray),a.viewport(0,0,n,o),a.bindFramebuffer(a.FRAMEBUFFER,r),a.activeTexture(a.TEXTURE0),a.bindTexture(a.TEXTURE_2D,e.texture),this.applyFilterPass(m,d,n,o),this.renderSession.shaderManager.setShader(this.defaultShader),a.uniform2f(this.defaultShader.projectionVector,n/2,-o/2),a.uniform2f(this.defaultShader.offsetVector,-p,-q),this.texturePool.push(e),c._glFilterTexture=null},b.WebGLFilterManager.prototype.applyFilterPass=function(a,c,d,e){var f=this.gl,g=a.shaders[f.id];g||(g=new b.PixiShader(f),g.fragmentSrc=a.fragmentSrc,g.uniforms=a.uniforms,g.init(),a.shaders[f.id]=g),this.renderSession.shaderManager.setShader(g),f.uniform2f(g.projectionVector,d/2,-e/2),f.uniform2f(g.offsetVector,0,0),a.uniforms.dimensions&&(a.uniforms.dimensions.value[0]=this.width,a.uniforms.dimensions.value[1]=this.height,a.uniforms.dimensions.value[2]=this.vertexArray[0],a.uniforms.dimensions.value[3]=this.vertexArray[5]),g.syncUniforms(),f.bindBuffer(f.ARRAY_BUFFER,this.vertexBuffer),f.vertexAttribPointer(g.aVertexPosition,2,f.FLOAT,!1,0,0),f.bindBuffer(f.ARRAY_BUFFER,this.uvBuffer),f.vertexAttribPointer(g.aTextureCoord,2,f.FLOAT,!1,0,0),f.bindBuffer(f.ARRAY_BUFFER,this.colorBuffer),f.vertexAttribPointer(g.colorAttribute,2,f.FLOAT,!1,0,0),f.bindBuffer(f.ELEMENT_ARRAY_BUFFER,this.indexBuffer),f.drawElements(f.TRIANGLES,6,f.UNSIGNED_SHORT,0),this.renderSession.drawCount++},b.WebGLFilterManager.prototype.initShaderBuffers=function(){var a=this.gl;this.vertexBuffer=a.createBuffer(),this.uvBuffer=a.createBuffer(),this.colorBuffer=a.createBuffer(),this.indexBuffer=a.createBuffer(),this.vertexArray=new Float32Array([0,0,1,0,0,1,1,1]),a.bindBuffer(a.ARRAY_BUFFER,this.vertexBuffer),a.bufferData(a.ARRAY_BUFFER,this.vertexArray,a.STATIC_DRAW),this.uvArray=new Float32Array([0,0,1,0,0,1,1,1]),a.bindBuffer(a.ARRAY_BUFFER,this.uvBuffer),a.bufferData(a.ARRAY_BUFFER,this.uvArray,a.STATIC_DRAW),this.colorArray=new Float32Array([1,16777215,1,16777215,1,16777215,1,16777215]),a.bindBuffer(a.ARRAY_BUFFER,this.colorBuffer),a.bufferData(a.ARRAY_BUFFER,this.colorArray,a.STATIC_DRAW),a.bindBuffer(a.ELEMENT_ARRAY_BUFFER,this.indexBuffer),a.bufferData(a.ELEMENT_ARRAY_BUFFER,new Uint16Array([0,1,2,1,3,2]),a.STATIC_DRAW)},b.WebGLFilterManager.prototype.destroy=function(){var a=this.gl;this.filterStack=null,this.offsetX=0,this.offsetY=0;for(var b=0;b<this.texturePool.length;b++)this.texturePool[b].destroy();this.texturePool=null,a.deleteBuffer(this.vertexBuffer),a.deleteBuffer(this.uvBuffer),a.deleteBuffer(this.colorBuffer),a.deleteBuffer(this.indexBuffer)},b.FilterTexture=function(a,c,d,e){this.gl=a,this.frameBuffer=a.createFramebuffer(),this.texture=a.createTexture(),e=e||b.scaleModes.DEFAULT,a.bindTexture(a.TEXTURE_2D,this.texture),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_MAG_FILTER,e===b.scaleModes.LINEAR?a.LINEAR:a.NEAREST),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_MIN_FILTER,e===b.scaleModes.LINEAR?a.LINEAR:a.NEAREST),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_WRAP_S,a.CLAMP_TO_EDGE),a.texParameteri(a.TEXTURE_2D,a.TEXTURE_WRAP_T,a.CLAMP_TO_EDGE),a.bindFramebuffer(a.FRAMEBUFFER,this.framebuffer),a.bindFramebuffer(a.FRAMEBUFFER,this.frameBuffer),a.framebufferTexture2D(a.FRAMEBUFFER,a.COLOR_ATTACHMENT0,a.TEXTURE_2D,this.texture,0),this.renderBuffer=a.createRenderbuffer(),a.bindRenderbuffer(a.RENDERBUFFER,this.renderBuffer),a.framebufferRenderbuffer(a.FRAMEBUFFER,a.DEPTH_STENCIL_ATTACHMENT,a.RENDERBUFFER,this.renderBuffer),this.resize(c,d)},b.FilterTexture.prototype.clear=function(){var a=this.gl;a.clearColor(0,0,0,0),a.clear(a.COLOR_BUFFER_BIT)},b.FilterTexture.prototype.resize=function(a,b){if(this.width!==a||this.height!==b){this.width=a,this.height=b;var c=this.gl;c.bindTexture(c.TEXTURE_2D,this.texture),c.texImage2D(c.TEXTURE_2D,0,c.RGBA,a,b,0,c.RGBA,c.UNSIGNED_BYTE,null),c.bindRenderbuffer(c.RENDERBUFFER,this.renderBuffer),c.renderbufferStorage(c.RENDERBUFFER,c.DEPTH_STENCIL,a,b)}},b.FilterTexture.prototype.destroy=function(){var a=this.gl;a.deleteFramebuffer(this.frameBuffer),a.deleteTexture(this.texture),this.frameBuffer=null,this.texture=null},b.CanvasMaskManager=function(){},b.CanvasMaskManager.prototype.pushMask=function(a,c){c.save();var d=a.alpha,e=a.worldTransform;c.setTransform(e.a,e.c,e.b,e.d,e.tx,e.ty),b.CanvasGraphics.renderGraphicsMask(a,c),c.clip(),a.worldAlpha=d},b.CanvasMaskManager.prototype.popMask=function(a){a.restore()},b.CanvasTinter=function(){},b.CanvasTinter.getTintedTexture=function(a,c){var d=a.texture;c=b.CanvasTinter.roundColor(c);var e="#"+("00000"+(0|c).toString(16)).substr(-6);if(d.tintCache=d.tintCache||{},d.tintCache[e])return d.tintCache[e];var f=b.CanvasTinter.canvas||document.createElement("canvas");if(b.CanvasTinter.tintMethod(d,c,f),b.CanvasTinter.convertTintToImage){var g=new Image;g.src=f.toDataURL(),d.tintCache[e]=g}else d.tintCache[e]=f,b.CanvasTinter.canvas=null;return f},b.CanvasTinter.tintWithMultiply=function(a,b,c){var d=c.getContext("2d"),e=a.frame;c.width=e.width,c.height=e.height,d.fillStyle="#"+("00000"+(0|b).toString(16)).substr(-6),d.fillRect(0,0,e.width,e.height),d.globalCompositeOperation="multiply",d.drawImage(a.baseTexture.source,e.x,e.y,e.width,e.height,0,0,e.width,e.height),d.globalCompositeOperation="destination-atop",d.drawImage(a.baseTexture.source,e.x,e.y,e.width,e.height,0,0,e.width,e.height)},b.CanvasTinter.tintWithOverlay=function(a,b,c){var d=c.getContext("2d"),e=a.frame;c.width=e.width,c.height=e.height,d.globalCompositeOperation="copy",d.fillStyle="#"+("00000"+(0|b).toString(16)).substr(-6),d.fillRect(0,0,e.width,e.height),d.globalCompositeOperation="destination-atop",d.drawImage(a.baseTexture.source,e.x,e.y,e.width,e.height,0,0,e.width,e.height)},b.CanvasTinter.tintWithPerPixel=function(a,c,d){var e=d.getContext("2d"),f=a.frame;d.width=f.width,d.height=f.height,e.globalCompositeOperation="copy",e.drawImage(a.baseTexture.source,f.x,f.y,f.width,f.height,0,0,f.width,f.height);for(var g=b.hex2rgb(c),h=g[0],i=g[1],j=g[2],k=e.getImageData(0,0,f.width,f.height),l=k.data,m=0;m<l.length;m+=4)l[m+0]*=h,l[m+1]*=i,l[m+2]*=j;e.putImageData(k,0,0)},b.CanvasTinter.roundColor=function(a){var c=b.CanvasTinter.cacheStepsPerColorChannel,d=b.hex2rgb(a);return d[0]=Math.min(255,d[0]/c*c),d[1]=Math.min(255,d[1]/c*c),d[2]=Math.min(255,d[2]/c*c),b.rgb2hex(d)},b.CanvasTinter.cacheStepsPerColorChannel=8,b.CanvasTinter.convertTintToImage=!1,b.CanvasTinter.canUseMultiply=b.canUseNewCanvasBlendModes(),b.CanvasTinter.tintMethod=b.CanvasTinter.canUseMultiply?b.CanvasTinter.tintWithMultiply:b.CanvasTinter.tintWithPerPixel,b.CanvasRenderer=function(a,c,d,e){b.defaultRenderer||(b.sayHello("Canvas"),b.defaultRenderer=this),this.type=b.CANVAS_RENDERER,this.clearBeforeRender=!0,this.transparent=!!e,b.blendModesCanvas||(b.blendModesCanvas=[],b.canUseNewCanvasBlendModes()?(b.blendModesCanvas[b.blendModes.NORMAL]="source-over",b.blendModesCanvas[b.blendModes.ADD]="lighter",b.blendModesCanvas[b.blendModes.MULTIPLY]="multiply",b.blendModesCanvas[b.blendModes.SCREEN]="screen",b.blendModesCanvas[b.blendModes.OVERLAY]="overlay",b.blendModesCanvas[b.blendModes.DARKEN]="darken",b.blendModesCanvas[b.blendModes.LIGHTEN]="lighten",b.blendModesCanvas[b.blendModes.COLOR_DODGE]="color-dodge",b.blendModesCanvas[b.blendModes.COLOR_BURN]="color-burn",b.blendModesCanvas[b.blendModes.HARD_LIGHT]="hard-light",b.blendModesCanvas[b.blendModes.SOFT_LIGHT]="soft-light",b.blendModesCanvas[b.blendModes.DIFFERENCE]="difference",b.blendModesCanvas[b.blendModes.EXCLUSION]="exclusion",b.blendModesCanvas[b.blendModes.HUE]="hue",b.blendModesCanvas[b.blendModes.SATURATION]="saturation",b.blendModesCanvas[b.blendModes.COLOR]="color",b.blendModesCanvas[b.blendModes.LUMINOSITY]="luminosity"):(b.blendModesCanvas[b.blendModes.NORMAL]="source-over",b.blendModesCanvas[b.blendModes.ADD]="lighter",b.blendModesCanvas[b.blendModes.MULTIPLY]="source-over",b.blendModesCanvas[b.blendModes.SCREEN]="source-over",b.blendModesCanvas[b.blendModes.OVERLAY]="source-over",b.blendModesCanvas[b.blendModes.DARKEN]="source-over",b.blendModesCanvas[b.blendModes.LIGHTEN]="source-over",b.blendModesCanvas[b.blendModes.COLOR_DODGE]="source-over",b.blendModesCanvas[b.blendModes.COLOR_BURN]="source-over",b.blendModesCanvas[b.blendModes.HARD_LIGHT]="source-over",b.blendModesCanvas[b.blendModes.SOFT_LIGHT]="source-over",b.blendModesCanvas[b.blendModes.DIFFERENCE]="source-over",b.blendModesCanvas[b.blendModes.EXCLUSION]="source-over",b.blendModesCanvas[b.blendModes.HUE]="source-over",b.blendModesCanvas[b.blendModes.SATURATION]="source-over",b.blendModesCanvas[b.blendModes.COLOR]="source-over",b.blendModesCanvas[b.blendModes.LUMINOSITY]="source-over")),this.width=a||800,this.height=c||600,this.view=d||document.createElement("canvas"),this.context=this.view.getContext("2d",{alpha:this.transparent}),this.refresh=!0,this.view.width=this.width,this.view.height=this.height,this.count=0,this.maskManager=new b.CanvasMaskManager,this.renderSession={context:this.context,maskManager:this.maskManager,scaleMode:null,smoothProperty:null,roundPixels:!1},"imageSmoothingEnabled"in this.context?this.renderSession.smoothProperty="imageSmoothingEnabled":"webkitImageSmoothingEnabled"in this.context?this.renderSession.smoothProperty="webkitImageSmoothingEnabled":"mozImageSmoothingEnabled"in this.context?this.renderSession.smoothProperty="mozImageSmoothingEnabled":"oImageSmoothingEnabled"in this.context&&(this.renderSession.smoothProperty="oImageSmoothingEnabled")},b.CanvasRenderer.prototype.constructor=b.CanvasRenderer,b.CanvasRenderer.prototype.render=function(a){b.texturesToUpdate.length=0,b.texturesToDestroy.length=0,a.updateTransform(),this.context.setTransform(1,0,0,1,0,0),this.context.globalAlpha=1,navigator.isCocoonJS&&this.view.screencanvas&&(this.context.fillStyle="black",this.context.clear()),!this.transparent&&this.clearBeforeRender?(this.context.fillStyle=a.backgroundColorString,this.context.fillRect(0,0,this.width,this.height)):this.transparent&&this.clearBeforeRender&&this.context.clearRect(0,0,this.width,this.height),this.renderDisplayObject(a),a.interactive&&(a._interactiveEventsAdded||(a._interactiveEventsAdded=!0,a.interactionManager.setTarget(this))),b.Texture.frameUpdates.length>0&&(b.Texture.frameUpdates.length=0)
 },b.CanvasRenderer.prototype.resize=function(a,b){this.width=a,this.height=b,this.view.width=a,this.view.height=b},b.CanvasRenderer.prototype.renderDisplayObject=function(a,b){this.renderSession.context=b||this.context,a._renderCanvas(this.renderSession)},b.CanvasRenderer.prototype.renderStripFlat=function(a){var b=this.context,c=a.verticies,d=c.length/2;this.count++,b.beginPath();for(var e=1;d-2>e;e++){var f=2*e,g=c[f],h=c[f+2],i=c[f+4],j=c[f+1],k=c[f+3],l=c[f+5];b.moveTo(g,j),b.lineTo(h,k),b.lineTo(i,l)}b.fillStyle="#FF0000",b.fill(),b.closePath()},b.CanvasRenderer.prototype.renderStrip=function(a){var b=this.context,c=a.verticies,d=a.uvs,e=c.length/2;this.count++;for(var f=1;e-2>f;f++){var g=2*f,h=c[g],i=c[g+2],j=c[g+4],k=c[g+1],l=c[g+3],m=c[g+5],n=d[g]*a.texture.width,o=d[g+2]*a.texture.width,p=d[g+4]*a.texture.width,q=d[g+1]*a.texture.height,r=d[g+3]*a.texture.height,s=d[g+5]*a.texture.height;b.save(),b.beginPath(),b.moveTo(h,k),b.lineTo(i,l),b.lineTo(j,m),b.closePath(),b.clip();var t=n*r+q*p+o*s-r*p-q*o-n*s,u=h*r+q*j+i*s-r*j-q*i-h*s,v=n*i+h*p+o*j-i*p-h*o-n*j,w=n*r*j+q*i*p+h*o*s-h*r*p-q*o*j-n*i*s,x=k*r+q*m+l*s-r*m-q*l-k*s,y=n*l+k*p+o*m-l*p-k*o-n*m,z=n*r*m+q*l*p+k*o*s-k*r*p-q*o*m-n*l*s;b.transform(u/t,x/t,v/t,y/t,w/t,z/t),b.drawImage(a.texture.baseTexture.source,0,0),b.restore()}},b.CanvasBuffer=function(a,b){this.width=a,this.height=b,this.canvas=document.createElement("canvas"),this.context=this.canvas.getContext("2d"),this.canvas.width=a,this.canvas.height=b},b.CanvasBuffer.prototype.clear=function(){this.context.clearRect(0,0,this.width,this.height)},b.CanvasBuffer.prototype.resize=function(a,b){this.width=this.canvas.width=a,this.height=this.canvas.height=b},b.CanvasGraphics=function(){},b.CanvasGraphics.renderGraphics=function(a,c){for(var d=a.worldAlpha,e="",f=0;f<a.graphicsData.length;f++){var g=a.graphicsData[f],h=g.points;if(c.strokeStyle=e="#"+("00000"+(0|g.lineColor).toString(16)).substr(-6),c.lineWidth=g.lineWidth,g.type===b.Graphics.POLY){c.beginPath(),c.moveTo(h[0],h[1]);for(var i=1;i<h.length/2;i++)c.lineTo(h[2*i],h[2*i+1]);h[0]===h[h.length-2]&&h[1]===h[h.length-1]&&c.closePath(),g.fill&&(c.globalAlpha=g.fillAlpha*d,c.fillStyle=e="#"+("00000"+(0|g.fillColor).toString(16)).substr(-6),c.fill()),g.lineWidth&&(c.globalAlpha=g.lineAlpha*d,c.stroke())}else if(g.type===b.Graphics.RECT)(g.fillColor||0===g.fillColor)&&(c.globalAlpha=g.fillAlpha*d,c.fillStyle=e="#"+("00000"+(0|g.fillColor).toString(16)).substr(-6),c.fillRect(h[0],h[1],h[2],h[3])),g.lineWidth&&(c.globalAlpha=g.lineAlpha*d,c.strokeRect(h[0],h[1],h[2],h[3]));else if(g.type===b.Graphics.CIRC)c.beginPath(),c.arc(h[0],h[1],h[2],0,2*Math.PI),c.closePath(),g.fill&&(c.globalAlpha=g.fillAlpha*d,c.fillStyle=e="#"+("00000"+(0|g.fillColor).toString(16)).substr(-6),c.fill()),g.lineWidth&&(c.globalAlpha=g.lineAlpha*d,c.stroke());else if(g.type===b.Graphics.ELIP){var j=g.points,k=2*j[2],l=2*j[3],m=j[0]-k/2,n=j[1]-l/2;c.beginPath();var o=.5522848,p=k/2*o,q=l/2*o,r=m+k,s=n+l,t=m+k/2,u=n+l/2;c.moveTo(m,u),c.bezierCurveTo(m,u-q,t-p,n,t,n),c.bezierCurveTo(t+p,n,r,u-q,r,u),c.bezierCurveTo(r,u+q,t+p,s,t,s),c.bezierCurveTo(t-p,s,m,u+q,m,u),c.closePath(),g.fill&&(c.globalAlpha=g.fillAlpha*d,c.fillStyle=e="#"+("00000"+(0|g.fillColor).toString(16)).substr(-6),c.fill()),g.lineWidth&&(c.globalAlpha=g.lineAlpha*d,c.stroke())}else if(g.type===b.Graphics.RREC){var v=h[0],w=h[1],x=h[2],y=h[3],z=h[4],A=Math.min(x,y)/2|0;z=z>A?A:z,c.beginPath(),c.moveTo(v,w+z),c.lineTo(v,w+y-z),c.quadraticCurveTo(v,w+y,v+z,w+y),c.lineTo(v+x-z,w+y),c.quadraticCurveTo(v+x,w+y,v+x,w+y-z),c.lineTo(v+x,w+z),c.quadraticCurveTo(v+x,w,v+x-z,w),c.lineTo(v+z,w),c.quadraticCurveTo(v,w,v,w+z),c.closePath(),(g.fillColor||0===g.fillColor)&&(c.globalAlpha=g.fillAlpha*d,c.fillStyle=e="#"+("00000"+(0|g.fillColor).toString(16)).substr(-6),c.fill()),g.lineWidth&&(c.globalAlpha=g.lineAlpha*d,c.stroke())}}},b.CanvasGraphics.renderGraphicsMask=function(a,c){var d=a.graphicsData.length;if(0!==d){d>1&&(d=1,window.console.log("Pixi.js warning: masks in canvas can only mask using the first path in the graphics object"));for(var e=0;1>e;e++){var f=a.graphicsData[e],g=f.points;if(f.type===b.Graphics.POLY){c.beginPath(),c.moveTo(g[0],g[1]);for(var h=1;h<g.length/2;h++)c.lineTo(g[2*h],g[2*h+1]);g[0]===g[g.length-2]&&g[1]===g[g.length-1]&&c.closePath()}else if(f.type===b.Graphics.RECT)c.beginPath(),c.rect(g[0],g[1],g[2],g[3]),c.closePath();else if(f.type===b.Graphics.CIRC)c.beginPath(),c.arc(g[0],g[1],g[2],0,2*Math.PI),c.closePath();else if(f.type===b.Graphics.ELIP){var i=f.points,j=2*i[2],k=2*i[3],l=i[0]-j/2,m=i[1]-k/2;c.beginPath();var n=.5522848,o=j/2*n,p=k/2*n,q=l+j,r=m+k,s=l+j/2,t=m+k/2;c.moveTo(l,t),c.bezierCurveTo(l,t-p,s-o,m,s,m),c.bezierCurveTo(s+o,m,q,t-p,q,t),c.bezierCurveTo(q,t+p,s+o,r,s,r),c.bezierCurveTo(s-o,r,l,t+p,l,t),c.closePath()}else if(f.type===b.Graphics.RREC){var u=g[0],v=g[1],w=g[2],x=g[3],y=g[4],z=Math.min(w,x)/2|0;y=y>z?z:y,c.beginPath(),c.moveTo(u,v+y),c.lineTo(u,v+x-y),c.quadraticCurveTo(u,v+x,u+y,v+x),c.lineTo(u+w-y,v+x),c.quadraticCurveTo(u+w,v+x,u+w,v+x-y),c.lineTo(u+w,v+y),c.quadraticCurveTo(u+w,v,u+w-y,v),c.lineTo(u+y,v),c.quadraticCurveTo(u,v,u,v+y),c.closePath()}}}},b.Graphics=function(){b.DisplayObjectContainer.call(this),this.renderable=!0,this.fillAlpha=1,this.lineWidth=0,this.lineColor="black",this.graphicsData=[],this.tint=16777215,this.blendMode=b.blendModes.NORMAL,this.currentPath={points:[]},this._webGL=[],this.isMask=!1,this.bounds=null,this.boundsPadding=10,this.dirty=!0},b.Graphics.prototype=Object.create(b.DisplayObjectContainer.prototype),b.Graphics.prototype.constructor=b.Graphics,Object.defineProperty(b.Graphics.prototype,"cacheAsBitmap",{get:function(){return this._cacheAsBitmap},set:function(a){this._cacheAsBitmap=a,this._cacheAsBitmap?this._generateCachedSprite():(this.destroyCachedSprite(),this.dirty=!0)}}),b.Graphics.prototype.lineStyle=function(a,c,d){return this.currentPath.points.length||this.graphicsData.pop(),this.lineWidth=a||0,this.lineColor=c||0,this.lineAlpha=arguments.length<3?1:d,this.currentPath={lineWidth:this.lineWidth,lineColor:this.lineColor,lineAlpha:this.lineAlpha,fillColor:this.fillColor,fillAlpha:this.fillAlpha,fill:this.filling,points:[],type:b.Graphics.POLY},this.graphicsData.push(this.currentPath),this},b.Graphics.prototype.moveTo=function(a,c){return this.currentPath.points.length||this.graphicsData.pop(),this.currentPath=this.currentPath={lineWidth:this.lineWidth,lineColor:this.lineColor,lineAlpha:this.lineAlpha,fillColor:this.fillColor,fillAlpha:this.fillAlpha,fill:this.filling,points:[],type:b.Graphics.POLY},this.currentPath.points.push(a,c),this.graphicsData.push(this.currentPath),this},b.Graphics.prototype.lineTo=function(a,b){return this.currentPath.points.push(a,b),this.dirty=!0,this},b.Graphics.prototype.quadraticCurveTo=function(a,b,c,d){0===this.currentPath.points.length&&this.moveTo(0,0);var e,f,g=20,h=this.currentPath.points;0===h.length&&this.moveTo(0,0);for(var i=h[h.length-2],j=h[h.length-1],k=0,l=1;g>=l;l++)k=l/g,e=i+(a-i)*k,f=j+(b-j)*k,h.push(e+(a+(c-a)*k-e)*k,f+(b+(d-b)*k-f)*k);return this.dirty=!0,this},b.Graphics.prototype.bezierCurveTo=function(a,b,c,d,e,f){0===this.currentPath.points.length&&this.moveTo(0,0);for(var g,h,i,j,k,l=20,m=this.currentPath.points,n=m[m.length-2],o=m[m.length-1],p=0,q=1;l>q;q++)p=q/l,g=1-p,h=g*g,i=h*g,j=p*p,k=j*p,m.push(i*n+3*h*p*a+3*g*j*c+k*e,i*o+3*h*p*b+3*g*j*d+k*f);return this.dirty=!0,this},b.Graphics.prototype.arcTo=function(a,b,c,d,e){0===this.currentPath.points.length&&this.moveTo(a,b);var f=this.currentPath.points,g=f[f.length-2],h=f[f.length-1],i=h-b,j=g-a,k=d-b,l=c-a,m=Math.abs(i*l-j*k);if(1e-8>m||0===e)f.push(a,b);else{var n=i*i+j*j,o=k*k+l*l,p=i*k+j*l,q=e*Math.sqrt(n)/m,r=e*Math.sqrt(o)/m,s=q*p/n,t=r*p/o,u=q*l+r*j,v=q*k+r*i,w=j*(r+s),x=i*(r+s),y=l*(q+t),z=k*(q+t),A=Math.atan2(x-v,w-u),B=Math.atan2(z-v,y-u);this.arc(u+a,v+b,e,A,B,j*k>l*i)}return this.dirty=!0,this},b.Graphics.prototype.arc=function(a,b,c,d,e,f){var g=a+Math.cos(d)*c,h=b+Math.sin(d)*c,i=this.currentPath.points;if((0!==i.length&&i[i.length-2]!==g||i[i.length-1]!==h)&&(this.moveTo(g,h),i=this.currentPath.points),d===e)return this;!f&&d>=e?e+=2*Math.PI:f&&e>=d&&(d+=2*Math.PI);var j=f?-1*(d-e):e-d,k=Math.abs(j)/(2*Math.PI)*40;if(0===j)return this;for(var l=j/(2*k),m=2*l,n=Math.cos(l),o=Math.sin(l),p=k-1,q=p%1/p,r=0;p>=r;r++){var s=r+q*r,t=l+d+m*s,u=Math.cos(t),v=-Math.sin(t);i.push((n*u+o*v)*c+a,(n*-v+o*u)*c+b)}return this.dirty=!0,this},b.Graphics.prototype.drawPath=function(a){return this.currentPath.points.length||this.graphicsData.pop(),this.currentPath=this.currentPath={lineWidth:this.lineWidth,lineColor:this.lineColor,lineAlpha:this.lineAlpha,fillColor:this.fillColor,fillAlpha:this.fillAlpha,fill:this.filling,points:[],type:b.Graphics.POLY},this.graphicsData.push(this.currentPath),this.currentPath.points=this.currentPath.points.concat(a),this.dirty=!0,this},b.Graphics.prototype.beginFill=function(a,b){return this.filling=!0,this.fillColor=a||0,this.fillAlpha=arguments.length<2?1:b,this},b.Graphics.prototype.endFill=function(){return this.filling=!1,this.fillColor=null,this.fillAlpha=1,this},b.Graphics.prototype.drawRect=function(a,c,d,e){return this.currentPath.points.length||this.graphicsData.pop(),this.currentPath={lineWidth:this.lineWidth,lineColor:this.lineColor,lineAlpha:this.lineAlpha,fillColor:this.fillColor,fillAlpha:this.fillAlpha,fill:this.filling,points:[a,c,d,e],type:b.Graphics.RECT},this.graphicsData.push(this.currentPath),this.dirty=!0,this},b.Graphics.prototype.drawRoundedRect=function(a,c,d,e,f){return this.currentPath.points.length||this.graphicsData.pop(),this.currentPath={lineWidth:this.lineWidth,lineColor:this.lineColor,lineAlpha:this.lineAlpha,fillColor:this.fillColor,fillAlpha:this.fillAlpha,fill:this.filling,points:[a,c,d,e,f],type:b.Graphics.RREC},this.graphicsData.push(this.currentPath),this.dirty=!0,this},b.Graphics.prototype.drawCircle=function(a,c,d){return this.currentPath.points.length||this.graphicsData.pop(),this.currentPath={lineWidth:this.lineWidth,lineColor:this.lineColor,lineAlpha:this.lineAlpha,fillColor:this.fillColor,fillAlpha:this.fillAlpha,fill:this.filling,points:[a,c,d,d],type:b.Graphics.CIRC},this.graphicsData.push(this.currentPath),this.dirty=!0,this},b.Graphics.prototype.drawEllipse=function(a,c,d,e){return this.currentPath.points.length||this.graphicsData.pop(),this.currentPath={lineWidth:this.lineWidth,lineColor:this.lineColor,lineAlpha:this.lineAlpha,fillColor:this.fillColor,fillAlpha:this.fillAlpha,fill:this.filling,points:[a,c,d,e],type:b.Graphics.ELIP},this.graphicsData.push(this.currentPath),this.dirty=!0,this},b.Graphics.prototype.clear=function(){return this.lineWidth=0,this.filling=!1,this.dirty=!0,this.clearDirty=!0,this.graphicsData=[],this.bounds=null,this},b.Graphics.prototype.generateTexture=function(){var a=this.getBounds(),c=new b.CanvasBuffer(a.width,a.height),d=b.Texture.fromCanvas(c.canvas);return c.context.translate(-a.x,-a.y),b.CanvasGraphics.renderGraphics(this,c.context),d},b.Graphics.prototype._renderWebGL=function(a){if(this.visible!==!1&&0!==this.alpha&&this.isMask!==!0){if(this._cacheAsBitmap)return this.dirty&&(this._generateCachedSprite(),b.updateWebGLTexture(this._cachedSprite.texture.baseTexture,a.gl),this.dirty=!1),this._cachedSprite.alpha=this.alpha,b.Sprite.prototype._renderWebGL.call(this._cachedSprite,a),void 0;if(a.spriteBatch.stop(),a.blendModeManager.setBlendMode(this.blendMode),this._mask&&a.maskManager.pushMask(this._mask,a),this._filters&&a.filterManager.pushFilter(this._filterBlock),this.blendMode!==a.spriteBatch.currentBlendMode){a.spriteBatch.currentBlendMode=this.blendMode;var c=b.blendModesWebGL[a.spriteBatch.currentBlendMode];a.spriteBatch.gl.blendFunc(c[0],c[1])}if(b.WebGLGraphics.renderGraphics(this,a),this.children.length){a.spriteBatch.start();for(var d=0,e=this.children.length;e>d;d++)this.children[d]._renderWebGL(a);a.spriteBatch.stop()}this._filters&&a.filterManager.popFilter(),this._mask&&a.maskManager.popMask(this.mask,a),a.drawCount++,a.spriteBatch.start()}},b.Graphics.prototype._renderCanvas=function(a){if(this.visible!==!1&&0!==this.alpha&&this.isMask!==!0){var c=a.context,d=this.worldTransform;this.blendMode!==a.currentBlendMode&&(a.currentBlendMode=this.blendMode,c.globalCompositeOperation=b.blendModesCanvas[a.currentBlendMode]),this._mask&&a.maskManager.pushMask(this._mask,a.context),c.setTransform(d.a,d.c,d.b,d.d,d.tx,d.ty),b.CanvasGraphics.renderGraphics(this,c);for(var e=0,f=this.children.length;f>e;e++)this.children[e]._renderCanvas(a);this._mask&&a.maskManager.popMask(a.context)}},b.Graphics.prototype.getBounds=function(a){this.bounds||this.updateBounds();var b=this.bounds.x,c=this.bounds.width+this.bounds.x,d=this.bounds.y,e=this.bounds.height+this.bounds.y,f=a||this.worldTransform,g=f.a,h=f.c,i=f.b,j=f.d,k=f.tx,l=f.ty,m=g*c+i*e+k,n=j*e+h*c+l,o=g*b+i*e+k,p=j*e+h*b+l,q=g*b+i*d+k,r=j*d+h*b+l,s=g*c+i*d+k,t=j*d+h*c+l,u=m,v=n,w=m,x=n;w=w>o?o:w,w=w>q?q:w,w=w>s?s:w,x=x>p?p:x,x=x>r?r:x,x=x>t?t:x,u=o>u?o:u,u=q>u?q:u,u=s>u?s:u,v=p>v?p:v,v=r>v?r:v,v=t>v?t:v;var y=this._bounds;return y.x=w,y.width=u-w,y.y=x,y.height=v-x,y},b.Graphics.prototype.updateBounds=function(){for(var a,c,d,e,f,g=1/0,h=-1/0,i=1/0,j=-1/0,k=0;k<this.graphicsData.length;k++){var l=this.graphicsData[k],m=l.type,n=l.lineWidth;if(a=l.points,m===b.Graphics.RECT)c=a[0]-n/2,d=a[1]-n/2,e=a[2]+n,f=a[3]+n,g=g>c?c:g,h=c+e>h?c+e:h,i=i>d?c:i,j=d+f>j?d+f:j;else if(m===b.Graphics.CIRC||m===b.Graphics.ELIP)c=a[0],d=a[1],e=a[2]+n/2,f=a[3]+n/2,g=g>c-e?c-e:g,h=c+e>h?c+e:h,i=i>d-f?d-f:i,j=d+f>j?d+f:j;else for(var o=0;o<a.length;o+=2)c=a[o],d=a[o+1],g=g>c-n?c-n:g,h=c+n>h?c+n:h,i=i>d-n?d-n:i,j=d+n>j?d+n:j}var p=this.boundsPadding;this.bounds=new b.Rectangle(g-p,i-p,h-g+2*p,j-i+2*p)},b.Graphics.prototype._generateCachedSprite=function(){var a=this.getLocalBounds();if(this._cachedSprite)this._cachedSprite.buffer.resize(a.width,a.height);else{var c=new b.CanvasBuffer(a.width,a.height),d=b.Texture.fromCanvas(c.canvas);this._cachedSprite=new b.Sprite(d),this._cachedSprite.buffer=c,this._cachedSprite.worldTransform=this.worldTransform}this._cachedSprite.anchor.x=-(a.x/a.width),this._cachedSprite.anchor.y=-(a.y/a.height),this._cachedSprite.buffer.context.translate(-a.x,-a.y),b.CanvasGraphics.renderGraphics(this,this._cachedSprite.buffer.context),this._cachedSprite.alpha=this.alpha},b.Graphics.prototype.destroyCachedSprite=function(){this._cachedSprite.texture.destroy(!0),this._cachedSprite=null},b.Graphics.POLY=0,b.Graphics.RECT=1,b.Graphics.CIRC=2,b.Graphics.ELIP=3,b.Graphics.RREC=4,b.Strip=function(a){b.DisplayObjectContainer.call(this),this.texture=a,this.uvs=new b.Float32Array([0,1,1,1,1,0,0,1]),this.verticies=new b.Float32Array([0,0,100,0,100,100,0,100]),this.colors=new b.Float32Array([1,1,1,1]),this.indices=new b.Uint16Array([0,1,2,3]),this.dirty=!0},b.Strip.prototype=Object.create(b.DisplayObjectContainer.prototype),b.Strip.prototype.constructor=b.Strip,b.Strip.prototype._renderWebGL=function(a){!this.visible||this.alpha<=0||(a.spriteBatch.stop(),this._vertexBuffer||this._initWebGL(a),a.shaderManager.setShader(a.shaderManager.stripShader),this._renderStrip(a),a.spriteBatch.start())},b.Strip.prototype._initWebGL=function(a){var b=a.gl;this._vertexBuffer=b.createBuffer(),this._indexBuffer=b.createBuffer(),this._uvBuffer=b.createBuffer(),this._colorBuffer=b.createBuffer(),b.bindBuffer(b.ARRAY_BUFFER,this._vertexBuffer),b.bufferData(b.ARRAY_BUFFER,this.verticies,b.DYNAMIC_DRAW),b.bindBuffer(b.ARRAY_BUFFER,this._uvBuffer),b.bufferData(b.ARRAY_BUFFER,this.uvs,b.STATIC_DRAW),b.bindBuffer(b.ARRAY_BUFFER,this._colorBuffer),b.bufferData(b.ARRAY_BUFFER,this.colors,b.STATIC_DRAW),b.bindBuffer(b.ELEMENT_ARRAY_BUFFER,this._indexBuffer),b.bufferData(b.ELEMENT_ARRAY_BUFFER,this.indices,b.STATIC_DRAW)},b.Strip.prototype._renderStrip=function(a){var c=a.gl,d=a.projection,e=a.offset,f=a.shaderManager.stripShader;c.blendFunc(c.ONE,c.ONE_MINUS_SRC_ALPHA),c.uniformMatrix3fv(f.translationMatrix,!1,this.worldTransform.toArray(!0)),c.uniform2f(f.projectionVector,d.x,-d.y),c.uniform2f(f.offsetVector,-e.x,-e.y),c.uniform1f(f.alpha,1),this.dirty?(this.dirty=!1,c.bindBuffer(c.ARRAY_BUFFER,this._vertexBuffer),c.bufferData(c.ARRAY_BUFFER,this.verticies,c.STATIC_DRAW),c.vertexAttribPointer(f.aVertexPosition,2,c.FLOAT,!1,0,0),c.bindBuffer(c.ARRAY_BUFFER,this._uvBuffer),c.bufferData(c.ARRAY_BUFFER,this.uvs,c.STATIC_DRAW),c.vertexAttribPointer(f.aTextureCoord,2,c.FLOAT,!1,0,0),c.activeTexture(c.TEXTURE0),c.bindTexture(c.TEXTURE_2D,this.texture.baseTexture._glTextures[c.id]||b.createWebGLTexture(this.texture.baseTexture,c)),c.bindBuffer(c.ELEMENT_ARRAY_BUFFER,this._indexBuffer),c.bufferData(c.ELEMENT_ARRAY_BUFFER,this.indices,c.STATIC_DRAW)):(c.bindBuffer(c.ARRAY_BUFFER,this._vertexBuffer),c.bufferSubData(c.ARRAY_BUFFER,0,this.verticies),c.vertexAttribPointer(f.aVertexPosition,2,c.FLOAT,!1,0,0),c.bindBuffer(c.ARRAY_BUFFER,this._uvBuffer),c.vertexAttribPointer(f.aTextureCoord,2,c.FLOAT,!1,0,0),c.activeTexture(c.TEXTURE0),c.bindTexture(c.TEXTURE_2D,this.texture.baseTexture._glTextures[c.id]||b.createWebGLTexture(this.texture.baseTexture,c)),c.bindBuffer(c.ELEMENT_ARRAY_BUFFER,this._indexBuffer)),c.drawElements(c.TRIANGLE_STRIP,this.indices.length,c.UNSIGNED_SHORT,0)},b.Strip.prototype._renderCanvas=function(a){var b=a.context,c=this.worldTransform;a.roundPixels?b.setTransform(c.a,c.c,c.b,c.d,0|c.tx,0|c.ty):b.setTransform(c.a,c.c,c.b,c.d,c.tx,c.ty);var d=this,e=d.verticies,f=d.uvs,g=e.length/2;this.count++;for(var h=0;g-2>h;h++){var i=2*h,j=e[i],k=e[i+2],l=e[i+4],m=e[i+1],n=e[i+3],o=e[i+5],p=(j+k+l)/3,q=(m+n+o)/3,r=j-p,s=m-q,t=Math.sqrt(r*r+s*s);j=p+r/t*(t+3),m=q+s/t*(t+3),r=k-p,s=n-q,t=Math.sqrt(r*r+s*s),k=p+r/t*(t+3),n=q+s/t*(t+3),r=l-p,s=o-q,t=Math.sqrt(r*r+s*s),l=p+r/t*(t+3),o=q+s/t*(t+3);var u=f[i]*d.texture.width,v=f[i+2]*d.texture.width,w=f[i+4]*d.texture.width,x=f[i+1]*d.texture.height,y=f[i+3]*d.texture.height,z=f[i+5]*d.texture.height;b.save(),b.beginPath(),b.moveTo(j,m),b.lineTo(k,n),b.lineTo(l,o),b.closePath(),b.clip();var A=u*y+x*w+v*z-y*w-x*v-u*z,B=j*y+x*l+k*z-y*l-x*k-j*z,C=u*k+j*w+v*l-k*w-j*v-u*l,D=u*y*l+x*k*w+j*v*z-j*y*w-x*v*l-u*k*z,E=m*y+x*o+n*z-y*o-x*n-m*z,F=u*n+m*w+v*o-n*w-m*v-u*o,G=u*y*o+x*n*w+m*v*z-m*y*w-x*v*o-u*n*z;b.transform(B/A,E/A,C/A,F/A,D/A,G/A),b.drawImage(d.texture.baseTexture.source,0,0),b.restore()}},b.Strip.prototype.onTextureUpdate=function(){this.updateFrame=!0},b.Rope=function(a,c){b.Strip.call(this,a),this.points=c,this.verticies=new b.Float32Array(4*c.length),this.uvs=new b.Float32Array(4*c.length),this.colors=new b.Float32Array(2*c.length),this.indices=new b.Uint16Array(2*c.length),this.refresh()},b.Rope.prototype=Object.create(b.Strip.prototype),b.Rope.prototype.constructor=b.Rope,b.Rope.prototype.refresh=function(){var a=this.points;if(!(a.length<1)){var b=this.uvs,c=a[0],d=this.indices,e=this.colors;this.count-=.2,b[0]=0,b[1]=0,b[2]=0,b[3]=1,e[0]=1,e[1]=1,d[0]=0,d[1]=1;for(var f,g,h,i=a.length,j=1;i>j;j++)f=a[j],g=4*j,h=j/(i-1),j%2?(b[g]=h,b[g+1]=0,b[g+2]=h,b[g+3]=1):(b[g]=h,b[g+1]=0,b[g+2]=h,b[g+3]=1),g=2*j,e[g]=1,e[g+1]=1,g=2*j,d[g]=g,d[g+1]=g+1,c=f}},b.Rope.prototype.updateTransform=function(){var a=this.points;if(!(a.length<1)){var c,d=a[0],e={x:0,y:0};this.count-=.2;for(var f,g,h,i,j,k=this.verticies,l=a.length,m=0;l>m;m++)f=a[m],g=4*m,c=m<a.length-1?a[m+1]:f,e.y=-(c.x-d.x),e.x=c.y-d.y,h=10*(1-m/(l-1)),h>1&&(h=1),i=Math.sqrt(e.x*e.x+e.y*e.y),j=this.texture.height/2,e.x/=i,e.y/=i,e.x*=j,e.y*=j,k[g]=f.x+e.x,k[g+1]=f.y+e.y,k[g+2]=f.x-e.x,k[g+3]=f.y-e.y,d=f;b.DisplayObjectContainer.prototype.updateTransform.call(this)}},b.Rope.prototype.setTexture=function(a){this.texture=a},b.TilingSprite=function(a,c,d){b.Sprite.call(this,a),this._width=c||100,this._height=d||100,this.tileScale=new b.Point(1,1),this.tileScaleOffset=new b.Point(1,1),this.tilePosition=new b.Point(0,0),this.renderable=!0,this.tint=16777215,this.blendMode=b.blendModes.NORMAL},b.TilingSprite.prototype=Object.create(b.Sprite.prototype),b.TilingSprite.prototype.constructor=b.TilingSprite,Object.defineProperty(b.TilingSprite.prototype,"width",{get:function(){return this._width},set:function(a){this._width=a}}),Object.defineProperty(b.TilingSprite.prototype,"height",{get:function(){return this._height},set:function(a){this._height=a}}),b.TilingSprite.prototype.setTexture=function(a){this.texture!==a&&(this.texture=a,this.refreshTexture=!0,this.cachedTint=16777215)},b.TilingSprite.prototype._renderWebGL=function(a){if(this.visible!==!1&&0!==this.alpha){var c,d;for(this._mask&&(a.spriteBatch.stop(),a.maskManager.pushMask(this.mask,a),a.spriteBatch.start()),this._filters&&(a.spriteBatch.flush(),a.filterManager.pushFilter(this._filterBlock)),!this.tilingTexture||this.refreshTexture?(this.generateTilingTexture(!0),this.tilingTexture&&this.tilingTexture.needsUpdate&&(b.updateWebGLTexture(this.tilingTexture.baseTexture,a.gl),this.tilingTexture.needsUpdate=!1)):a.spriteBatch.renderTilingSprite(this),c=0,d=this.children.length;d>c;c++)this.children[c]._renderWebGL(a);a.spriteBatch.stop(),this._filters&&a.filterManager.popFilter(),this._mask&&a.maskManager.popMask(a),a.spriteBatch.start()}},b.TilingSprite.prototype._renderCanvas=function(a){if(this.visible!==!1&&0!==this.alpha){var c=a.context;this._mask&&a.maskManager.pushMask(this._mask,c),c.globalAlpha=this.worldAlpha;var d,e,f=this.worldTransform;if(c.setTransform(f.a,f.c,f.b,f.d,f.tx,f.ty),!this.__tilePattern||this.refreshTexture){if(this.generateTilingTexture(!1),!this.tilingTexture)return;this.__tilePattern=c.createPattern(this.tilingTexture.baseTexture.source,"repeat")}this.blendMode!==a.currentBlendMode&&(a.currentBlendMode=this.blendMode,c.globalCompositeOperation=b.blendModesCanvas[a.currentBlendMode]);var g=this.tilePosition,h=this.tileScale;for(g.x%=this.tilingTexture.baseTexture.width,g.y%=this.tilingTexture.baseTexture.height,c.scale(h.x,h.y),c.translate(g.x,g.y),c.fillStyle=this.__tilePattern,c.fillRect(-g.x+this.anchor.x*-this._width,-g.y+this.anchor.y*-this._height,this._width/h.x,this._height/h.y),c.scale(1/h.x,1/h.y),c.translate(-g.x,-g.y),this._mask&&a.maskManager.popMask(a.context),d=0,e=this.children.length;e>d;d++)this.children[d]._renderCanvas(a)}},b.TilingSprite.prototype.getBounds=function(){var a=this._width,b=this._height,c=a*(1-this.anchor.x),d=a*-this.anchor.x,e=b*(1-this.anchor.y),f=b*-this.anchor.y,g=this.worldTransform,h=g.a,i=g.c,j=g.b,k=g.d,l=g.tx,m=g.ty,n=h*d+j*f+l,o=k*f+i*d+m,p=h*c+j*f+l,q=k*f+i*c+m,r=h*c+j*e+l,s=k*e+i*c+m,t=h*d+j*e+l,u=k*e+i*d+m,v=-1/0,w=-1/0,x=1/0,y=1/0;x=x>n?n:x,x=x>p?p:x,x=x>r?r:x,x=x>t?t:x,y=y>o?o:y,y=y>q?q:y,y=y>s?s:y,y=y>u?u:y,v=n>v?n:v,v=p>v?p:v,v=r>v?r:v,v=t>v?t:v,w=o>w?o:w,w=q>w?q:w,w=s>w?s:w,w=u>w?u:w;var z=this._bounds;return z.x=x,z.width=v-x,z.y=y,z.height=w-y,this._currentBounds=z,z},b.TilingSprite.prototype.onTextureUpdate=function(){},b.TilingSprite.prototype.generateTilingTexture=function(a){if(this.texture.baseTexture.hasLoaded){var c,d,e=this.texture,f=e.frame,g=f.width!==e.baseTexture.width||f.height!==e.baseTexture.height,h=!1;if(a?(c=b.getNextPowerOfTwo(f.width),d=b.getNextPowerOfTwo(f.height),(f.width!==c||f.height!==d)&&(h=!0)):g&&(c=f.width,d=f.height,h=!0),h){var i;this.tilingTexture&&this.tilingTexture.isTiling?(i=this.tilingTexture.canvasBuffer,i.resize(c,d),this.tilingTexture.baseTexture.width=c,this.tilingTexture.baseTexture.height=d,this.tilingTexture.needsUpdate=!0):(i=new b.CanvasBuffer(c,d),this.tilingTexture=b.Texture.fromCanvas(i.canvas),this.tilingTexture.canvasBuffer=i,this.tilingTexture.isTiling=!0),i.context.drawImage(e.baseTexture.source,e.crop.x,e.crop.y,e.crop.width,e.crop.height,0,0,c,d),this.tileScaleOffset.x=f.width/c,this.tileScaleOffset.y=f.height/d}else this.tilingTexture&&this.tilingTexture.isTiling&&this.tilingTexture.destroy(!0),this.tileScaleOffset.x=1,this.tileScaleOffset.y=1,this.tilingTexture=e;this.refreshTexture=!1,this.tilingTexture.baseTexture._powerOf2=!0}};var f={};f.BoneData=function(a,b){this.name=a,this.parent=b},f.BoneData.prototype={length:0,x:0,y:0,rotation:0,scaleX:1,scaleY:1},f.SlotData=function(a,b){this.name=a,this.boneData=b},f.SlotData.prototype={r:1,g:1,b:1,a:1,attachmentName:null},f.Bone=function(a,b){this.data=a,this.parent=b,this.setToSetupPose()},f.Bone.yDown=!1,f.Bone.prototype={x:0,y:0,rotation:0,scaleX:1,scaleY:1,m00:0,m01:0,worldX:0,m10:0,m11:0,worldY:0,worldRotation:0,worldScaleX:1,worldScaleY:1,updateWorldTransform:function(a,b){var c=this.parent;null!=c?(this.worldX=this.x*c.m00+this.y*c.m01+c.worldX,this.worldY=this.x*c.m10+this.y*c.m11+c.worldY,this.worldScaleX=c.worldScaleX*this.scaleX,this.worldScaleY=c.worldScaleY*this.scaleY,this.worldRotation=c.worldRotation+this.rotation):(this.worldX=this.x,this.worldY=this.y,this.worldScaleX=this.scaleX,this.worldScaleY=this.scaleY,this.worldRotation=this.rotation);var d=this.worldRotation*Math.PI/180,e=Math.cos(d),g=Math.sin(d);this.m00=e*this.worldScaleX,this.m10=g*this.worldScaleX,this.m01=-g*this.worldScaleY,this.m11=e*this.worldScaleY,a&&(this.m00=-this.m00,this.m01=-this.m01),b&&(this.m10=-this.m10,this.m11=-this.m11),f.Bone.yDown&&(this.m10=-this.m10,this.m11=-this.m11)},setToSetupPose:function(){var a=this.data;this.x=a.x,this.y=a.y,this.rotation=a.rotation,this.scaleX=a.scaleX,this.scaleY=a.scaleY}},f.Slot=function(a,b,c){this.data=a,this.skeleton=b,this.bone=c,this.setToSetupPose()},f.Slot.prototype={r:1,g:1,b:1,a:1,_attachmentTime:0,attachment:null,setAttachment:function(a){this.attachment=a,this._attachmentTime=this.skeleton.time},setAttachmentTime:function(a){this._attachmentTime=this.skeleton.time-a},getAttachmentTime:function(){return this.skeleton.time-this._attachmentTime},setToSetupPose:function(){var a=this.data;this.r=a.r,this.g=a.g,this.b=a.b,this.a=a.a;for(var b=this.skeleton.data.slots,c=0,d=b.length;d>c;c++)if(b[c]==a){this.setAttachment(a.attachmentName?this.skeleton.getAttachmentBySlotIndex(c,a.attachmentName):null);break}}},f.Skin=function(a){this.name=a,this.attachments={}},f.Skin.prototype={addAttachment:function(a,b,c){this.attachments[a+":"+b]=c},getAttachment:function(a,b){return this.attachments[a+":"+b]},_attachAll:function(a,b){for(var c in b.attachments){var d=c.indexOf(":"),e=parseInt(c.substring(0,d),10),f=c.substring(d+1),g=a.slots[e];if(g.attachment&&g.attachment.name==f){var h=this.getAttachment(e,f);h&&g.setAttachment(h)}}}},f.Animation=function(a,b,c){this.name=a,this.timelines=b,this.duration=c},f.Animation.prototype={apply:function(a,b,c){c&&this.duration&&(b%=this.duration);for(var d=this.timelines,e=0,f=d.length;f>e;e++)d[e].apply(a,b,1)},mix:function(a,b,c,d){c&&this.duration&&(b%=this.duration);for(var e=this.timelines,f=0,g=e.length;g>f;f++)e[f].apply(a,b,d)}},f.binarySearch=function(a,b,c){var d=0,e=Math.floor(a.length/c)-2;if(!e)return c;for(var f=e>>>1;;){if(a[(f+1)*c]<=b?d=f+1:e=f,d==e)return(d+1)*c;f=d+e>>>1}},f.linearSearch=function(a,b,c){for(var d=0,e=a.length-c;e>=d;d+=c)if(a[d]>b)return d;return-1},f.Curves=function(a){this.curves=[],this.curves.length=6*(a-1)},f.Curves.prototype={setLinear:function(a){this.curves[6*a]=0},setStepped:function(a){this.curves[6*a]=-1},setCurve:function(a,b,c,d,e){var f=.1,g=f*f,h=g*f,i=3*f,j=3*g,k=6*g,l=6*h,m=2*-b+d,n=2*-c+e,o=3*(b-d)+1,p=3*(c-e)+1,q=6*a,r=this.curves;r[q]=b*i+m*j+o*h,r[q+1]=c*i+n*j+p*h,r[q+2]=m*k+o*l,r[q+3]=n*k+p*l,r[q+4]=o*l,r[q+5]=p*l},getCurvePercent:function(a,b){b=0>b?0:b>1?1:b;var c=6*a,d=this.curves,e=d[c];if(!e)return b;if(-1==e)return 0;for(var f=d[c+1],g=d[c+2],h=d[c+3],i=d[c+4],j=d[c+5],k=e,l=f,m=8;;){if(k>=b){var n=k-e,o=l-f;return o+(l-o)*(b-n)/(k-n)}if(!m)break;m--,e+=g,f+=h,g+=i,h+=j,k+=e,l+=f}return l+(1-l)*(b-k)/(1-k)}},f.RotateTimeline=function(a){this.curves=new f.Curves(a),this.frames=[],this.frames.length=2*a},f.RotateTimeline.prototype={boneIndex:0,getFrameCount:function(){return this.frames.length/2},setFrame:function(a,b,c){a*=2,this.frames[a]=b,this.frames[a+1]=c},apply:function(a,b,c){var d,e=this.frames;if(!(b<e[0])){var g=a.bones[this.boneIndex];if(b>=e[e.length-2]){for(d=g.data.rotation+e[e.length-1]-g.rotation;d>180;)d-=360;for(;-180>d;)d+=360;return g.rotation+=d*c,void 0}var h=f.binarySearch(e,b,2),i=e[h-1],j=e[h],k=1-(b-j)/(e[h-2]-j);for(k=this.curves.getCurvePercent(h/2-1,k),d=e[h+1]-i;d>180;)d-=360;for(;-180>d;)d+=360;for(d=g.data.rotation+(i+d*k)-g.rotation;d>180;)d-=360;for(;-180>d;)d+=360;g.rotation+=d*c}}},f.TranslateTimeline=function(a){this.curves=new f.Curves(a),this.frames=[],this.frames.length=3*a},f.TranslateTimeline.prototype={boneIndex:0,getFrameCount:function(){return this.frames.length/3},setFrame:function(a,b,c,d){a*=3,this.frames[a]=b,this.frames[a+1]=c,this.frames[a+2]=d},apply:function(a,b,c){var d=this.frames;if(!(b<d[0])){var e=a.bones[this.boneIndex];if(b>=d[d.length-3])return e.x+=(e.data.x+d[d.length-2]-e.x)*c,e.y+=(e.data.y+d[d.length-1]-e.y)*c,void 0;var g=f.binarySearch(d,b,3),h=d[g-2],i=d[g-1],j=d[g],k=1-(b-j)/(d[g+-3]-j);k=this.curves.getCurvePercent(g/3-1,k),e.x+=(e.data.x+h+(d[g+1]-h)*k-e.x)*c,e.y+=(e.data.y+i+(d[g+2]-i)*k-e.y)*c}}},f.ScaleTimeline=function(a){this.curves=new f.Curves(a),this.frames=[],this.frames.length=3*a},f.ScaleTimeline.prototype={boneIndex:0,getFrameCount:function(){return this.frames.length/3},setFrame:function(a,b,c,d){a*=3,this.frames[a]=b,this.frames[a+1]=c,this.frames[a+2]=d},apply:function(a,b,c){var d=this.frames;if(!(b<d[0])){var e=a.bones[this.boneIndex];if(b>=d[d.length-3])return e.scaleX+=(e.data.scaleX-1+d[d.length-2]-e.scaleX)*c,e.scaleY+=(e.data.scaleY-1+d[d.length-1]-e.scaleY)*c,void 0;var g=f.binarySearch(d,b,3),h=d[g-2],i=d[g-1],j=d[g],k=1-(b-j)/(d[g+-3]-j);k=this.curves.getCurvePercent(g/3-1,k),e.scaleX+=(e.data.scaleX-1+h+(d[g+1]-h)*k-e.scaleX)*c,e.scaleY+=(e.data.scaleY-1+i+(d[g+2]-i)*k-e.scaleY)*c}}},f.ColorTimeline=function(a){this.curves=new f.Curves(a),this.frames=[],this.frames.length=5*a},f.ColorTimeline.prototype={slotIndex:0,getFrameCount:function(){return this.frames.length/5},setFrame:function(a,b,c,d,e,f){a*=5,this.frames[a]=b,this.frames[a+1]=c,this.frames[a+2]=d,this.frames[a+3]=e,this.frames[a+4]=f},apply:function(a,b,c){var d=this.frames;if(!(b<d[0])){var e=a.slots[this.slotIndex];if(b>=d[d.length-5]){var g=d.length-1;return e.r=d[g-3],e.g=d[g-2],e.b=d[g-1],e.a=d[g],void 0}var h=f.binarySearch(d,b,5),i=d[h-4],j=d[h-3],k=d[h-2],l=d[h-1],m=d[h],n=1-(b-m)/(d[h-5]-m);n=this.curves.getCurvePercent(h/5-1,n);var o=i+(d[h+1]-i)*n,p=j+(d[h+2]-j)*n,q=k+(d[h+3]-k)*n,r=l+(d[h+4]-l)*n;1>c?(e.r+=(o-e.r)*c,e.g+=(p-e.g)*c,e.b+=(q-e.b)*c,e.a+=(r-e.a)*c):(e.r=o,e.g=p,e.b=q,e.a=r)}}},f.AttachmentTimeline=function(a){this.curves=new f.Curves(a),this.frames=[],this.frames.length=a,this.attachmentNames=[],this.attachmentNames.length=a},f.AttachmentTimeline.prototype={slotIndex:0,getFrameCount:function(){return this.frames.length},setFrame:function(a,b,c){this.frames[a]=b,this.attachmentNames[a]=c},apply:function(a,b){var c=this.frames;if(!(b<c[0])){var d;d=b>=c[c.length-1]?c.length-1:f.binarySearch(c,b,1)-1;var e=this.attachmentNames[d];a.slots[this.slotIndex].setAttachment(e?a.getAttachmentBySlotIndex(this.slotIndex,e):null)}}},f.SkeletonData=function(){this.bones=[],this.slots=[],this.skins=[],this.animations=[]},f.SkeletonData.prototype={defaultSkin:null,findBone:function(a){for(var b=this.bones,c=0,d=b.length;d>c;c++)if(b[c].name==a)return b[c];return null},findBoneIndex:function(a){for(var b=this.bones,c=0,d=b.length;d>c;c++)if(b[c].name==a)return c;return-1},findSlot:function(a){for(var b=this.slots,c=0,d=b.length;d>c;c++)if(b[c].name==a)return slot[c];return null},findSlotIndex:function(a){for(var b=this.slots,c=0,d=b.length;d>c;c++)if(b[c].name==a)return c;return-1},findSkin:function(a){for(var b=this.skins,c=0,d=b.length;d>c;c++)if(b[c].name==a)return b[c];return null},findAnimation:function(a){for(var b=this.animations,c=0,d=b.length;d>c;c++)if(b[c].name==a)return b[c];return null}},f.Skeleton=function(a){this.data=a,this.bones=[];
 for(var b=0,c=a.bones.length;c>b;b++){var d=a.bones[b],e=d.parent?this.bones[a.bones.indexOf(d.parent)]:null;this.bones.push(new f.Bone(d,e))}for(this.slots=[],this.drawOrder=[],b=0,c=a.slots.length;c>b;b++){var g=a.slots[b],h=this.bones[a.bones.indexOf(g.boneData)],i=new f.Slot(g,this,h);this.slots.push(i),this.drawOrder.push(i)}},f.Skeleton.prototype={x:0,y:0,skin:null,r:1,g:1,b:1,a:1,time:0,flipX:!1,flipY:!1,updateWorldTransform:function(){for(var a=this.flipX,b=this.flipY,c=this.bones,d=0,e=c.length;e>d;d++)c[d].updateWorldTransform(a,b)},setToSetupPose:function(){this.setBonesToSetupPose(),this.setSlotsToSetupPose()},setBonesToSetupPose:function(){for(var a=this.bones,b=0,c=a.length;c>b;b++)a[b].setToSetupPose()},setSlotsToSetupPose:function(){for(var a=this.slots,b=0,c=a.length;c>b;b++)a[b].setToSetupPose(b)},getRootBone:function(){return this.bones.length?this.bones[0]:null},findBone:function(a){for(var b=this.bones,c=0,d=b.length;d>c;c++)if(b[c].data.name==a)return b[c];return null},findBoneIndex:function(a){for(var b=this.bones,c=0,d=b.length;d>c;c++)if(b[c].data.name==a)return c;return-1},findSlot:function(a){for(var b=this.slots,c=0,d=b.length;d>c;c++)if(b[c].data.name==a)return b[c];return null},findSlotIndex:function(a){for(var b=this.slots,c=0,d=b.length;d>c;c++)if(b[c].data.name==a)return c;return-1},setSkinByName:function(a){var b=this.data.findSkin(a);if(!b)throw"Skin not found: "+a;this.setSkin(b)},setSkin:function(a){this.skin&&a&&a._attachAll(this,this.skin),this.skin=a},getAttachmentBySlotName:function(a,b){return this.getAttachmentBySlotIndex(this.data.findSlotIndex(a),b)},getAttachmentBySlotIndex:function(a,b){if(this.skin){var c=this.skin.getAttachment(a,b);if(c)return c}return this.data.defaultSkin?this.data.defaultSkin.getAttachment(a,b):null},setAttachment:function(a,b){for(var c=this.slots,d=0,e=c.size;e>d;d++){var f=c[d];if(f.data.name==a){var g=null;if(b&&(g=this.getAttachment(d,b),null==g))throw"Attachment not found: "+b+", for slot: "+a;return f.setAttachment(g),void 0}}throw"Slot not found: "+a},update:function(a){time+=a}},f.AttachmentType={region:0},f.RegionAttachment=function(){this.offset=[],this.offset.length=8,this.uvs=[],this.uvs.length=8},f.RegionAttachment.prototype={x:0,y:0,rotation:0,scaleX:1,scaleY:1,width:0,height:0,rendererObject:null,regionOffsetX:0,regionOffsetY:0,regionWidth:0,regionHeight:0,regionOriginalWidth:0,regionOriginalHeight:0,setUVs:function(a,b,c,d,e){var f=this.uvs;e?(f[2]=a,f[3]=d,f[4]=a,f[5]=b,f[6]=c,f[7]=b,f[0]=c,f[1]=d):(f[0]=a,f[1]=d,f[2]=a,f[3]=b,f[4]=c,f[5]=b,f[6]=c,f[7]=d)},updateOffset:function(){var a=this.width/this.regionOriginalWidth*this.scaleX,b=this.height/this.regionOriginalHeight*this.scaleY,c=-this.width/2*this.scaleX+this.regionOffsetX*a,d=-this.height/2*this.scaleY+this.regionOffsetY*b,e=c+this.regionWidth*a,f=d+this.regionHeight*b,g=this.rotation*Math.PI/180,h=Math.cos(g),i=Math.sin(g),j=c*h+this.x,k=c*i,l=d*h+this.y,m=d*i,n=e*h+this.x,o=e*i,p=f*h+this.y,q=f*i,r=this.offset;r[0]=j-m,r[1]=l+k,r[2]=j-q,r[3]=p+k,r[4]=n-q,r[5]=p+o,r[6]=n-m,r[7]=l+o},computeVertices:function(a,b,c,d){a+=c.worldX,b+=c.worldY;var e=c.m00,f=c.m01,g=c.m10,h=c.m11,i=this.offset;d[0]=i[0]*e+i[1]*f+a,d[1]=i[0]*g+i[1]*h+b,d[2]=i[2]*e+i[3]*f+a,d[3]=i[2]*g+i[3]*h+b,d[4]=i[4]*e+i[5]*f+a,d[5]=i[4]*g+i[5]*h+b,d[6]=i[6]*e+i[7]*f+a,d[7]=i[6]*g+i[7]*h+b}},f.AnimationStateData=function(a){this.skeletonData=a,this.animationToMixTime={}},f.AnimationStateData.prototype={defaultMix:0,setMixByName:function(a,b,c){var d=this.skeletonData.findAnimation(a);if(!d)throw"Animation not found: "+a;var e=this.skeletonData.findAnimation(b);if(!e)throw"Animation not found: "+b;this.setMix(d,e,c)},setMix:function(a,b,c){this.animationToMixTime[a.name+":"+b.name]=c},getMix:function(a,b){var c=this.animationToMixTime[a.name+":"+b.name];return c?c:this.defaultMix}},f.AnimationState=function(a){this.data=a,this.queue=[]},f.AnimationState.prototype={animationSpeed:1,current:null,previous:null,currentTime:0,previousTime:0,currentLoop:!1,previousLoop:!1,mixTime:0,mixDuration:0,update:function(a){if(this.currentTime+=a*this.animationSpeed,this.previousTime+=a,this.mixTime+=a,this.queue.length>0){var b=this.queue[0];this.currentTime>=b.delay&&(this._setAnimation(b.animation,b.loop),this.queue.shift())}},apply:function(a){if(this.current)if(this.previous){this.previous.apply(a,this.previousTime,this.previousLoop);var b=this.mixTime/this.mixDuration;b>=1&&(b=1,this.previous=null),this.current.mix(a,this.currentTime,this.currentLoop,b)}else this.current.apply(a,this.currentTime,this.currentLoop)},clearAnimation:function(){this.previous=null,this.current=null,this.queue.length=0},_setAnimation:function(a,b){this.previous=null,a&&this.current&&(this.mixDuration=this.data.getMix(this.current,a),this.mixDuration>0&&(this.mixTime=0,this.previous=this.current,this.previousTime=this.currentTime,this.previousLoop=this.currentLoop)),this.current=a,this.currentLoop=b,this.currentTime=0},setAnimationByName:function(a,b){var c=this.data.skeletonData.findAnimation(a);if(!c)throw"Animation not found: "+a;this.setAnimation(c,b)},setAnimation:function(a,b){this.queue.length=0,this._setAnimation(a,b)},addAnimationByName:function(a,b,c){var d=this.data.skeletonData.findAnimation(a);if(!d)throw"Animation not found: "+a;this.addAnimation(d,b,c)},addAnimation:function(a,b,c){var d={};if(d.animation=a,d.loop=b,!c||0>=c){var e=this.queue.length?this.queue[this.queue.length-1].animation:this.current;c=null!=e?e.duration-this.data.getMix(e,a)+(c||0):0}d.delay=c,this.queue.push(d)},isComplete:function(){return!this.current||this.currentTime>=this.current.duration}},f.SkeletonJson=function(a){this.attachmentLoader=a},f.SkeletonJson.prototype={scale:1,readSkeletonData:function(a){for(var b,c=new f.SkeletonData,d=a.bones,e=0,g=d.length;g>e;e++){var h=d[e],i=null;if(h.parent&&(i=c.findBone(h.parent),!i))throw"Parent bone not found: "+h.parent;b=new f.BoneData(h.name,i),b.length=(h.length||0)*this.scale,b.x=(h.x||0)*this.scale,b.y=(h.y||0)*this.scale,b.rotation=h.rotation||0,b.scaleX=h.scaleX||1,b.scaleY=h.scaleY||1,c.bones.push(b)}var j=a.slots;for(e=0,g=j.length;g>e;e++){var k=j[e];if(b=c.findBone(k.bone),!b)throw"Slot bone not found: "+k.bone;var l=new f.SlotData(k.name,b),m=k.color;m&&(l.r=f.SkeletonJson.toColor(m,0),l.g=f.SkeletonJson.toColor(m,1),l.b=f.SkeletonJson.toColor(m,2),l.a=f.SkeletonJson.toColor(m,3)),l.attachmentName=k.attachment,c.slots.push(l)}var n=a.skins;for(var o in n)if(n.hasOwnProperty(o)){var p=n[o],q=new f.Skin(o);for(var r in p)if(p.hasOwnProperty(r)){var s=c.findSlotIndex(r),t=p[r];for(var u in t)if(t.hasOwnProperty(u)){var v=this.readAttachment(q,u,t[u]);null!=v&&q.addAttachment(s,u,v)}}c.skins.push(q),"default"==q.name&&(c.defaultSkin=q)}var w=a.animations;for(var x in w)w.hasOwnProperty(x)&&this.readAnimation(x,w[x],c);return c},readAttachment:function(a,b,c){b=c.name||b;var d=f.AttachmentType[c.type||"region"];if(d==f.AttachmentType.region){var e=new f.RegionAttachment;return e.x=(c.x||0)*this.scale,e.y=(c.y||0)*this.scale,e.scaleX=c.scaleX||1,e.scaleY=c.scaleY||1,e.rotation=c.rotation||0,e.width=(c.width||32)*this.scale,e.height=(c.height||32)*this.scale,e.updateOffset(),e.rendererObject={},e.rendererObject.name=b,e.rendererObject.scale={},e.rendererObject.scale.x=e.scaleX,e.rendererObject.scale.y=e.scaleY,e.rendererObject.rotation=-e.rotation*Math.PI/180,e}throw"Unknown attachment type: "+d},readAnimation:function(a,b,c){var d,e,g,h,i,j,k,l=[],m=0,n=b.bones;for(var o in n)if(n.hasOwnProperty(o)){var p=c.findBoneIndex(o);if(-1==p)throw"Bone not found: "+o;var q=n[o];for(g in q)if(q.hasOwnProperty(g))if(i=q[g],"rotate"==g){for(e=new f.RotateTimeline(i.length),e.boneIndex=p,d=0,j=0,k=i.length;k>j;j++)h=i[j],e.setFrame(d,h.time,h.angle),f.SkeletonJson.readCurve(e,d,h),d++;l.push(e),m=Math.max(m,e.frames[2*e.getFrameCount()-2])}else{if("translate"!=g&&"scale"!=g)throw"Invalid timeline type for a bone: "+g+" ("+o+")";var r=1;for("scale"==g?e=new f.ScaleTimeline(i.length):(e=new f.TranslateTimeline(i.length),r=this.scale),e.boneIndex=p,d=0,j=0,k=i.length;k>j;j++){h=i[j];var s=(h.x||0)*r,t=(h.y||0)*r;e.setFrame(d,h.time,s,t),f.SkeletonJson.readCurve(e,d,h),d++}l.push(e),m=Math.max(m,e.frames[3*e.getFrameCount()-3])}}var u=b.slots;for(var v in u)if(u.hasOwnProperty(v)){var w=u[v],x=c.findSlotIndex(v);for(g in w)if(w.hasOwnProperty(g))if(i=w[g],"color"==g){for(e=new f.ColorTimeline(i.length),e.slotIndex=x,d=0,j=0,k=i.length;k>j;j++){h=i[j];var y=h.color,z=f.SkeletonJson.toColor(y,0),A=f.SkeletonJson.toColor(y,1),B=f.SkeletonJson.toColor(y,2),C=f.SkeletonJson.toColor(y,3);e.setFrame(d,h.time,z,A,B,C),f.SkeletonJson.readCurve(e,d,h),d++}l.push(e),m=Math.max(m,e.frames[5*e.getFrameCount()-5])}else{if("attachment"!=g)throw"Invalid timeline type for a slot: "+g+" ("+v+")";for(e=new f.AttachmentTimeline(i.length),e.slotIndex=x,d=0,j=0,k=i.length;k>j;j++)h=i[j],e.setFrame(d++,h.time,h.name);l.push(e),m=Math.max(m,e.frames[e.getFrameCount()-1])}}c.animations.push(new f.Animation(a,l,m))}},f.SkeletonJson.readCurve=function(a,b,c){var d=c.curve;d&&("stepped"==d?a.curves.setStepped(b):d instanceof Array&&a.curves.setCurve(b,d[0],d[1],d[2],d[3]))},f.SkeletonJson.toColor=function(a,b){if(8!=a.length)throw"Color hexidecimal length must be 8, recieved: "+a;return parseInt(a.substr(2*b,2),16)/255},f.Atlas=function(a,b){this.textureLoader=b,this.pages=[],this.regions=[];var c=new f.AtlasReader(a),d=[];d.length=4;for(var e=null;;){var g=c.readLine();if(null==g)break;if(g=c.trim(g),g.length)if(e){var h=new f.AtlasRegion;h.name=g,h.page=e,h.rotate="true"==c.readValue(),c.readTuple(d);var i=parseInt(d[0],10),j=parseInt(d[1],10);c.readTuple(d);var k=parseInt(d[0],10),l=parseInt(d[1],10);h.u=i/e.width,h.v=j/e.height,h.rotate?(h.u2=(i+l)/e.width,h.v2=(j+k)/e.height):(h.u2=(i+k)/e.width,h.v2=(j+l)/e.height),h.x=i,h.y=j,h.width=Math.abs(k),h.height=Math.abs(l),4==c.readTuple(d)&&(h.splits=[parseInt(d[0],10),parseInt(d[1],10),parseInt(d[2],10),parseInt(d[3],10)],4==c.readTuple(d)&&(h.pads=[parseInt(d[0],10),parseInt(d[1],10),parseInt(d[2],10),parseInt(d[3],10)],c.readTuple(d))),h.originalWidth=parseInt(d[0],10),h.originalHeight=parseInt(d[1],10),c.readTuple(d),h.offsetX=parseInt(d[0],10),h.offsetY=parseInt(d[1],10),h.index=parseInt(c.readValue(),10),this.regions.push(h)}else{e=new f.AtlasPage,e.name=g,e.format=f.Atlas.Format[c.readValue()],c.readTuple(d),e.minFilter=f.Atlas.TextureFilter[d[0]],e.magFilter=f.Atlas.TextureFilter[d[1]];var m=c.readValue();e.uWrap=f.Atlas.TextureWrap.clampToEdge,e.vWrap=f.Atlas.TextureWrap.clampToEdge,"x"==m?e.uWrap=f.Atlas.TextureWrap.repeat:"y"==m?e.vWrap=f.Atlas.TextureWrap.repeat:"xy"==m&&(e.uWrap=e.vWrap=f.Atlas.TextureWrap.repeat),b.load(e,g),this.pages.push(e)}else e=null}},f.Atlas.prototype={findRegion:function(a){for(var b=this.regions,c=0,d=b.length;d>c;c++)if(b[c].name==a)return b[c];return null},dispose:function(){for(var a=this.pages,b=0,c=a.length;c>b;b++)this.textureLoader.unload(a[b].rendererObject)},updateUVs:function(a){for(var b=this.regions,c=0,d=b.length;d>c;c++){var e=b[c];e.page==a&&(e.u=e.x/a.width,e.v=e.y/a.height,e.rotate?(e.u2=(e.x+e.height)/a.width,e.v2=(e.y+e.width)/a.height):(e.u2=(e.x+e.width)/a.width,e.v2=(e.y+e.height)/a.height))}}},f.Atlas.Format={alpha:0,intensity:1,luminanceAlpha:2,rgb565:3,rgba4444:4,rgb888:5,rgba8888:6},f.Atlas.TextureFilter={nearest:0,linear:1,mipMap:2,mipMapNearestNearest:3,mipMapLinearNearest:4,mipMapNearestLinear:5,mipMapLinearLinear:6},f.Atlas.TextureWrap={mirroredRepeat:0,clampToEdge:1,repeat:2},f.AtlasPage=function(){},f.AtlasPage.prototype={name:null,format:null,minFilter:null,magFilter:null,uWrap:null,vWrap:null,rendererObject:null,width:0,height:0},f.AtlasRegion=function(){},f.AtlasRegion.prototype={page:null,name:null,x:0,y:0,width:0,height:0,u:0,v:0,u2:0,v2:0,offsetX:0,offsetY:0,originalWidth:0,originalHeight:0,index:0,rotate:!1,splits:null,pads:null},f.AtlasReader=function(a){this.lines=a.split(/\r\n|\r|\n/)},f.AtlasReader.prototype={index:0,trim:function(a){return a.replace(/^\s+|\s+$/g,"")},readLine:function(){return this.index>=this.lines.length?null:this.lines[this.index++]},readValue:function(){var a=this.readLine(),b=a.indexOf(":");if(-1==b)throw"Invalid line: "+a;return this.trim(a.substring(b+1))},readTuple:function(a){var b=this.readLine(),c=b.indexOf(":");if(-1==c)throw"Invalid line: "+b;for(var d=0,e=c+1;3>d;d++){var f=b.indexOf(",",e);if(-1==f){if(!d)throw"Invalid line: "+b;break}a[d]=this.trim(b.substr(e,f-e)),e=f+1}return a[d]=this.trim(b.substring(e)),d+1}},f.AtlasAttachmentLoader=function(a){this.atlas=a},f.AtlasAttachmentLoader.prototype={newAttachment:function(a,b,c){switch(b){case f.AttachmentType.region:var d=this.atlas.findRegion(c);if(!d)throw"Region not found in atlas: "+c+" ("+b+")";var e=new f.RegionAttachment(c);return e.rendererObject=d,e.setUVs(d.u,d.v,d.u2,d.v2,d.rotate),e.regionOffsetX=d.offsetX,e.regionOffsetY=d.offsetY,e.regionWidth=d.width,e.regionHeight=d.height,e.regionOriginalWidth=d.originalWidth,e.regionOriginalHeight=d.originalHeight,e}throw"Unknown attachment type: "+b}},f.Bone.yDown=!0,b.AnimCache={},b.Spine=function(a){if(b.DisplayObjectContainer.call(this),this.spineData=b.AnimCache[a],!this.spineData)throw new Error("Spine data must be preloaded using PIXI.SpineLoader or PIXI.AssetLoader: "+a);this.skeleton=new f.Skeleton(this.spineData),this.skeleton.updateWorldTransform(),this.stateData=new f.AnimationStateData(this.spineData),this.state=new f.AnimationState(this.stateData),this.slotContainers=[];for(var c=0,d=this.skeleton.drawOrder.length;d>c;c++){var e=this.skeleton.drawOrder[c],g=e.attachment,h=new b.DisplayObjectContainer;if(this.slotContainers.push(h),this.addChild(h),g instanceof f.RegionAttachment){var i=g.rendererObject.name,j=this.createSprite(e,g.rendererObject);e.currentSprite=j,e.currentSpriteName=i,h.addChild(j)}}},b.Spine.prototype=Object.create(b.DisplayObjectContainer.prototype),b.Spine.prototype.constructor=b.Spine,b.Spine.prototype.updateTransform=function(){this.lastTime=this.lastTime||Date.now();var a=.001*(Date.now()-this.lastTime);this.lastTime=Date.now(),this.state.update(a),this.state.apply(this.skeleton),this.skeleton.updateWorldTransform();for(var c=this.skeleton.drawOrder,d=0,e=c.length;e>d;d++){var g=c[d],h=g.attachment,i=this.slotContainers[d];if(h instanceof f.RegionAttachment){if(h.rendererObject&&(!g.currentSpriteName||g.currentSpriteName!=h.name)){var j=h.rendererObject.name;if(void 0!==g.currentSprite&&(g.currentSprite.visible=!1),g.sprites=g.sprites||{},void 0!==g.sprites[j])g.sprites[j].visible=!0;else{var k=this.createSprite(g,h.rendererObject);i.addChild(k)}g.currentSprite=g.sprites[j],g.currentSpriteName=j}i.visible=!0;var l=g.bone;i.position.x=l.worldX+h.x*l.m00+h.y*l.m01,i.position.y=l.worldY+h.x*l.m10+h.y*l.m11,i.scale.x=l.worldScaleX,i.scale.y=l.worldScaleY,i.rotation=-(g.bone.worldRotation*Math.PI/180),i.alpha=g.a,g.currentSprite.tint=b.rgb2hex([g.r,g.g,g.b])}else i.visible=!1}b.DisplayObjectContainer.prototype.updateTransform.call(this)},b.Spine.prototype.createSprite=function(a,c){var d=b.TextureCache[c.name]?c.name:c.name+".png",e=new b.Sprite(b.Texture.fromFrame(d));return e.scale=c.scale,e.rotation=c.rotation,e.anchor.x=e.anchor.y=.5,a.sprites=a.sprites||{},a.sprites[c.name]=e,e},b.BaseTextureCache={},b.texturesToUpdate=[],b.texturesToDestroy=[],b.BaseTextureCacheIdGenerator=0,b.BaseTexture=function(a,c){if(b.EventTarget.call(this),this.width=100,this.height=100,this.scaleMode=c||b.scaleModes.DEFAULT,this.hasLoaded=!1,this.source=a,this.id=b.BaseTextureCacheIdGenerator++,this.premultipliedAlpha=!0,this._glTextures=[],this._dirty=[],a){if((this.source.complete||this.source.getContext)&&this.source.width&&this.source.height)this.hasLoaded=!0,this.width=this.source.width,this.height=this.source.height,b.texturesToUpdate.push(this);else{var d=this;this.source.onload=function(){d.hasLoaded=!0,d.width=d.source.width,d.height=d.source.height;for(var a=0;a<d._glTextures.length;a++)d._dirty[a]=!0;d.dispatchEvent({type:"loaded",content:d})},this.source.onerror=function(){d.dispatchEvent({type:"error",content:d})}}this.imageUrl=null,this._powerOf2=!1}},b.BaseTexture.prototype.constructor=b.BaseTexture,b.BaseTexture.prototype.destroy=function(){this.imageUrl?(delete b.BaseTextureCache[this.imageUrl],delete b.TextureCache[this.imageUrl],this.imageUrl=null,this.source.src=null):this.source&&this.source._pixiId&&delete b.BaseTextureCache[this.source._pixiId],this.source=null,b.texturesToDestroy.push(this)},b.BaseTexture.prototype.updateSourceImage=function(a){this.hasLoaded=!1,this.source.src=null,this.source.src=a},b.BaseTexture.fromImage=function(a,c,d){var e=b.BaseTextureCache[a];if(void 0===c&&-1===a.indexOf("data:")&&(c=!0),!e){var f=new Image;c&&(f.crossOrigin=""),f.src=a,e=new b.BaseTexture(f,d),e.imageUrl=a,b.BaseTextureCache[a]=e}return e},b.BaseTexture.fromCanvas=function(a,c){a._pixiId||(a._pixiId="canvas_"+b.TextureCacheIdGenerator++);var d=b.BaseTextureCache[a._pixiId];return d||(d=new b.BaseTexture(a,c),b.BaseTextureCache[a._pixiId]=d),d},b.TextureCache={},b.FrameCache={},b.TextureCacheIdGenerator=0,b.Texture=function(a,c){if(b.EventTarget.call(this),this.noFrame=!1,c||(this.noFrame=!0,c=new b.Rectangle(0,0,1,1)),a instanceof b.Texture&&(a=a.baseTexture),this.baseTexture=a,this.frame=c,this.trim=null,this.valid=!1,this.scope=this,this._uvs=null,this.width=0,this.height=0,this.crop=new b.Rectangle(0,0,1,1),a.hasLoaded)this.noFrame&&(c=new b.Rectangle(0,0,a.width,a.height)),this.setFrame(c);else{var d=this;a.addEventListener("loaded",function(){d.onBaseTextureLoaded()})}},b.Texture.prototype.constructor=b.Texture,b.Texture.prototype.onBaseTextureLoaded=function(){var a=this.baseTexture;a.removeEventListener("loaded",this.onLoaded),this.noFrame&&(this.frame=new b.Rectangle(0,0,a.width,a.height)),this.setFrame(this.frame),this.scope.dispatchEvent({type:"update",content:this})},b.Texture.prototype.destroy=function(a){a&&this.baseTexture.destroy(),this.valid=!1},b.Texture.prototype.setFrame=function(a){if(this.noFrame=!1,this.frame=a,this.width=a.width,this.height=a.height,this.crop.x=a.x,this.crop.y=a.y,this.crop.width=a.width,this.crop.height=a.height,!this.trim&&(a.x+a.width>this.baseTexture.width||a.y+a.height>this.baseTexture.height))throw new Error("Texture Error: frame does not fit inside the base Texture dimensions "+this);this.valid=a&&a.width&&a.height&&this.baseTexture.source&&this.baseTexture.hasLoaded,this.trim&&(this.width=this.trim.width,this.height=this.trim.height,this.frame.width=this.trim.width,this.frame.height=this.trim.height),this.valid&&b.Texture.frameUpdates.push(this)},b.Texture.prototype._updateWebGLuvs=function(){this._uvs||(this._uvs=new b.TextureUvs);var a=this.crop,c=this.baseTexture.width,d=this.baseTexture.height;this._uvs.x0=a.x/c,this._uvs.y0=a.y/d,this._uvs.x1=(a.x+a.width)/c,this._uvs.y1=a.y/d,this._uvs.x2=(a.x+a.width)/c,this._uvs.y2=(a.y+a.height)/d,this._uvs.x3=a.x/c,this._uvs.y3=(a.y+a.height)/d},b.Texture.fromImage=function(a,c,d){var e=b.TextureCache[a];return e||(e=new b.Texture(b.BaseTexture.fromImage(a,c,d)),b.TextureCache[a]=e),e},b.Texture.fromFrame=function(a){var c=b.TextureCache[a];if(!c)throw new Error('The frameId "'+a+'" does not exist in the texture cache ');return c},b.Texture.fromCanvas=function(a,c){var d=b.BaseTexture.fromCanvas(a,c);return new b.Texture(d)},b.Texture.addTextureToCache=function(a,c){b.TextureCache[c]=a},b.Texture.removeTextureFromCache=function(a){var c=b.TextureCache[a];return delete b.TextureCache[a],delete b.BaseTextureCache[a],c},b.Texture.frameUpdates=[],b.TextureUvs=function(){this.x0=0,this.y0=0,this.x1=0,this.y1=0,this.x2=0,this.y2=0,this.x3=0,this.y3=0},b.RenderTexture=function(a,c,d,e){if(b.EventTarget.call(this),this.width=a||100,this.height=c||100,this.frame=new b.Rectangle(0,0,this.width,this.height),this.crop=new b.Rectangle(0,0,this.width,this.height),this.baseTexture=new b.BaseTexture,this.baseTexture.width=this.width,this.baseTexture.height=this.height,this.baseTexture._glTextures=[],this.baseTexture.scaleMode=e||b.scaleModes.DEFAULT,this.baseTexture.hasLoaded=!0,this.renderer=d||b.defaultRenderer,this.renderer.type===b.WEBGL_RENDERER){var f=this.renderer.gl;this.textureBuffer=new b.FilterTexture(f,this.width,this.height,this.baseTexture.scaleMode),this.baseTexture._glTextures[f.id]=this.textureBuffer.texture,this.render=this.renderWebGL,this.projection=new b.Point(this.width/2,-this.height/2)}else this.render=this.renderCanvas,this.textureBuffer=new b.CanvasBuffer(this.width,this.height),this.baseTexture.source=this.textureBuffer.canvas;this.valid=!0,b.Texture.frameUpdates.push(this)},b.RenderTexture.prototype=Object.create(b.Texture.prototype),b.RenderTexture.prototype.constructor=b.RenderTexture,b.RenderTexture.prototype.resize=function(a,c,d){(a!==this.width||c!==this.height)&&(this.width=this.frame.width=this.crop.width=a,this.height=this.frame.height=this.crop.height=c,d&&(this.baseTexture.width=this.width,this.baseTexture.height=this.height),this.renderer.type===b.WEBGL_RENDERER&&(this.projection.x=this.width/2,this.projection.y=-this.height/2),this.textureBuffer.resize(this.width,this.height))},b.RenderTexture.prototype.clear=function(){this.renderer.type===b.WEBGL_RENDERER&&this.renderer.gl.bindFramebuffer(this.renderer.gl.FRAMEBUFFER,this.textureBuffer.frameBuffer),this.textureBuffer.clear()},b.RenderTexture.prototype.renderWebGL=function(a,c,d){var e=this.renderer.gl;e.colorMask(!0,!0,!0,!0),e.viewport(0,0,this.width,this.height),e.bindFramebuffer(e.FRAMEBUFFER,this.textureBuffer.frameBuffer),d&&this.textureBuffer.clear();var f=a.children,g=a.worldTransform;a.worldTransform=b.RenderTexture.tempMatrix,a.worldTransform.d=-1,a.worldTransform.ty=-2*this.projection.y,c&&(a.worldTransform.tx=c.x,a.worldTransform.ty-=c.y);for(var h=0,i=f.length;i>h;h++)f[h].updateTransform();b.WebGLRenderer.updateTextures(),this.renderer.spriteBatch.dirty=!0,this.renderer.renderDisplayObject(a,this.projection,this.textureBuffer.frameBuffer),a.worldTransform=g,this.renderer.spriteBatch.dirty=!0},b.RenderTexture.prototype.renderCanvas=function(a,c,d){var e=a.children,f=a.worldTransform;a.worldTransform=b.RenderTexture.tempMatrix,c?(a.worldTransform.tx=c.x,a.worldTransform.ty=c.y):(a.worldTransform.tx=0,a.worldTransform.ty=0);for(var g=0,h=e.length;h>g;g++)e[g].updateTransform();d&&this.textureBuffer.clear();var i=this.textureBuffer.context;this.renderer.renderDisplayObject(a,i),i.setTransform(1,0,0,1,0,0),a.worldTransform=f},b.RenderTexture.tempMatrix=new b.Matrix,b.AssetLoader=function(a,c){b.EventTarget.call(this),this.assetURLs=a,this.crossorigin=c,this.loadersByType={jpg:b.ImageLoader,jpeg:b.ImageLoader,png:b.ImageLoader,gif:b.ImageLoader,webp:b.ImageLoader,json:b.JsonLoader,atlas:b.AtlasLoader,anim:b.SpineLoader,xml:b.BitmapFontLoader,fnt:b.BitmapFontLoader}},b.AssetLoader.prototype.constructor=b.AssetLoader,b.AssetLoader.prototype._getDataType=function(a){var b="data:",c=a.slice(0,b.length).toLowerCase();if(c===b){var d=a.slice(b.length),e=d.indexOf(",");if(-1===e)return null;var f=d.slice(0,e).split(";")[0];return f&&"text/plain"!==f.toLowerCase()?f.split("/").pop().toLowerCase():"txt"}return null},b.AssetLoader.prototype.load=function(){function a(a){b.onAssetLoaded(a.content)}var b=this;this.loadCount=this.assetURLs.length;for(var c=0;c<this.assetURLs.length;c++){var d=this.assetURLs[c],e=this._getDataType(d);e||(e=d.split("?").shift().split(".").pop().toLowerCase());var f=this.loadersByType[e];if(!f)throw new Error(e+" is an unsupported file type");var g=new f(d,this.crossorigin);g.addEventListener("loaded",a),g.load()}},b.AssetLoader.prototype.onAssetLoaded=function(a){this.loadCount--,this.dispatchEvent({type:"onProgress",content:this,loader:a}),this.onProgress&&this.onProgress(a),this.loadCount||(this.dispatchEvent({type:"onComplete",content:this}),this.onComplete&&this.onComplete())},b.JsonLoader=function(a,c){b.EventTarget.call(this),this.url=a,this.crossorigin=c,this.baseUrl=a.replace(/[^\/]*$/,""),this.loaded=!1},b.JsonLoader.prototype.constructor=b.JsonLoader,b.JsonLoader.prototype.load=function(){var a=this;window.XDomainRequest&&a.crossorigin?(this.ajaxRequest=new window.XDomainRequest,this.ajaxRequest.timeout=3e3,this.ajaxRequest.onerror=function(){a.onError()},this.ajaxRequest.ontimeout=function(){a.onError()},this.ajaxRequest.onprogress=function(){}):this.ajaxRequest=window.XMLHttpRequest?new window.XMLHttpRequest:new window.ActiveXObject("Microsoft.XMLHTTP"),this.ajaxRequest.onload=function(){a.onJSONLoaded()},this.ajaxRequest.open("GET",this.url,!0),this.ajaxRequest.send()},b.JsonLoader.prototype.onJSONLoaded=function(){if(!this.ajaxRequest.responseText)return this.onError(),void 0;if(this.json=JSON.parse(this.ajaxRequest.responseText),this.json.frames){var a=this,c=this.baseUrl+this.json.meta.image,d=new b.ImageLoader(c,this.crossorigin),e=this.json.frames;this.texture=d.texture.baseTexture,d.addEventListener("loaded",function(){a.onLoaded()});for(var g in e){var h=e[g].frame;if(h&&(b.TextureCache[g]=new b.Texture(this.texture,{x:h.x,y:h.y,width:h.w,height:h.h}),b.TextureCache[g].crop=new b.Rectangle(h.x,h.y,h.w,h.h),e[g].trimmed)){var i=e[g].sourceSize,j=e[g].spriteSourceSize;b.TextureCache[g].trim=new b.Rectangle(j.x,j.y,i.w,i.h)}}d.load()}else if(this.json.bones){var k=new f.SkeletonJson,l=k.readSkeletonData(this.json);b.AnimCache[this.url]=l,this.onLoaded()}else this.onLoaded()},b.JsonLoader.prototype.onLoaded=function(){this.loaded=!0,this.dispatchEvent({type:"loaded",content:this})},b.JsonLoader.prototype.onError=function(){this.dispatchEvent({type:"error",content:this})},b.AtlasLoader=function(a,c){b.EventTarget.call(this),this.url=a,this.baseUrl=a.replace(/[^\/]*$/,""),this.crossorigin=c,this.loaded=!1},b.AtlasLoader.constructor=b.AtlasLoader,b.AtlasLoader.prototype.load=function(){this.ajaxRequest=new b.AjaxRequest,this.ajaxRequest.onreadystatechange=this.onAtlasLoaded.bind(this),this.ajaxRequest.open("GET",this.url,!0),this.ajaxRequest.overrideMimeType&&this.ajaxRequest.overrideMimeType("application/json"),this.ajaxRequest.send(null)},b.AtlasLoader.prototype.onAtlasLoaded=function(){if(4===this.ajaxRequest.readyState)if(200===this.ajaxRequest.status||-1===window.location.href.indexOf("http")){this.atlas={meta:{image:[]},frames:[]};var a=this.ajaxRequest.responseText.split(/\r?\n/),c=-3,d=0,e=null,f=!1,g=0,h=0,i=this.onLoaded.bind(this);for(g=0;g<a.length;g++)if(a[g]=a[g].replace(/^\s+|\s+$/g,""),""===a[g]&&(f=g+1),a[g].length>0){if(f===g)this.atlas.meta.image.push(a[g]),d=this.atlas.meta.image.length-1,this.atlas.frames.push({}),c=-3;else if(c>0)if(c%7===1)null!=e&&(this.atlas.frames[d][e.name]=e),e={name:a[g],frame:{}};else{var j=a[g].split(" ");if(c%7===3)e.frame.x=Number(j[1].replace(",","")),e.frame.y=Number(j[2]);else if(c%7===4)e.frame.w=Number(j[1].replace(",","")),e.frame.h=Number(j[2]);else if(c%7===5){var k={x:0,y:0,w:Number(j[1].replace(",","")),h:Number(j[2])};k.w>e.frame.w||k.h>e.frame.h?(e.trimmed=!0,e.realSize=k):e.trimmed=!1}}c++}if(null!=e&&(this.atlas.frames[d][e.name]=e),this.atlas.meta.image.length>0){for(this.images=[],h=0;h<this.atlas.meta.image.length;h++){var l=this.baseUrl+this.atlas.meta.image[h],m=this.atlas.frames[h];this.images.push(new b.ImageLoader(l,this.crossorigin));for(g in m){var n=m[g].frame;n&&(b.TextureCache[g]=new b.Texture(this.images[h].texture.baseTexture,{x:n.x,y:n.y,width:n.w,height:n.h}),m[g].trimmed&&(b.TextureCache[g].realSize=m[g].realSize,b.TextureCache[g].trim.x=0,b.TextureCache[g].trim.y=0))}}for(this.currentImageId=0,h=0;h<this.images.length;h++)this.images[h].addEventListener("loaded",i);this.images[this.currentImageId].load()}else this.onLoaded()}else this.onError()},b.AtlasLoader.prototype.onLoaded=function(){this.images.length-1>this.currentImageId?(this.currentImageId++,this.images[this.currentImageId].load()):(this.loaded=!0,this.dispatchEvent({type:"loaded",content:this}))},b.AtlasLoader.prototype.onError=function(){this.dispatchEvent({type:"error",content:this})},b.SpriteSheetLoader=function(a,c){b.EventTarget.call(this),this.url=a,this.crossorigin=c,this.baseUrl=a.replace(/[^\/]*$/,""),this.texture=null,this.frames={}},b.SpriteSheetLoader.prototype.constructor=b.SpriteSheetLoader,b.SpriteSheetLoader.prototype.load=function(){var a=this,c=new b.JsonLoader(this.url,this.crossorigin);c.addEventListener("loaded",function(b){a.json=b.content.json,a.onLoaded()}),c.load()},b.SpriteSheetLoader.prototype.onLoaded=function(){this.dispatchEvent({type:"loaded",content:this})},b.ImageLoader=function(a,c){b.EventTarget.call(this),this.texture=b.Texture.fromImage(a,c),this.frames=[]},b.ImageLoader.prototype.constructor=b.ImageLoader,b.ImageLoader.prototype.load=function(){if(this.texture.baseTexture.hasLoaded)this.onLoaded();else{var a=this;this.texture.baseTexture.addEventListener("loaded",function(){a.onLoaded()})}},b.ImageLoader.prototype.onLoaded=function(){this.dispatchEvent({type:"loaded",content:this})},b.ImageLoader.prototype.loadFramedSpriteSheet=function(a,c,d){this.frames=[];for(var e=Math.floor(this.texture.width/a),f=Math.floor(this.texture.height/c),g=0,h=0;f>h;h++)for(var i=0;e>i;i++,g++){var j=new b.Texture(this.texture,{x:i*a,y:h*c,width:a,height:c});this.frames.push(j),d&&(b.TextureCache[d+"-"+g]=j)}if(this.texture.baseTexture.hasLoaded)this.onLoaded();else{var k=this;this.texture.baseTexture.addEventListener("loaded",function(){k.onLoaded()})}},b.BitmapFontLoader=function(a,c){b.EventTarget.call(this),this.url=a,this.crossorigin=c,this.baseUrl=a.replace(/[^\/]*$/,""),this.texture=null},b.BitmapFontLoader.prototype.constructor=b.BitmapFontLoader,b.BitmapFontLoader.prototype.load=function(){this.ajaxRequest=new b.AjaxRequest;var a=this;this.ajaxRequest.onreadystatechange=function(){a.onXMLLoaded()},this.ajaxRequest.open("GET",this.url,!0),this.ajaxRequest.overrideMimeType&&this.ajaxRequest.overrideMimeType("application/xml"),this.ajaxRequest.send(null)},b.BitmapFontLoader.prototype.onXMLLoaded=function(){if(4===this.ajaxRequest.readyState&&(200===this.ajaxRequest.status||-1===window.location.protocol.indexOf("http"))){var a=this.ajaxRequest.responseXML;if(!a||/MSIE 9/i.test(navigator.userAgent)||navigator.isCocoonJS)if("function"==typeof window.DOMParser){var c=new DOMParser;a=c.parseFromString(this.ajaxRequest.responseText,"text/xml")}else{var d=document.createElement("div");d.innerHTML=this.ajaxRequest.responseText,a=d}var e=this.baseUrl+a.getElementsByTagName("page")[0].getAttribute("file"),f=new b.ImageLoader(e,this.crossorigin);this.texture=f.texture.baseTexture;var g={},h=a.getElementsByTagName("info")[0],i=a.getElementsByTagName("common")[0];g.font=h.getAttribute("face"),g.size=parseInt(h.getAttribute("size"),10),g.lineHeight=parseInt(i.getAttribute("lineHeight"),10),g.chars={};for(var j=a.getElementsByTagName("char"),k=0;k<j.length;k++){var l=parseInt(j[k].getAttribute("id"),10),m=new b.Rectangle(parseInt(j[k].getAttribute("x"),10),parseInt(j[k].getAttribute("y"),10),parseInt(j[k].getAttribute("width"),10),parseInt(j[k].getAttribute("height"),10));g.chars[l]={xOffset:parseInt(j[k].getAttribute("xoffset"),10),yOffset:parseInt(j[k].getAttribute("yoffset"),10),xAdvance:parseInt(j[k].getAttribute("xadvance"),10),kerning:{},texture:b.TextureCache[l]=new b.Texture(this.texture,m)}}var n=a.getElementsByTagName("kerning");for(k=0;k<n.length;k++){var o=parseInt(n[k].getAttribute("first"),10),p=parseInt(n[k].getAttribute("second"),10),q=parseInt(n[k].getAttribute("amount"),10);g.chars[p].kerning[o]=q}b.BitmapText.fonts[g.font]=g;var r=this;f.addEventListener("loaded",function(){r.onLoaded()}),f.load()}},b.BitmapFontLoader.prototype.onLoaded=function(){this.dispatchEvent({type:"loaded",content:this})},b.SpineLoader=function(a,c){b.EventTarget.call(this),this.url=a,this.crossorigin=c,this.loaded=!1},b.SpineLoader.prototype.constructor=b.SpineLoader,b.SpineLoader.prototype.load=function(){var a=this,c=new b.JsonLoader(this.url,this.crossorigin);
 c.addEventListener("loaded",function(b){a.json=b.content.json,a.onLoaded()}),c.load()},b.SpineLoader.prototype.onLoaded=function(){this.loaded=!0,this.dispatchEvent({type:"loaded",content:this})},b.AbstractFilter=function(a,b){this.passes=[this],this.shaders=[],this.dirty=!0,this.padding=0,this.uniforms=b||{},this.fragmentSrc=a||[]},b.AlphaMaskFilter=function(a){b.AbstractFilter.call(this),this.passes=[this],a.baseTexture._powerOf2=!0,this.uniforms={mask:{type:"sampler2D",value:a},mapDimensions:{type:"2f",value:{x:1,y:5112}},dimensions:{type:"4fv",value:[0,0,0,0]}},a.baseTexture.hasLoaded?(this.uniforms.mask.value.x=a.width,this.uniforms.mask.value.y=a.height):(this.boundLoadedFunction=this.onTextureLoaded.bind(this),a.baseTexture.on("loaded",this.boundLoadedFunction)),this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform sampler2D mask;","uniform sampler2D uSampler;","uniform vec2 offset;","uniform vec4 dimensions;","uniform vec2 mapDimensions;","void main(void) {","   vec2 mapCords = vTextureCoord.xy;","   mapCords += (dimensions.zw + offset)/ dimensions.xy ;","   mapCords.y *= -1.0;","   mapCords.y += 1.0;","   mapCords *= dimensions.xy / mapDimensions;","   vec4 original =  texture2D(uSampler, vTextureCoord);","   float maskAlpha =  texture2D(mask, mapCords).r;","   original *= maskAlpha;","   gl_FragColor =  original;","}"]},b.AlphaMaskFilter.prototype=Object.create(b.AbstractFilter.prototype),b.AlphaMaskFilter.prototype.constructor=b.AlphaMaskFilter,b.AlphaMaskFilter.prototype.onTextureLoaded=function(){this.uniforms.mapDimensions.value.x=this.uniforms.mask.value.width,this.uniforms.mapDimensions.value.y=this.uniforms.mask.value.height,this.uniforms.mask.value.baseTexture.off("loaded",this.boundLoadedFunction)},Object.defineProperty(b.AlphaMaskFilter.prototype,"map",{get:function(){return this.uniforms.mask.value},set:function(a){this.uniforms.mask.value=a}}),b.ColorMatrixFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={matrix:{type:"mat4",value:[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform float invert;","uniform mat4 matrix;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord) * matrix;","}"]},b.ColorMatrixFilter.prototype=Object.create(b.AbstractFilter.prototype),b.ColorMatrixFilter.prototype.constructor=b.ColorMatrixFilter,Object.defineProperty(b.ColorMatrixFilter.prototype,"matrix",{get:function(){return this.uniforms.matrix.value},set:function(a){this.uniforms.matrix.value=a}}),b.GrayFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={gray:{type:"1f",value:1}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform sampler2D uSampler;","uniform float gray;","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord);","   gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.2126*gl_FragColor.r + 0.7152*gl_FragColor.g + 0.0722*gl_FragColor.b), gray);","}"]},b.GrayFilter.prototype=Object.create(b.AbstractFilter.prototype),b.GrayFilter.prototype.constructor=b.GrayFilter,Object.defineProperty(b.GrayFilter.prototype,"gray",{get:function(){return this.uniforms.gray.value},set:function(a){this.uniforms.gray.value=a}}),b.DisplacementFilter=function(a){b.AbstractFilter.call(this),this.passes=[this],a.baseTexture._powerOf2=!0,this.uniforms={displacementMap:{type:"sampler2D",value:a},scale:{type:"2f",value:{x:30,y:30}},offset:{type:"2f",value:{x:0,y:0}},mapDimensions:{type:"2f",value:{x:1,y:5112}},dimensions:{type:"4fv",value:[0,0,0,0]}},a.baseTexture.hasLoaded?(this.uniforms.mapDimensions.value.x=a.width,this.uniforms.mapDimensions.value.y=a.height):(this.boundLoadedFunction=this.onTextureLoaded.bind(this),a.baseTexture.on("loaded",this.boundLoadedFunction)),this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform sampler2D displacementMap;","uniform sampler2D uSampler;","uniform vec2 scale;","uniform vec2 offset;","uniform vec4 dimensions;","uniform vec2 mapDimensions;","void main(void) {","   vec2 mapCords = vTextureCoord.xy;","   mapCords += (dimensions.zw + offset)/ dimensions.xy ;","   mapCords.y *= -1.0;","   mapCords.y += 1.0;","   vec2 matSample = texture2D(displacementMap, mapCords).xy;","   matSample -= 0.5;","   matSample *= scale;","   matSample /= mapDimensions;","   gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x + matSample.x, vTextureCoord.y + matSample.y));","   gl_FragColor.rgb = mix( gl_FragColor.rgb, gl_FragColor.rgb, 1.0);","   vec2 cord = vTextureCoord;","}"]},b.DisplacementFilter.prototype=Object.create(b.AbstractFilter.prototype),b.DisplacementFilter.prototype.constructor=b.DisplacementFilter,b.DisplacementFilter.prototype.onTextureLoaded=function(){this.uniforms.mapDimensions.value.x=this.uniforms.displacementMap.value.width,this.uniforms.mapDimensions.value.y=this.uniforms.displacementMap.value.height,this.uniforms.displacementMap.value.baseTexture.off("loaded",this.boundLoadedFunction)},Object.defineProperty(b.DisplacementFilter.prototype,"map",{get:function(){return this.uniforms.displacementMap.value},set:function(a){this.uniforms.displacementMap.value=a}}),Object.defineProperty(b.DisplacementFilter.prototype,"scale",{get:function(){return this.uniforms.scale.value},set:function(a){this.uniforms.scale.value=a}}),Object.defineProperty(b.DisplacementFilter.prototype,"offset",{get:function(){return this.uniforms.offset.value},set:function(a){this.uniforms.offset.value=a}}),b.PixelateFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={invert:{type:"1f",value:0},dimensions:{type:"4fv",value:new Float32Array([1e4,100,10,10])},pixelSize:{type:"2f",value:{x:10,y:10}}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform vec2 testDim;","uniform vec4 dimensions;","uniform vec2 pixelSize;","uniform sampler2D uSampler;","void main(void) {","   vec2 coord = vTextureCoord;","   vec2 size = dimensions.xy/pixelSize;","   vec2 color = floor( ( vTextureCoord * size ) ) / size + pixelSize/dimensions.xy * 0.5;","   gl_FragColor = texture2D(uSampler, color);","}"]},b.PixelateFilter.prototype=Object.create(b.AbstractFilter.prototype),b.PixelateFilter.prototype.constructor=b.PixelateFilter,Object.defineProperty(b.PixelateFilter.prototype,"size",{get:function(){return this.uniforms.pixelSize.value},set:function(a){this.dirty=!0,this.uniforms.pixelSize.value=a}}),b.BlurXFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={blur:{type:"1f",value:1/512}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform float blur;","uniform sampler2D uSampler;","void main(void) {","   vec4 sum = vec4(0.0);","   sum += texture2D(uSampler, vec2(vTextureCoord.x - 4.0*blur, vTextureCoord.y)) * 0.05;","   sum += texture2D(uSampler, vec2(vTextureCoord.x - 3.0*blur, vTextureCoord.y)) * 0.09;","   sum += texture2D(uSampler, vec2(vTextureCoord.x - 2.0*blur, vTextureCoord.y)) * 0.12;","   sum += texture2D(uSampler, vec2(vTextureCoord.x - blur, vTextureCoord.y)) * 0.15;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y)) * 0.16;","   sum += texture2D(uSampler, vec2(vTextureCoord.x + blur, vTextureCoord.y)) * 0.15;","   sum += texture2D(uSampler, vec2(vTextureCoord.x + 2.0*blur, vTextureCoord.y)) * 0.12;","   sum += texture2D(uSampler, vec2(vTextureCoord.x + 3.0*blur, vTextureCoord.y)) * 0.09;","   sum += texture2D(uSampler, vec2(vTextureCoord.x + 4.0*blur, vTextureCoord.y)) * 0.05;","   gl_FragColor = sum;","}"]},b.BlurXFilter.prototype=Object.create(b.AbstractFilter.prototype),b.BlurXFilter.prototype.constructor=b.BlurXFilter,Object.defineProperty(b.BlurXFilter.prototype,"blur",{get:function(){return this.uniforms.blur.value/(1/7e3)},set:function(a){this.dirty=!0,this.uniforms.blur.value=1/7e3*a}}),b.BlurYFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={blur:{type:"1f",value:1/512}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform float blur;","uniform sampler2D uSampler;","void main(void) {","   vec4 sum = vec4(0.0);","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y - 4.0*blur)) * 0.05;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y - 3.0*blur)) * 0.09;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y - 2.0*blur)) * 0.12;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y - blur)) * 0.15;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y)) * 0.16;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y + blur)) * 0.15;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y + 2.0*blur)) * 0.12;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y + 3.0*blur)) * 0.09;","   sum += texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y + 4.0*blur)) * 0.05;","   gl_FragColor = sum;","}"]},b.BlurYFilter.prototype=Object.create(b.AbstractFilter.prototype),b.BlurYFilter.prototype.constructor=b.BlurYFilter,Object.defineProperty(b.BlurYFilter.prototype,"blur",{get:function(){return this.uniforms.blur.value/(1/7e3)},set:function(a){this.uniforms.blur.value=1/7e3*a}}),b.BlurFilter=function(){this.blurXFilter=new b.BlurXFilter,this.blurYFilter=new b.BlurYFilter,this.passes=[this.blurXFilter,this.blurYFilter]},Object.defineProperty(b.BlurFilter.prototype,"blur",{get:function(){return this.blurXFilter.blur},set:function(a){this.blurXFilter.blur=this.blurYFilter.blur=a}}),Object.defineProperty(b.BlurFilter.prototype,"blurX",{get:function(){return this.blurXFilter.blur},set:function(a){this.blurXFilter.blur=a}}),Object.defineProperty(b.BlurFilter.prototype,"blurY",{get:function(){return this.blurYFilter.blur},set:function(a){this.blurYFilter.blur=a}}),b.InvertFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={invert:{type:"1f",value:1}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform float invert;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord);","   gl_FragColor.rgb = mix( (vec3(1)-gl_FragColor.rgb) * gl_FragColor.a, gl_FragColor.rgb, 1.0 - invert);","}"]},b.InvertFilter.prototype=Object.create(b.AbstractFilter.prototype),b.InvertFilter.prototype.constructor=b.InvertFilter,Object.defineProperty(b.InvertFilter.prototype,"invert",{get:function(){return this.uniforms.invert.value},set:function(a){this.uniforms.invert.value=a}}),b.SepiaFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={sepia:{type:"1f",value:1}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform float sepia;","uniform sampler2D uSampler;","const mat3 sepiaMatrix = mat3(0.3588, 0.7044, 0.1368, 0.2990, 0.5870, 0.1140, 0.2392, 0.4696, 0.0912);","void main(void) {","   gl_FragColor = texture2D(uSampler, vTextureCoord);","   gl_FragColor.rgb = mix( gl_FragColor.rgb, gl_FragColor.rgb * sepiaMatrix, sepia);","}"]},b.SepiaFilter.prototype=Object.create(b.AbstractFilter.prototype),b.SepiaFilter.prototype.constructor=b.SepiaFilter,Object.defineProperty(b.SepiaFilter.prototype,"sepia",{get:function(){return this.uniforms.sepia.value},set:function(a){this.uniforms.sepia.value=a}}),b.TwistFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={radius:{type:"1f",value:.5},angle:{type:"1f",value:5},offset:{type:"2f",value:{x:.5,y:.5}}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform vec4 dimensions;","uniform sampler2D uSampler;","uniform float radius;","uniform float angle;","uniform vec2 offset;","void main(void) {","   vec2 coord = vTextureCoord - offset;","   float distance = length(coord);","   if (distance < radius) {","       float ratio = (radius - distance) / radius;","       float angleMod = ratio * ratio * angle;","       float s = sin(angleMod);","       float c = cos(angleMod);","       coord = vec2(coord.x * c - coord.y * s, coord.x * s + coord.y * c);","   }","   gl_FragColor = texture2D(uSampler, coord+offset);","}"]},b.TwistFilter.prototype=Object.create(b.AbstractFilter.prototype),b.TwistFilter.prototype.constructor=b.TwistFilter,Object.defineProperty(b.TwistFilter.prototype,"offset",{get:function(){return this.uniforms.offset.value},set:function(a){this.dirty=!0,this.uniforms.offset.value=a}}),Object.defineProperty(b.TwistFilter.prototype,"radius",{get:function(){return this.uniforms.radius.value},set:function(a){this.dirty=!0,this.uniforms.radius.value=a}}),Object.defineProperty(b.TwistFilter.prototype,"angle",{get:function(){return this.uniforms.angle.value},set:function(a){this.dirty=!0,this.uniforms.angle.value=a}}),b.ColorStepFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={step:{type:"1f",value:5}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform sampler2D uSampler;","uniform float step;","void main(void) {","   vec4 color = texture2D(uSampler, vTextureCoord);","   color = floor(color * step) / step;","   gl_FragColor = color;","}"]},b.ColorStepFilter.prototype=Object.create(b.AbstractFilter.prototype),b.ColorStepFilter.prototype.constructor=b.ColorStepFilter,Object.defineProperty(b.ColorStepFilter.prototype,"step",{get:function(){return this.uniforms.step.value},set:function(a){this.uniforms.step.value=a}}),b.DotScreenFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={scale:{type:"1f",value:1},angle:{type:"1f",value:5},dimensions:{type:"4fv",value:[0,0,0,0]}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform vec4 dimensions;","uniform sampler2D uSampler;","uniform float angle;","uniform float scale;","float pattern() {","   float s = sin(angle), c = cos(angle);","   vec2 tex = vTextureCoord * dimensions.xy;","   vec2 point = vec2(","       c * tex.x - s * tex.y,","       s * tex.x + c * tex.y","   ) * scale;","   return (sin(point.x) * sin(point.y)) * 4.0;","}","void main() {","   vec4 color = texture2D(uSampler, vTextureCoord);","   float average = (color.r + color.g + color.b) / 3.0;","   gl_FragColor = vec4(vec3(average * 10.0 - 5.0 + pattern()), color.a);","}"]},b.DotScreenFilter.prototype=Object.create(b.AbstractFilter.prototype),b.DotScreenFilter.prototype.constructor=b.DotScreenFilter,Object.defineProperty(b.DotScreenFilter.prototype,"scale",{get:function(){return this.uniforms.scale.value},set:function(a){this.dirty=!0,this.uniforms.scale.value=a}}),Object.defineProperty(b.DotScreenFilter.prototype,"angle",{get:function(){return this.uniforms.angle.value},set:function(a){this.dirty=!0,this.uniforms.angle.value=a}}),b.CrossHatchFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={blur:{type:"1f",value:1/512}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform float blur;","uniform sampler2D uSampler;","void main(void) {","    float lum = length(texture2D(uSampler, vTextureCoord.xy).rgb);","    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);","    if (lum < 1.00) {","        if (mod(gl_FragCoord.x + gl_FragCoord.y, 10.0) == 0.0) {","            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);","        }","    }","    if (lum < 0.75) {","        if (mod(gl_FragCoord.x - gl_FragCoord.y, 10.0) == 0.0) {","            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);","        }","    }","    if (lum < 0.50) {","        if (mod(gl_FragCoord.x + gl_FragCoord.y - 5.0, 10.0) == 0.0) {","            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);","        }","    }","    if (lum < 0.3) {","        if (mod(gl_FragCoord.x - gl_FragCoord.y - 5.0, 10.0) == 0.0) {","            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);","        }","    }","}"]},b.CrossHatchFilter.prototype=Object.create(b.AbstractFilter.prototype),b.CrossHatchFilter.prototype.constructor=b.BlurYFilter,Object.defineProperty(b.CrossHatchFilter.prototype,"blur",{get:function(){return this.uniforms.blur.value/(1/7e3)},set:function(a){this.uniforms.blur.value=1/7e3*a}}),b.RGBSplitFilter=function(){b.AbstractFilter.call(this),this.passes=[this],this.uniforms={red:{type:"2f",value:{x:20,y:20}},green:{type:"2f",value:{x:-20,y:20}},blue:{type:"2f",value:{x:20,y:-20}},dimensions:{type:"4fv",value:[0,0,0,0]}},this.fragmentSrc=["precision mediump float;","varying vec2 vTextureCoord;","varying vec4 vColor;","uniform vec2 red;","uniform vec2 green;","uniform vec2 blue;","uniform vec4 dimensions;","uniform sampler2D uSampler;","void main(void) {","   gl_FragColor.r = texture2D(uSampler, vTextureCoord + red/dimensions.xy).r;","   gl_FragColor.g = texture2D(uSampler, vTextureCoord + green/dimensions.xy).g;","   gl_FragColor.b = texture2D(uSampler, vTextureCoord + blue/dimensions.xy).b;","   gl_FragColor.a = texture2D(uSampler, vTextureCoord).a;","}"]},b.RGBSplitFilter.prototype=Object.create(b.AbstractFilter.prototype),b.RGBSplitFilter.prototype.constructor=b.RGBSplitFilter,Object.defineProperty(b.RGBSplitFilter.prototype,"angle",{get:function(){return this.uniforms.blur.value/(1/7e3)},set:function(a){this.uniforms.blur.value=1/7e3*a}}),"undefined"!=typeof exports?("undefined"!=typeof module&&module.exports&&(exports=module.exports=b),exports.PIXI=b):"undefined"!=typeof define&&define.amd?define(b):a.PIXI=b}).call(this);
-},{}],66:[function(require,module,exports){
-(function (process){
-// Copyright 2010-2012 Mikeal Rogers
-//
-//    Licensed under the Apache License, Version 2.0 (the "License");
-//    you may not use this file except in compliance with the License.
-//    You may obtain a copy of the License at
-//
-//        http://www.apache.org/licenses/LICENSE-2.0
-//
-//    Unless required by applicable law or agreed to in writing, software
-//    distributed under the License is distributed on an "AS IS" BASIS,
-//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//    See the License for the specific language governing permissions and
-//    limitations under the License.
-
-var cookies = require('./lib/cookies')
-  , copy = require('./lib/copy')
-  , Request = require('./request')
-  , util = require('util')
-  ;
-
-
-
-// organize params for patch, post, put, head, del
-function initParams(uri, options, callback) {
-  var opts;
-  if ((typeof options === 'function') && !callback) callback = options
-  if (options && typeof options === 'object') {
-    opts = util._extend({}, options);
-    opts.uri = uri
-  } else if (typeof uri === 'string') {
-    opts = {uri:uri}
-  } else {
-    opts = util._extend({}, uri);
-    uri = opts.uri
-  }
-
-  return { uri: uri, options: opts, callback: callback }
-}
-
-function request (uri, options, callback) {
-  var opts;
-  if (typeof uri === 'undefined') throw new Error('undefined is not a valid uri or options object.')
-  if ((typeof options === 'function') && !callback) callback = options
-  if (options && typeof options === 'object') {
-    opts = util._extend({}, options);
-    opts.uri = uri
-  } else if (typeof uri === 'string') {
-    opts = {uri:uri}
-  } else {
-    opts = util._extend({}, uri);
-  }
-
-  if (callback) opts.callback = callback
-  var r = new Request(opts)
-  return r
-}
-
-module.exports = request
-
-request.Request = Request;
-
-request.debug = process.env.NODE_DEBUG && /request/.test(process.env.NODE_DEBUG)
-
-request.initParams = initParams
-
-request.defaults = function (options, requester) {
-  var def = function (method) {
-    var d = function (uri, opts, callback) {
-      var params = initParams(uri, opts, callback)
-      Object.keys(options).forEach(function (key) {
-        if (key !== 'headers' && params.options[key] === undefined) {
-          params.options[key] = options[key]
-        }
-      })
-      if (options.headers) {
-        var headers = {}
-        util._extend(headers, options.headers)
-        util._extend(headers, params.options.headers)
-        params.options.headers = headers
-      }
-      if(typeof requester === 'function') {
-        if(method === request) {
-          method = requester
-        } else {
-          params.options._requester = requester
-        }
-      }
-      return method(params.options, params.callback)
-    }
-    return d
-  }
-  var de = def(request)
-  de.get = def(request.get)
-  de.patch = def(request.patch)
-  de.post = def(request.post)
-  de.put = def(request.put)
-  de.head = def(request.head)
-  de.del = def(request.del)
-  de.cookie = def(request.cookie)
-  de.jar = request.jar
-  return de
-}
-
-function requester(params) {
-  if(typeof params.options._requester === 'function') {
-    return params.options._requester
-  } else {
-    return request
-  }
-}
-
-request.forever = function (agentOptions, optionsArg) {
-  var options = {}
-  if (optionsArg) {
-    for (var option in optionsArg) {
-      options[option] = optionsArg[option]
-    }
-  }
-  if (agentOptions) options.agentOptions = agentOptions
-  options.forever = true
-  return request.defaults(options)
-}
-
-request.get = function (uri, options, callback) {
-  var params = initParams(uri, options, callback)
-  params.options.method = 'GET'
-  return requester(params)(params.uri || null, params.options, params.callback)
-}
-request.post = function (uri, options, callback) {
-  var params = initParams(uri, options, callback)
-  params.options.method = 'POST'
-  return requester(params)(params.uri || null, params.options, params.callback)
-}
-request.put = function (uri, options, callback) {
-  var params = initParams(uri, options, callback)
-  params.options.method = 'PUT'
-  return requester(params)(params.uri || null, params.options, params.callback)
-}
-request.patch = function (uri, options, callback) {
-  var params = initParams(uri, options, callback)
-  params.options.method = 'PATCH'
-  return requester(params)(params.uri || null, params.options, params.callback)
-}
-request.head = function (uri, options, callback) {
-  var params = initParams(uri, options, callback)
-  params.options.method = 'HEAD'
-  if (params.options.body ||
-      params.options.requestBodyStream ||
-      (params.options.json && typeof params.options.json !== 'boolean') ||
-      params.options.multipart) {
-    throw new Error("HTTP HEAD requests MUST NOT include a request body.")
-  }
-
-  return requester(params)(params.uri || null, params.options, params.callback)
-}
-request.del = function (uri, options, callback) {
-  var params = initParams(uri, options, callback)
-  params.options.method = 'DELETE'
-  return requester(params)(params.uri || null, params.options, params.callback)
-}
-request.jar = function () {
-  return cookies.jar();
-}
-request.cookie = function (str) {
-  return cookies.parse(str);
-}
-
-}).call(this,require('_process'))
-},{"./lib/cookies":67,"./lib/copy":68,"./request":84,"_process":44,"util":64}],67:[function(require,module,exports){
-var optional = require('./optional')
-  , tough = optional('tough-cookie')
-  , Cookie = tough && tough.Cookie
-  , CookieJar = tough && tough.CookieJar
-  ;
-
-exports.parse = function(str) {
-  if (str && str.uri) str = str.uri
-  if (typeof str !== 'string') throw new Error("The cookie function only accepts STRING as param")
-  if (!Cookie) {
-    return null;
-  }
-  return Cookie.parse(str)
-};
-
-// Adapt the sometimes-Async api of tough.CookieJar to our requirements
-function RequestJar() {
-  this._jar = new CookieJar();
-}
-RequestJar.prototype.setCookie = function(cookieOrStr, uri, options) {
-  return this._jar.setCookieSync(cookieOrStr, uri, options || {});
-};
-RequestJar.prototype.getCookieString = function(uri) {
-  return this._jar.getCookieStringSync(uri);
-};
-RequestJar.prototype.getCookies = function(uri) {
-  return this._jar.getCookiesSync(uri);
-};
-
-exports.jar = function() {
-  if (!CookieJar) {
-    // tough-cookie not loaded, return a stub object:
-    return {
-      setCookie: function(){},
-      getCookieString: function(){},
-      getCookies: function(){}
-    };
-  }
-  return new RequestJar();
-};
-
-},{"./optional":71}],68:[function(require,module,exports){
-module.exports =
-function copy (obj) {
-  var o = {}
-  Object.keys(obj).forEach(function (i) {
-    o[i] = obj[i]
-  })
-  return o
-}
-},{}],69:[function(require,module,exports){
-(function (process){
-var util = require('util')
-
-module.exports =
-function debug () {
-  if (/\brequest\b/.test(process.env.NODE_DEBUG))
-    console.error('REQUEST %s', util.format.apply(util, arguments))
-}
-
-}).call(this,require('_process'))
-},{"_process":44,"util":64}],70:[function(require,module,exports){
-// Safe toJSON
-module.exports =
-function getSafe (self, uuid) {
-  if (typeof self === 'object' || typeof self === 'function') var safe = {}
-  if (Array.isArray(self)) var safe = []
-
-  var recurse = []
-
-  Object.defineProperty(self, uuid, {})
-
-  var attrs = Object.keys(self).filter(function (i) {
-    if (i === uuid) return false
-    if ( (typeof self[i] !== 'object' && typeof self[i] !== 'function') || self[i] === null) return true
-    return !(Object.getOwnPropertyDescriptor(self[i], uuid))
-  })
-
-
-  for (var i=0;i<attrs.length;i++) {
-    if ( (typeof self[attrs[i]] !== 'object' && typeof self[attrs[i]] !== 'function') ||
-          self[attrs[i]] === null
-        ) {
-      safe[attrs[i]] = self[attrs[i]]
-    } else {
-      recurse.push(attrs[i])
-      Object.defineProperty(self[attrs[i]], uuid, {})
-    }
-  }
-
-  for (var i=0;i<recurse.length;i++) {
-    safe[recurse[i]] = getSafe(self[recurse[i]], uuid)
-  }
-
-  return safe
-}
-},{}],71:[function(require,module,exports){
-module.exports = function(moduleName) {
-  try {
-    return module.parent.require(moduleName);
-  } catch (e) {}
-};
-
-},{}],72:[function(require,module,exports){
-module.exports = ForeverAgent
-ForeverAgent.SSL = ForeverAgentSSL
-
-var util = require('util')
-  , Agent = require('http').Agent
-  , net = require('net')
-  , tls = require('tls')
-  , AgentSSL = require('https').Agent
-
-function ForeverAgent(options) {
-  var self = this
-  self.options = options || {}
-  self.requests = {}
-  self.sockets = {}
-  self.freeSockets = {}
-  self.maxSockets = self.options.maxSockets || Agent.defaultMaxSockets
-  self.minSockets = self.options.minSockets || ForeverAgent.defaultMinSockets
-  self.on('free', function(socket, host, port) {
-    var name = host + ':' + port
-    if (self.requests[name] && self.requests[name].length) {
-      self.requests[name].shift().onSocket(socket)
-    } else if (self.sockets[name].length < self.minSockets) {
-      if (!self.freeSockets[name]) self.freeSockets[name] = []
-      self.freeSockets[name].push(socket)
-      
-      // if an error happens while we don't use the socket anyway, meh, throw the socket away
-      var onIdleError = function() {
-        socket.destroy()
-      }
-      socket._onIdleError = onIdleError
-      socket.on('error', onIdleError)
-    } else {
-      // If there are no pending requests just destroy the
-      // socket and it will get removed from the pool. This
-      // gets us out of timeout issues and allows us to
-      // default to Connection:keep-alive.
-      socket.destroy()
-    }
-  })
-
-}
-util.inherits(ForeverAgent, Agent)
-
-ForeverAgent.defaultMinSockets = 5
-
-
-ForeverAgent.prototype.createConnection = net.createConnection
-ForeverAgent.prototype.addRequestNoreuse = Agent.prototype.addRequest
-ForeverAgent.prototype.addRequest = function(req, host, port) {
-  var name = host + ':' + port
-  if (this.freeSockets[name] && this.freeSockets[name].length > 0 && !req.useChunkedEncodingByDefault) {
-    var idleSocket = this.freeSockets[name].pop()
-    idleSocket.removeListener('error', idleSocket._onIdleError)
-    delete idleSocket._onIdleError
-    req._reusedSocket = true
-    req.onSocket(idleSocket)
-  } else {
-    this.addRequestNoreuse(req, host, port)
-  }
-}
-
-ForeverAgent.prototype.removeSocket = function(s, name, host, port) {
-  if (this.sockets[name]) {
-    var index = this.sockets[name].indexOf(s)
-    if (index !== -1) {
-      this.sockets[name].splice(index, 1)
-    }
-  } else if (this.sockets[name] && this.sockets[name].length === 0) {
-    // don't leak
-    delete this.sockets[name]
-    delete this.requests[name]
-  }
-  
-  if (this.freeSockets[name]) {
-    var index = this.freeSockets[name].indexOf(s)
-    if (index !== -1) {
-      this.freeSockets[name].splice(index, 1)
-      if (this.freeSockets[name].length === 0) {
-        delete this.freeSockets[name]
-      }
-    }
-  }
-
-  if (this.requests[name] && this.requests[name].length) {
-    // If we have pending requests and a socket gets closed a new one
-    // needs to be created to take over in the pool for the one that closed.
-    this.createSocket(name, host, port).emit('free')
-  }
-}
-
-function ForeverAgentSSL (options) {
-  ForeverAgent.call(this, options)
-}
-util.inherits(ForeverAgentSSL, ForeverAgent)
-
-ForeverAgentSSL.prototype.createConnection = createConnectionSSL
-ForeverAgentSSL.prototype.addRequestNoreuse = AgentSSL.prototype.addRequest
-
-function createConnectionSSL (port, host, options) {
-  if (typeof port === 'object') {
-    options = port;
-  } else if (typeof host === 'object') {
-    options = host;
-  } else if (typeof options === 'object') {
-    options = options;
-  } else {
-    options = {};
-  }
-
-  if (typeof port === 'number') {
-    options.port = port;
-  }
-
-  if (typeof host === 'string') {
-    options.host = host;
-  }
-
-  return tls.connect(options);
-}
-
-},{"http":37,"https":41,"net":1,"tls":1,"util":64}],73:[function(require,module,exports){
-module.exports = stringify;
-
-function getSerialize (fn, decycle) {
-  var seen = [], keys = [];
-  decycle = decycle || function(key, value) {
-    return '[Circular ' + getPath(value, seen, keys) + ']'
-  };
-  return function(key, value) {
-    var ret = value;
-    if (typeof value === 'object' && value) {
-      if (seen.indexOf(value) !== -1)
-        ret = decycle(key, value);
-      else {
-        seen.push(value);
-        keys.push(key);
-      }
-    }
-    if (fn) ret = fn(key, ret);
-    return ret;
-  }
-}
-
-function getPath (value, seen, keys) {
-  var index = seen.indexOf(value);
-  var path = [ keys[index] ];
-  for (index--; index >= 0; index--) {
-    if (seen[index][ path[0] ] === value) {
-      value = seen[index];
-      path.unshift(keys[index]);
-    }
-  }
-  return '~' + path.join('.');
-}
-
-function stringify(obj, fn, spaces, decycle) {
-  return JSON.stringify(obj, getSerialize(fn, decycle), spaces);
-}
-
-stringify.getSerialize = getSerialize;
-
-},{}],74:[function(require,module,exports){
-module.exports={
-  "text/jade": [
-    "jade"
-  ],
-  "text/stylus": [
-    "stylus",
-    "styl"
-  ],
-  "text/less": [
-    "less"
-  ],
-  "text/x-sass": [
-    "sass"
-  ],
-  "text/x-scss": [
-    "scss"
-  ],
-  "text/coffeescript": [
-    "coffee"
-  ],
-  "text/x-handlebars-template": [
-    "hbs"
-  ],
-  "text/jsx": [
-    "jsx"
-  ]
-}
-
-},{}],75:[function(require,module,exports){
-
-// types[extension] = type
-exports.types = Object.create(null)
-// extensions[type] = [extensions]
-exports.extensions = Object.create(null)
-// define more mime types
-exports.define = define
-
-// store the json files
-exports.json = {
-  mime: require('./mime.json'),
-  node: require('./node.json'),
-  custom: require('./custom.json'),
-}
-
-exports.lookup = function (string) {
-  if (!string || typeof string !== "string") return false
-  string = string.replace(/.*[\.\/\\]/, '').toLowerCase()
-  if (!string) return false
-  return exports.types[string] || false
-}
-
-exports.extension = function (type) {
-  if (!type || typeof type !== "string") return false
-  type = type.match(/^\s*([^;\s]*)(?:;|\s|$)/)
-  if (!type) return false
-  var exts = exports.extensions[type[1].toLowerCase()]
-  if (!exts || !exts.length) return false
-  return exts[0]
-}
-
-// type has to be an exact mime type
-exports.charset = function (type) {
-  // special cases
-  switch (type) {
-    case 'application/json': return 'UTF-8'
-    case 'application/javascript': return 'UTF-8'
-  }
-
-  // default text/* to utf-8
-  if (/^text\//.test(type)) return 'UTF-8'
-
-  return false
-}
-
-// backwards compatibility
-exports.charsets = {
-  lookup: exports.charset
-}
-
-exports.contentType = function (type) {
-  if (!type || typeof type !== "string") return false
-  if (!~type.indexOf('/')) type = exports.lookup(type)
-  if (!type) return false
-  if (!~type.indexOf('charset')) {
-    var charset = exports.charset(type)
-    if (charset) type += '; charset=' + charset.toLowerCase()
-  }
-  return type
-}
-
-define(exports.json.mime)
-define(exports.json.node)
-define(exports.json.custom)
-
-function define(json) {
-  Object.keys(json).forEach(function (type) {
-    var exts = json[type] || []
-    exports.extensions[type] = exports.extensions[type] || []
-    exts.forEach(function (ext) {
-      if (!~exports.extensions[type].indexOf(ext)) exports.extensions[type].push(ext)
-      exports.types[ext] = type
-    })
-  })
-}
-
-},{"./custom.json":74,"./mime.json":76,"./node.json":77}],76:[function(require,module,exports){
-module.exports={
-  "application/1d-interleaved-parityfec": [],
-  "application/3gpp-ims+xml": [],
-  "application/activemessage": [],
-  "application/andrew-inset": [
-    "ez"
-  ],
-  "application/applefile": [],
-  "application/applixware": [
-    "aw"
-  ],
-  "application/atom+xml": [
-    "atom"
-  ],
-  "application/atomcat+xml": [
-    "atomcat"
-  ],
-  "application/atomicmail": [],
-  "application/atomsvc+xml": [
-    "atomsvc"
-  ],
-  "application/auth-policy+xml": [],
-  "application/batch-smtp": [],
-  "application/beep+xml": [],
-  "application/calendar+xml": [],
-  "application/cals-1840": [],
-  "application/ccmp+xml": [],
-  "application/ccxml+xml": [
-    "ccxml"
-  ],
-  "application/cdmi-capability": [
-    "cdmia"
-  ],
-  "application/cdmi-container": [
-    "cdmic"
-  ],
-  "application/cdmi-domain": [
-    "cdmid"
-  ],
-  "application/cdmi-object": [
-    "cdmio"
-  ],
-  "application/cdmi-queue": [
-    "cdmiq"
-  ],
-  "application/cea-2018+xml": [],
-  "application/cellml+xml": [],
-  "application/cfw": [],
-  "application/cnrp+xml": [],
-  "application/commonground": [],
-  "application/conference-info+xml": [],
-  "application/cpl+xml": [],
-  "application/csta+xml": [],
-  "application/cstadata+xml": [],
-  "application/cu-seeme": [
-    "cu"
-  ],
-  "application/cybercash": [],
-  "application/davmount+xml": [
-    "davmount"
-  ],
-  "application/dca-rft": [],
-  "application/dec-dx": [],
-  "application/dialog-info+xml": [],
-  "application/dicom": [],
-  "application/dns": [],
-  "application/docbook+xml": [
-    "dbk"
-  ],
-  "application/dskpp+xml": [],
-  "application/dssc+der": [
-    "dssc"
-  ],
-  "application/dssc+xml": [
-    "xdssc"
-  ],
-  "application/dvcs": [],
-  "application/ecmascript": [
-    "ecma"
-  ],
-  "application/edi-consent": [],
-  "application/edi-x12": [],
-  "application/edifact": [],
-  "application/emma+xml": [
-    "emma"
-  ],
-  "application/epp+xml": [],
-  "application/epub+zip": [
-    "epub"
-  ],
-  "application/eshop": [],
-  "application/example": [],
-  "application/exi": [
-    "exi"
-  ],
-  "application/fastinfoset": [],
-  "application/fastsoap": [],
-  "application/fits": [],
-  "application/font-tdpfr": [
-    "pfr"
-  ],
-  "application/framework-attributes+xml": [],
-  "application/gml+xml": [
-    "gml"
-  ],
-  "application/gpx+xml": [
-    "gpx"
-  ],
-  "application/gxf": [
-    "gxf"
-  ],
-  "application/h224": [],
-  "application/held+xml": [],
-  "application/http": [],
-  "application/hyperstudio": [
-    "stk"
-  ],
-  "application/ibe-key-request+xml": [],
-  "application/ibe-pkg-reply+xml": [],
-  "application/ibe-pp-data": [],
-  "application/iges": [],
-  "application/im-iscomposing+xml": [],
-  "application/index": [],
-  "application/index.cmd": [],
-  "application/index.obj": [],
-  "application/index.response": [],
-  "application/index.vnd": [],
-  "application/inkml+xml": [
-    "ink",
-    "inkml"
-  ],
-  "application/iotp": [],
-  "application/ipfix": [
-    "ipfix"
-  ],
-  "application/ipp": [],
-  "application/isup": [],
-  "application/java-archive": [
-    "jar"
-  ],
-  "application/java-serialized-object": [
-    "ser"
-  ],
-  "application/java-vm": [
-    "class"
-  ],
-  "application/javascript": [
-    "js"
-  ],
-  "application/json": [
-    "json"
-  ],
-  "application/jsonml+json": [
-    "jsonml"
-  ],
-  "application/kpml-request+xml": [],
-  "application/kpml-response+xml": [],
-  "application/lost+xml": [
-    "lostxml"
-  ],
-  "application/mac-binhex40": [
-    "hqx"
-  ],
-  "application/mac-compactpro": [
-    "cpt"
-  ],
-  "application/macwriteii": [],
-  "application/mads+xml": [
-    "mads"
-  ],
-  "application/marc": [
-    "mrc"
-  ],
-  "application/marcxml+xml": [
-    "mrcx"
-  ],
-  "application/mathematica": [
-    "ma",
-    "nb",
-    "mb"
-  ],
-  "application/mathml-content+xml": [],
-  "application/mathml-presentation+xml": [],
-  "application/mathml+xml": [
-    "mathml"
-  ],
-  "application/mbms-associated-procedure-description+xml": [],
-  "application/mbms-deregister+xml": [],
-  "application/mbms-envelope+xml": [],
-  "application/mbms-msk+xml": [],
-  "application/mbms-msk-response+xml": [],
-  "application/mbms-protection-description+xml": [],
-  "application/mbms-reception-report+xml": [],
-  "application/mbms-register+xml": [],
-  "application/mbms-register-response+xml": [],
-  "application/mbms-user-service-description+xml": [],
-  "application/mbox": [
-    "mbox"
-  ],
-  "application/media_control+xml": [],
-  "application/mediaservercontrol+xml": [
-    "mscml"
-  ],
-  "application/metalink+xml": [
-    "metalink"
-  ],
-  "application/metalink4+xml": [
-    "meta4"
-  ],
-  "application/mets+xml": [
-    "mets"
-  ],
-  "application/mikey": [],
-  "application/mods+xml": [
-    "mods"
-  ],
-  "application/moss-keys": [],
-  "application/moss-signature": [],
-  "application/mosskey-data": [],
-  "application/mosskey-request": [],
-  "application/mp21": [
-    "m21",
-    "mp21"
-  ],
-  "application/mp4": [
-    "mp4s"
-  ],
-  "application/mpeg4-generic": [],
-  "application/mpeg4-iod": [],
-  "application/mpeg4-iod-xmt": [],
-  "application/msc-ivr+xml": [],
-  "application/msc-mixer+xml": [],
-  "application/msword": [
-    "doc",
-    "dot"
-  ],
-  "application/mxf": [
-    "mxf"
-  ],
-  "application/nasdata": [],
-  "application/news-checkgroups": [],
-  "application/news-groupinfo": [],
-  "application/news-transmission": [],
-  "application/nss": [],
-  "application/ocsp-request": [],
-  "application/ocsp-response": [],
-  "application/octet-stream": [
-    "bin",
-    "dms",
-    "lrf",
-    "mar",
-    "so",
-    "dist",
-    "distz",
-    "pkg",
-    "bpk",
-    "dump",
-    "elc",
-    "deploy"
-  ],
-  "application/oda": [
-    "oda"
-  ],
-  "application/oebps-package+xml": [
-    "opf"
-  ],
-  "application/ogg": [
-    "ogx"
-  ],
-  "application/omdoc+xml": [
-    "omdoc"
-  ],
-  "application/onenote": [
-    "onetoc",
-    "onetoc2",
-    "onetmp",
-    "onepkg"
-  ],
-  "application/oxps": [
-    "oxps"
-  ],
-  "application/parityfec": [],
-  "application/patch-ops-error+xml": [
-    "xer"
-  ],
-  "application/pdf": [
-    "pdf"
-  ],
-  "application/pgp-encrypted": [
-    "pgp"
-  ],
-  "application/pgp-keys": [],
-  "application/pgp-signature": [
-    "asc",
-    "sig"
-  ],
-  "application/pics-rules": [
-    "prf"
-  ],
-  "application/pidf+xml": [],
-  "application/pidf-diff+xml": [],
-  "application/pkcs10": [
-    "p10"
-  ],
-  "application/pkcs7-mime": [
-    "p7m",
-    "p7c"
-  ],
-  "application/pkcs7-signature": [
-    "p7s"
-  ],
-  "application/pkcs8": [
-    "p8"
-  ],
-  "application/pkix-attr-cert": [
-    "ac"
-  ],
-  "application/pkix-cert": [
-    "cer"
-  ],
-  "application/pkix-crl": [
-    "crl"
-  ],
-  "application/pkix-pkipath": [
-    "pkipath"
-  ],
-  "application/pkixcmp": [
-    "pki"
-  ],
-  "application/pls+xml": [
-    "pls"
-  ],
-  "application/poc-settings+xml": [],
-  "application/postscript": [
-    "ai",
-    "eps",
-    "ps"
-  ],
-  "application/prs.alvestrand.titrax-sheet": [],
-  "application/prs.cww": [
-    "cww"
-  ],
-  "application/prs.nprend": [],
-  "application/prs.plucker": [],
-  "application/prs.rdf-xml-crypt": [],
-  "application/prs.xsf+xml": [],
-  "application/pskc+xml": [
-    "pskcxml"
-  ],
-  "application/qsig": [],
-  "application/rdf+xml": [
-    "rdf"
-  ],
-  "application/reginfo+xml": [
-    "rif"
-  ],
-  "application/relax-ng-compact-syntax": [
-    "rnc"
-  ],
-  "application/remote-printing": [],
-  "application/resource-lists+xml": [
-    "rl"
-  ],
-  "application/resource-lists-diff+xml": [
-    "rld"
-  ],
-  "application/riscos": [],
-  "application/rlmi+xml": [],
-  "application/rls-services+xml": [
-    "rs"
-  ],
-  "application/rpki-ghostbusters": [
-    "gbr"
-  ],
-  "application/rpki-manifest": [
-    "mft"
-  ],
-  "application/rpki-roa": [
-    "roa"
-  ],
-  "application/rpki-updown": [],
-  "application/rsd+xml": [
-    "rsd"
-  ],
-  "application/rss+xml": [
-    "rss"
-  ],
-  "application/rtf": [
-    "rtf"
-  ],
-  "application/rtx": [],
-  "application/samlassertion+xml": [],
-  "application/samlmetadata+xml": [],
-  "application/sbml+xml": [
-    "sbml"
-  ],
-  "application/scvp-cv-request": [
-    "scq"
-  ],
-  "application/scvp-cv-response": [
-    "scs"
-  ],
-  "application/scvp-vp-request": [
-    "spq"
-  ],
-  "application/scvp-vp-response": [
-    "spp"
-  ],
-  "application/sdp": [
-    "sdp"
-  ],
-  "application/set-payment": [],
-  "application/set-payment-initiation": [
-    "setpay"
-  ],
-  "application/set-registration": [],
-  "application/set-registration-initiation": [
-    "setreg"
-  ],
-  "application/sgml": [],
-  "application/sgml-open-catalog": [],
-  "application/shf+xml": [
-    "shf"
-  ],
-  "application/sieve": [],
-  "application/simple-filter+xml": [],
-  "application/simple-message-summary": [],
-  "application/simplesymbolcontainer": [],
-  "application/slate": [],
-  "application/smil": [],
-  "application/smil+xml": [
-    "smi",
-    "smil"
-  ],
-  "application/soap+fastinfoset": [],
-  "application/soap+xml": [],
-  "application/sparql-query": [
-    "rq"
-  ],
-  "application/sparql-results+xml": [
-    "srx"
-  ],
-  "application/spirits-event+xml": [],
-  "application/srgs": [
-    "gram"
-  ],
-  "application/srgs+xml": [
-    "grxml"
-  ],
-  "application/sru+xml": [
-    "sru"
-  ],
-  "application/ssdl+xml": [
-    "ssdl"
-  ],
-  "application/ssml+xml": [
-    "ssml"
-  ],
-  "application/tamp-apex-update": [],
-  "application/tamp-apex-update-confirm": [],
-  "application/tamp-community-update": [],
-  "application/tamp-community-update-confirm": [],
-  "application/tamp-error": [],
-  "application/tamp-sequence-adjust": [],
-  "application/tamp-sequence-adjust-confirm": [],
-  "application/tamp-status-query": [],
-  "application/tamp-status-response": [],
-  "application/tamp-update": [],
-  "application/tamp-update-confirm": [],
-  "application/tei+xml": [
-    "tei",
-    "teicorpus"
-  ],
-  "application/thraud+xml": [
-    "tfi"
-  ],
-  "application/timestamp-query": [],
-  "application/timestamp-reply": [],
-  "application/timestamped-data": [
-    "tsd"
-  ],
-  "application/tve-trigger": [],
-  "application/ulpfec": [],
-  "application/vcard+xml": [],
-  "application/vemmi": [],
-  "application/vividence.scriptfile": [],
-  "application/vnd.3gpp.bsf+xml": [],
-  "application/vnd.3gpp.pic-bw-large": [
-    "plb"
-  ],
-  "application/vnd.3gpp.pic-bw-small": [
-    "psb"
-  ],
-  "application/vnd.3gpp.pic-bw-var": [
-    "pvb"
-  ],
-  "application/vnd.3gpp.sms": [],
-  "application/vnd.3gpp2.bcmcsinfo+xml": [],
-  "application/vnd.3gpp2.sms": [],
-  "application/vnd.3gpp2.tcap": [
-    "tcap"
-  ],
-  "application/vnd.3m.post-it-notes": [
-    "pwn"
-  ],
-  "application/vnd.accpac.simply.aso": [
-    "aso"
-  ],
-  "application/vnd.accpac.simply.imp": [
-    "imp"
-  ],
-  "application/vnd.acucobol": [
-    "acu"
-  ],
-  "application/vnd.acucorp": [
-    "atc",
-    "acutc"
-  ],
-  "application/vnd.adobe.air-application-installer-package+zip": [
-    "air"
-  ],
-  "application/vnd.adobe.formscentral.fcdt": [
-    "fcdt"
-  ],
-  "application/vnd.adobe.fxp": [
-    "fxp",
-    "fxpl"
-  ],
-  "application/vnd.adobe.partial-upload": [],
-  "application/vnd.adobe.xdp+xml": [
-    "xdp"
-  ],
-  "application/vnd.adobe.xfdf": [
-    "xfdf"
-  ],
-  "application/vnd.aether.imp": [],
-  "application/vnd.ah-barcode": [],
-  "application/vnd.ahead.space": [
-    "ahead"
-  ],
-  "application/vnd.airzip.filesecure.azf": [
-    "azf"
-  ],
-  "application/vnd.airzip.filesecure.azs": [
-    "azs"
-  ],
-  "application/vnd.amazon.ebook": [
-    "azw"
-  ],
-  "application/vnd.americandynamics.acc": [
-    "acc"
-  ],
-  "application/vnd.amiga.ami": [
-    "ami"
-  ],
-  "application/vnd.amundsen.maze+xml": [],
-  "application/vnd.android.package-archive": [
-    "apk"
-  ],
-  "application/vnd.anser-web-certificate-issue-initiation": [
-    "cii"
-  ],
-  "application/vnd.anser-web-funds-transfer-initiation": [
-    "fti"
-  ],
-  "application/vnd.antix.game-component": [
-    "atx"
-  ],
-  "application/vnd.apple.installer+xml": [
-    "mpkg"
-  ],
-  "application/vnd.apple.mpegurl": [
-    "m3u8"
-  ],
-  "application/vnd.arastra.swi": [],
-  "application/vnd.aristanetworks.swi": [
-    "swi"
-  ],
-  "application/vnd.astraea-software.iota": [
-    "iota"
-  ],
-  "application/vnd.audiograph": [
-    "aep"
-  ],
-  "application/vnd.autopackage": [],
-  "application/vnd.avistar+xml": [],
-  "application/vnd.blueice.multipass": [
-    "mpm"
-  ],
-  "application/vnd.bluetooth.ep.oob": [],
-  "application/vnd.bmi": [
-    "bmi"
-  ],
-  "application/vnd.businessobjects": [
-    "rep"
-  ],
-  "application/vnd.cab-jscript": [],
-  "application/vnd.canon-cpdl": [],
-  "application/vnd.canon-lips": [],
-  "application/vnd.cendio.thinlinc.clientconf": [],
-  "application/vnd.chemdraw+xml": [
-    "cdxml"
-  ],
-  "application/vnd.chipnuts.karaoke-mmd": [
-    "mmd"
-  ],
-  "application/vnd.cinderella": [
-    "cdy"
-  ],
-  "application/vnd.cirpack.isdn-ext": [],
-  "application/vnd.claymore": [
-    "cla"
-  ],
-  "application/vnd.cloanto.rp9": [
-    "rp9"
-  ],
-  "application/vnd.clonk.c4group": [
-    "c4g",
-    "c4d",
-    "c4f",
-    "c4p",
-    "c4u"
-  ],
-  "application/vnd.cluetrust.cartomobile-config": [
-    "c11amc"
-  ],
-  "application/vnd.cluetrust.cartomobile-config-pkg": [
-    "c11amz"
-  ],
-  "application/vnd.collection+json": [],
-  "application/vnd.commerce-battelle": [],
-  "application/vnd.commonspace": [
-    "csp"
-  ],
-  "application/vnd.contact.cmsg": [
-    "cdbcmsg"
-  ],
-  "application/vnd.cosmocaller": [
-    "cmc"
-  ],
-  "application/vnd.crick.clicker": [
-    "clkx"
-  ],
-  "application/vnd.crick.clicker.keyboard": [
-    "clkk"
-  ],
-  "application/vnd.crick.clicker.palette": [
-    "clkp"
-  ],
-  "application/vnd.crick.clicker.template": [
-    "clkt"
-  ],
-  "application/vnd.crick.clicker.wordbank": [
-    "clkw"
-  ],
-  "application/vnd.criticaltools.wbs+xml": [
-    "wbs"
-  ],
-  "application/vnd.ctc-posml": [
-    "pml"
-  ],
-  "application/vnd.ctct.ws+xml": [],
-  "application/vnd.cups-pdf": [],
-  "application/vnd.cups-postscript": [],
-  "application/vnd.cups-ppd": [
-    "ppd"
-  ],
-  "application/vnd.cups-raster": [],
-  "application/vnd.cups-raw": [],
-  "application/vnd.curl": [],
-  "application/vnd.curl.car": [
-    "car"
-  ],
-  "application/vnd.curl.pcurl": [
-    "pcurl"
-  ],
-  "application/vnd.cybank": [],
-  "application/vnd.dart": [
-    "dart"
-  ],
-  "application/vnd.data-vision.rdz": [
-    "rdz"
-  ],
-  "application/vnd.dece.data": [
-    "uvf",
-    "uvvf",
-    "uvd",
-    "uvvd"
-  ],
-  "application/vnd.dece.ttml+xml": [
-    "uvt",
-    "uvvt"
-  ],
-  "application/vnd.dece.unspecified": [
-    "uvx",
-    "uvvx"
-  ],
-  "application/vnd.dece.zip": [
-    "uvz",
-    "uvvz"
-  ],
-  "application/vnd.denovo.fcselayout-link": [
-    "fe_launch"
-  ],
-  "application/vnd.dir-bi.plate-dl-nosuffix": [],
-  "application/vnd.dna": [
-    "dna"
-  ],
-  "application/vnd.dolby.mlp": [
-    "mlp"
-  ],
-  "application/vnd.dolby.mobile.1": [],
-  "application/vnd.dolby.mobile.2": [],
-  "application/vnd.dpgraph": [
-    "dpg"
-  ],
-  "application/vnd.dreamfactory": [
-    "dfac"
-  ],
-  "application/vnd.ds-keypoint": [
-    "kpxx"
-  ],
-  "application/vnd.dvb.ait": [
-    "ait"
-  ],
-  "application/vnd.dvb.dvbj": [],
-  "application/vnd.dvb.esgcontainer": [],
-  "application/vnd.dvb.ipdcdftnotifaccess": [],
-  "application/vnd.dvb.ipdcesgaccess": [],
-  "application/vnd.dvb.ipdcesgaccess2": [],
-  "application/vnd.dvb.ipdcesgpdd": [],
-  "application/vnd.dvb.ipdcroaming": [],
-  "application/vnd.dvb.iptv.alfec-base": [],
-  "application/vnd.dvb.iptv.alfec-enhancement": [],
-  "application/vnd.dvb.notif-aggregate-root+xml": [],
-  "application/vnd.dvb.notif-container+xml": [],
-  "application/vnd.dvb.notif-generic+xml": [],
-  "application/vnd.dvb.notif-ia-msglist+xml": [],
-  "application/vnd.dvb.notif-ia-registration-request+xml": [],
-  "application/vnd.dvb.notif-ia-registration-response+xml": [],
-  "application/vnd.dvb.notif-init+xml": [],
-  "application/vnd.dvb.pfr": [],
-  "application/vnd.dvb.service": [
-    "svc"
-  ],
-  "application/vnd.dxr": [],
-  "application/vnd.dynageo": [
-    "geo"
-  ],
-  "application/vnd.easykaraoke.cdgdownload": [],
-  "application/vnd.ecdis-update": [],
-  "application/vnd.ecowin.chart": [
-    "mag"
-  ],
-  "application/vnd.ecowin.filerequest": [],
-  "application/vnd.ecowin.fileupdate": [],
-  "application/vnd.ecowin.series": [],
-  "application/vnd.ecowin.seriesrequest": [],
-  "application/vnd.ecowin.seriesupdate": [],
-  "application/vnd.emclient.accessrequest+xml": [],
-  "application/vnd.enliven": [
-    "nml"
-  ],
-  "application/vnd.eprints.data+xml": [],
-  "application/vnd.epson.esf": [
-    "esf"
-  ],
-  "application/vnd.epson.msf": [
-    "msf"
-  ],
-  "application/vnd.epson.quickanime": [
-    "qam"
-  ],
-  "application/vnd.epson.salt": [
-    "slt"
-  ],
-  "application/vnd.epson.ssf": [
-    "ssf"
-  ],
-  "application/vnd.ericsson.quickcall": [],
-  "application/vnd.eszigno3+xml": [
-    "es3",
-    "et3"
-  ],
-  "application/vnd.etsi.aoc+xml": [],
-  "application/vnd.etsi.cug+xml": [],
-  "application/vnd.etsi.iptvcommand+xml": [],
-  "application/vnd.etsi.iptvdiscovery+xml": [],
-  "application/vnd.etsi.iptvprofile+xml": [],
-  "application/vnd.etsi.iptvsad-bc+xml": [],
-  "application/vnd.etsi.iptvsad-cod+xml": [],
-  "application/vnd.etsi.iptvsad-npvr+xml": [],
-  "application/vnd.etsi.iptvservice+xml": [],
-  "application/vnd.etsi.iptvsync+xml": [],
-  "application/vnd.etsi.iptvueprofile+xml": [],
-  "application/vnd.etsi.mcid+xml": [],
-  "application/vnd.etsi.overload-control-policy-dataset+xml": [],
-  "application/vnd.etsi.sci+xml": [],
-  "application/vnd.etsi.simservs+xml": [],
-  "application/vnd.etsi.tsl+xml": [],
-  "application/vnd.etsi.tsl.der": [],
-  "application/vnd.eudora.data": [],
-  "application/vnd.ezpix-album": [
-    "ez2"
-  ],
-  "application/vnd.ezpix-package": [
-    "ez3"
-  ],
-  "application/vnd.f-secure.mobile": [],
-  "application/vnd.fdf": [
-    "fdf"
-  ],
-  "application/vnd.fdsn.mseed": [
-    "mseed"
-  ],
-  "application/vnd.fdsn.seed": [
-    "seed",
-    "dataless"
-  ],
-  "application/vnd.ffsns": [],
-  "application/vnd.fints": [],
-  "application/vnd.flographit": [
-    "gph"
-  ],
-  "application/vnd.fluxtime.clip": [
-    "ftc"
-  ],
-  "application/vnd.font-fontforge-sfd": [],
-  "application/vnd.framemaker": [
-    "fm",
-    "frame",
-    "maker",
-    "book"
-  ],
-  "application/vnd.frogans.fnc": [
-    "fnc"
-  ],
-  "application/vnd.frogans.ltf": [
-    "ltf"
-  ],
-  "application/vnd.fsc.weblaunch": [
-    "fsc"
-  ],
-  "application/vnd.fujitsu.oasys": [
-    "oas"
-  ],
-  "application/vnd.fujitsu.oasys2": [
-    "oa2"
-  ],
-  "application/vnd.fujitsu.oasys3": [
-    "oa3"
-  ],
-  "application/vnd.fujitsu.oasysgp": [
-    "fg5"
-  ],
-  "application/vnd.fujitsu.oasysprs": [
-    "bh2"
-  ],
-  "application/vnd.fujixerox.art-ex": [],
-  "application/vnd.fujixerox.art4": [],
-  "application/vnd.fujixerox.hbpl": [],
-  "application/vnd.fujixerox.ddd": [
-    "ddd"
-  ],
-  "application/vnd.fujixerox.docuworks": [
-    "xdw"
-  ],
-  "application/vnd.fujixerox.docuworks.binder": [
-    "xbd"
-  ],
-  "application/vnd.fut-misnet": [],
-  "application/vnd.fuzzysheet": [
-    "fzs"
-  ],
-  "application/vnd.genomatix.tuxedo": [
-    "txd"
-  ],
-  "application/vnd.geocube+xml": [],
-  "application/vnd.geogebra.file": [
-    "ggb"
-  ],
-  "application/vnd.geogebra.tool": [
-    "ggt"
-  ],
-  "application/vnd.geometry-explorer": [
-    "gex",
-    "gre"
-  ],
-  "application/vnd.geonext": [
-    "gxt"
-  ],
-  "application/vnd.geoplan": [
-    "g2w"
-  ],
-  "application/vnd.geospace": [
-    "g3w"
-  ],
-  "application/vnd.globalplatform.card-content-mgt": [],
-  "application/vnd.globalplatform.card-content-mgt-response": [],
-  "application/vnd.gmx": [
-    "gmx"
-  ],
-  "application/vnd.google-earth.kml+xml": [
-    "kml"
-  ],
-  "application/vnd.google-earth.kmz": [
-    "kmz"
-  ],
-  "application/vnd.grafeq": [
-    "gqf",
-    "gqs"
-  ],
-  "application/vnd.gridmp": [],
-  "application/vnd.groove-account": [
-    "gac"
-  ],
-  "application/vnd.groove-help": [
-    "ghf"
-  ],
-  "application/vnd.groove-identity-message": [
-    "gim"
-  ],
-  "application/vnd.groove-injector": [
-    "grv"
-  ],
-  "application/vnd.groove-tool-message": [
-    "gtm"
-  ],
-  "application/vnd.groove-tool-template": [
-    "tpl"
-  ],
-  "application/vnd.groove-vcard": [
-    "vcg"
-  ],
-  "application/vnd.hal+json": [],
-  "application/vnd.hal+xml": [
-    "hal"
-  ],
-  "application/vnd.handheld-entertainment+xml": [
-    "zmm"
-  ],
-  "application/vnd.hbci": [
-    "hbci"
-  ],
-  "application/vnd.hcl-bireports": [],
-  "application/vnd.hhe.lesson-player": [
-    "les"
-  ],
-  "application/vnd.hp-hpgl": [
-    "hpgl"
-  ],
-  "application/vnd.hp-hpid": [
-    "hpid"
-  ],
-  "application/vnd.hp-hps": [
-    "hps"
-  ],
-  "application/vnd.hp-jlyt": [
-    "jlt"
-  ],
-  "application/vnd.hp-pcl": [
-    "pcl"
-  ],
-  "application/vnd.hp-pclxl": [
-    "pclxl"
-  ],
-  "application/vnd.httphone": [],
-  "application/vnd.hzn-3d-crossword": [],
-  "application/vnd.ibm.afplinedata": [],
-  "application/vnd.ibm.electronic-media": [],
-  "application/vnd.ibm.minipay": [
-    "mpy"
-  ],
-  "application/vnd.ibm.modcap": [
-    "afp",
-    "listafp",
-    "list3820"
-  ],
-  "application/vnd.ibm.rights-management": [
-    "irm"
-  ],
-  "application/vnd.ibm.secure-container": [
-    "sc"
-  ],
-  "application/vnd.iccprofile": [
-    "icc",
-    "icm"
-  ],
-  "application/vnd.igloader": [
-    "igl"
-  ],
-  "application/vnd.immervision-ivp": [
-    "ivp"
-  ],
-  "application/vnd.immervision-ivu": [
-    "ivu"
-  ],
-  "application/vnd.informedcontrol.rms+xml": [],
-  "application/vnd.informix-visionary": [],
-  "application/vnd.infotech.project": [],
-  "application/vnd.infotech.project+xml": [],
-  "application/vnd.innopath.wamp.notification": [],
-  "application/vnd.insors.igm": [
-    "igm"
-  ],
-  "application/vnd.intercon.formnet": [
-    "xpw",
-    "xpx"
-  ],
-  "application/vnd.intergeo": [
-    "i2g"
-  ],
-  "application/vnd.intertrust.digibox": [],
-  "application/vnd.intertrust.nncp": [],
-  "application/vnd.intu.qbo": [
-    "qbo"
-  ],
-  "application/vnd.intu.qfx": [
-    "qfx"
-  ],
-  "application/vnd.iptc.g2.conceptitem+xml": [],
-  "application/vnd.iptc.g2.knowledgeitem+xml": [],
-  "application/vnd.iptc.g2.newsitem+xml": [],
-  "application/vnd.iptc.g2.newsmessage+xml": [],
-  "application/vnd.iptc.g2.packageitem+xml": [],
-  "application/vnd.iptc.g2.planningitem+xml": [],
-  "application/vnd.ipunplugged.rcprofile": [
-    "rcprofile"
-  ],
-  "application/vnd.irepository.package+xml": [
-    "irp"
-  ],
-  "application/vnd.is-xpr": [
-    "xpr"
-  ],
-  "application/vnd.isac.fcs": [
-    "fcs"
-  ],
-  "application/vnd.jam": [
-    "jam"
-  ],
-  "application/vnd.japannet-directory-service": [],
-  "application/vnd.japannet-jpnstore-wakeup": [],
-  "application/vnd.japannet-payment-wakeup": [],
-  "application/vnd.japannet-registration": [],
-  "application/vnd.japannet-registration-wakeup": [],
-  "application/vnd.japannet-setstore-wakeup": [],
-  "application/vnd.japannet-verification": [],
-  "application/vnd.japannet-verification-wakeup": [],
-  "application/vnd.jcp.javame.midlet-rms": [
-    "rms"
-  ],
-  "application/vnd.jisp": [
-    "jisp"
-  ],
-  "application/vnd.joost.joda-archive": [
-    "joda"
-  ],
-  "application/vnd.kahootz": [
-    "ktz",
-    "ktr"
-  ],
-  "application/vnd.kde.karbon": [
-    "karbon"
-  ],
-  "application/vnd.kde.kchart": [
-    "chrt"
-  ],
-  "application/vnd.kde.kformula": [
-    "kfo"
-  ],
-  "application/vnd.kde.kivio": [
-    "flw"
-  ],
-  "application/vnd.kde.kontour": [
-    "kon"
-  ],
-  "application/vnd.kde.kpresenter": [
-    "kpr",
-    "kpt"
-  ],
-  "application/vnd.kde.kspread": [
-    "ksp"
-  ],
-  "application/vnd.kde.kword": [
-    "kwd",
-    "kwt"
-  ],
-  "application/vnd.kenameaapp": [
-    "htke"
-  ],
-  "application/vnd.kidspiration": [
-    "kia"
-  ],
-  "application/vnd.kinar": [
-    "kne",
-    "knp"
-  ],
-  "application/vnd.koan": [
-    "skp",
-    "skd",
-    "skt",
-    "skm"
-  ],
-  "application/vnd.kodak-descriptor": [
-    "sse"
-  ],
-  "application/vnd.las.las+xml": [
-    "lasxml"
-  ],
-  "application/vnd.liberty-request+xml": [],
-  "application/vnd.llamagraphics.life-balance.desktop": [
-    "lbd"
-  ],
-  "application/vnd.llamagraphics.life-balance.exchange+xml": [
-    "lbe"
-  ],
-  "application/vnd.lotus-1-2-3": [
-    "123"
-  ],
-  "application/vnd.lotus-approach": [
-    "apr"
-  ],
-  "application/vnd.lotus-freelance": [
-    "pre"
-  ],
-  "application/vnd.lotus-notes": [
-    "nsf"
-  ],
-  "application/vnd.lotus-organizer": [
-    "org"
-  ],
-  "application/vnd.lotus-screencam": [
-    "scm"
-  ],
-  "application/vnd.lotus-wordpro": [
-    "lwp"
-  ],
-  "application/vnd.macports.portpkg": [
-    "portpkg"
-  ],
-  "application/vnd.marlin.drm.actiontoken+xml": [],
-  "application/vnd.marlin.drm.conftoken+xml": [],
-  "application/vnd.marlin.drm.license+xml": [],
-  "application/vnd.marlin.drm.mdcf": [],
-  "application/vnd.mcd": [
-    "mcd"
-  ],
-  "application/vnd.medcalcdata": [
-    "mc1"
-  ],
-  "application/vnd.mediastation.cdkey": [
-    "cdkey"
-  ],
-  "application/vnd.meridian-slingshot": [],
-  "application/vnd.mfer": [
-    "mwf"
-  ],
-  "application/vnd.mfmp": [
-    "mfm"
-  ],
-  "application/vnd.micrografx.flo": [
-    "flo"
-  ],
-  "application/vnd.micrografx.igx": [
-    "igx"
-  ],
-  "application/vnd.mif": [
-    "mif"
-  ],
-  "application/vnd.minisoft-hp3000-save": [],
-  "application/vnd.mitsubishi.misty-guard.trustweb": [],
-  "application/vnd.mobius.daf": [
-    "daf"
-  ],
-  "application/vnd.mobius.dis": [
-    "dis"
-  ],
-  "application/vnd.mobius.mbk": [
-    "mbk"
-  ],
-  "application/vnd.mobius.mqy": [
-    "mqy"
-  ],
-  "application/vnd.mobius.msl": [
-    "msl"
-  ],
-  "application/vnd.mobius.plc": [
-    "plc"
-  ],
-  "application/vnd.mobius.txf": [
-    "txf"
-  ],
-  "application/vnd.mophun.application": [
-    "mpn"
-  ],
-  "application/vnd.mophun.certificate": [
-    "mpc"
-  ],
-  "application/vnd.motorola.flexsuite": [],
-  "application/vnd.motorola.flexsuite.adsi": [],
-  "application/vnd.motorola.flexsuite.fis": [],
-  "application/vnd.motorola.flexsuite.gotap": [],
-  "application/vnd.motorola.flexsuite.kmr": [],
-  "application/vnd.motorola.flexsuite.ttc": [],
-  "application/vnd.motorola.flexsuite.wem": [],
-  "application/vnd.motorola.iprm": [],
-  "application/vnd.mozilla.xul+xml": [
-    "xul"
-  ],
-  "application/vnd.ms-artgalry": [
-    "cil"
-  ],
-  "application/vnd.ms-asf": [],
-  "application/vnd.ms-cab-compressed": [
-    "cab"
-  ],
-  "application/vnd.ms-color.iccprofile": [],
-  "application/vnd.ms-excel": [
-    "xls",
-    "xlm",
-    "xla",
-    "xlc",
-    "xlt",
-    "xlw"
-  ],
-  "application/vnd.ms-excel.addin.macroenabled.12": [
-    "xlam"
-  ],
-  "application/vnd.ms-excel.sheet.binary.macroenabled.12": [
-    "xlsb"
-  ],
-  "application/vnd.ms-excel.sheet.macroenabled.12": [
-    "xlsm"
-  ],
-  "application/vnd.ms-excel.template.macroenabled.12": [
-    "xltm"
-  ],
-  "application/vnd.ms-fontobject": [
-    "eot"
-  ],
-  "application/vnd.ms-htmlhelp": [
-    "chm"
-  ],
-  "application/vnd.ms-ims": [
-    "ims"
-  ],
-  "application/vnd.ms-lrm": [
-    "lrm"
-  ],
-  "application/vnd.ms-office.activex+xml": [],
-  "application/vnd.ms-officetheme": [
-    "thmx"
-  ],
-  "application/vnd.ms-opentype": [],
-  "application/vnd.ms-package.obfuscated-opentype": [],
-  "application/vnd.ms-pki.seccat": [
-    "cat"
-  ],
-  "application/vnd.ms-pki.stl": [
-    "stl"
-  ],
-  "application/vnd.ms-playready.initiator+xml": [],
-  "application/vnd.ms-powerpoint": [
-    "ppt",
-    "pps",
-    "pot"
-  ],
-  "application/vnd.ms-powerpoint.addin.macroenabled.12": [
-    "ppam"
-  ],
-  "application/vnd.ms-powerpoint.presentation.macroenabled.12": [
-    "pptm"
-  ],
-  "application/vnd.ms-powerpoint.slide.macroenabled.12": [
-    "sldm"
-  ],
-  "application/vnd.ms-powerpoint.slideshow.macroenabled.12": [
-    "ppsm"
-  ],
-  "application/vnd.ms-powerpoint.template.macroenabled.12": [
-    "potm"
-  ],
-  "application/vnd.ms-printing.printticket+xml": [],
-  "application/vnd.ms-project": [
-    "mpp",
-    "mpt"
-  ],
-  "application/vnd.ms-tnef": [],
-  "application/vnd.ms-wmdrm.lic-chlg-req": [],
-  "application/vnd.ms-wmdrm.lic-resp": [],
-  "application/vnd.ms-wmdrm.meter-chlg-req": [],
-  "application/vnd.ms-wmdrm.meter-resp": [],
-  "application/vnd.ms-word.document.macroenabled.12": [
-    "docm"
-  ],
-  "application/vnd.ms-word.template.macroenabled.12": [
-    "dotm"
-  ],
-  "application/vnd.ms-works": [
-    "wps",
-    "wks",
-    "wcm",
-    "wdb"
-  ],
-  "application/vnd.ms-wpl": [
-    "wpl"
-  ],
-  "application/vnd.ms-xpsdocument": [
-    "xps"
-  ],
-  "application/vnd.mseq": [
-    "mseq"
-  ],
-  "application/vnd.msign": [],
-  "application/vnd.multiad.creator": [],
-  "application/vnd.multiad.creator.cif": [],
-  "application/vnd.music-niff": [],
-  "application/vnd.musician": [
-    "mus"
-  ],
-  "application/vnd.muvee.style": [
-    "msty"
-  ],
-  "application/vnd.mynfc": [
-    "taglet"
-  ],
-  "application/vnd.ncd.control": [],
-  "application/vnd.ncd.reference": [],
-  "application/vnd.nervana": [],
-  "application/vnd.netfpx": [],
-  "application/vnd.neurolanguage.nlu": [
-    "nlu"
-  ],
-  "application/vnd.nitf": [
-    "ntf",
-    "nitf"
-  ],
-  "application/vnd.noblenet-directory": [
-    "nnd"
-  ],
-  "application/vnd.noblenet-sealer": [
-    "nns"
-  ],
-  "application/vnd.noblenet-web": [
-    "nnw"
-  ],
-  "application/vnd.nokia.catalogs": [],
-  "application/vnd.nokia.conml+wbxml": [],
-  "application/vnd.nokia.conml+xml": [],
-  "application/vnd.nokia.isds-radio-presets": [],
-  "application/vnd.nokia.iptv.config+xml": [],
-  "application/vnd.nokia.landmark+wbxml": [],
-  "application/vnd.nokia.landmark+xml": [],
-  "application/vnd.nokia.landmarkcollection+xml": [],
-  "application/vnd.nokia.n-gage.ac+xml": [],
-  "application/vnd.nokia.n-gage.data": [
-    "ngdat"
-  ],
-  "application/vnd.nokia.ncd": [],
-  "application/vnd.nokia.pcd+wbxml": [],
-  "application/vnd.nokia.pcd+xml": [],
-  "application/vnd.nokia.radio-preset": [
-    "rpst"
-  ],
-  "application/vnd.nokia.radio-presets": [
-    "rpss"
-  ],
-  "application/vnd.novadigm.edm": [
-    "edm"
-  ],
-  "application/vnd.novadigm.edx": [
-    "edx"
-  ],
-  "application/vnd.novadigm.ext": [
-    "ext"
-  ],
-  "application/vnd.ntt-local.file-transfer": [],
-  "application/vnd.ntt-local.sip-ta_remote": [],
-  "application/vnd.ntt-local.sip-ta_tcp_stream": [],
-  "application/vnd.oasis.opendocument.chart": [
-    "odc"
-  ],
-  "application/vnd.oasis.opendocument.chart-template": [
-    "otc"
-  ],
-  "application/vnd.oasis.opendocument.database": [
-    "odb"
-  ],
-  "application/vnd.oasis.opendocument.formula": [
-    "odf"
-  ],
-  "application/vnd.oasis.opendocument.formula-template": [
-    "odft"
-  ],
-  "application/vnd.oasis.opendocument.graphics": [
-    "odg"
-  ],
-  "application/vnd.oasis.opendocument.graphics-template": [
-    "otg"
-  ],
-  "application/vnd.oasis.opendocument.image": [
-    "odi"
-  ],
-  "application/vnd.oasis.opendocument.image-template": [
-    "oti"
-  ],
-  "application/vnd.oasis.opendocument.presentation": [
-    "odp"
-  ],
-  "application/vnd.oasis.opendocument.presentation-template": [
-    "otp"
-  ],
-  "application/vnd.oasis.opendocument.spreadsheet": [
-    "ods"
-  ],
-  "application/vnd.oasis.opendocument.spreadsheet-template": [
-    "ots"
-  ],
-  "application/vnd.oasis.opendocument.text": [
-    "odt"
-  ],
-  "application/vnd.oasis.opendocument.text-master": [
-    "odm"
-  ],
-  "application/vnd.oasis.opendocument.text-template": [
-    "ott"
-  ],
-  "application/vnd.oasis.opendocument.text-web": [
-    "oth"
-  ],
-  "application/vnd.obn": [],
-  "application/vnd.oftn.l10n+json": [],
-  "application/vnd.oipf.contentaccessdownload+xml": [],
-  "application/vnd.oipf.contentaccessstreaming+xml": [],
-  "application/vnd.oipf.cspg-hexbinary": [],
-  "application/vnd.oipf.dae.svg+xml": [],
-  "application/vnd.oipf.dae.xhtml+xml": [],
-  "application/vnd.oipf.mippvcontrolmessage+xml": [],
-  "application/vnd.oipf.pae.gem": [],
-  "application/vnd.oipf.spdiscovery+xml": [],
-  "application/vnd.oipf.spdlist+xml": [],
-  "application/vnd.oipf.ueprofile+xml": [],
-  "application/vnd.oipf.userprofile+xml": [],
-  "application/vnd.olpc-sugar": [
-    "xo"
-  ],
-  "application/vnd.oma-scws-config": [],
-  "application/vnd.oma-scws-http-request": [],
-  "application/vnd.oma-scws-http-response": [],
-  "application/vnd.oma.bcast.associated-procedure-parameter+xml": [],
-  "application/vnd.oma.bcast.drm-trigger+xml": [],
-  "application/vnd.oma.bcast.imd+xml": [],
-  "application/vnd.oma.bcast.ltkm": [],
-  "application/vnd.oma.bcast.notification+xml": [],
-  "application/vnd.oma.bcast.provisioningtrigger": [],
-  "application/vnd.oma.bcast.sgboot": [],
-  "application/vnd.oma.bcast.sgdd+xml": [],
-  "application/vnd.oma.bcast.sgdu": [],
-  "application/vnd.oma.bcast.simple-symbol-container": [],
-  "application/vnd.oma.bcast.smartcard-trigger+xml": [],
-  "application/vnd.oma.bcast.sprov+xml": [],
-  "application/vnd.oma.bcast.stkm": [],
-  "application/vnd.oma.cab-address-book+xml": [],
-  "application/vnd.oma.cab-feature-handler+xml": [],
-  "application/vnd.oma.cab-pcc+xml": [],
-  "application/vnd.oma.cab-user-prefs+xml": [],
-  "application/vnd.oma.dcd": [],
-  "application/vnd.oma.dcdc": [],
-  "application/vnd.oma.dd2+xml": [
-    "dd2"
-  ],
-  "application/vnd.oma.drm.risd+xml": [],
-  "application/vnd.oma.group-usage-list+xml": [],
-  "application/vnd.oma.pal+xml": [],
-  "application/vnd.oma.poc.detailed-progress-report+xml": [],
-  "application/vnd.oma.poc.final-report+xml": [],
-  "application/vnd.oma.poc.groups+xml": [],
-  "application/vnd.oma.poc.invocation-descriptor+xml": [],
-  "application/vnd.oma.poc.optimized-progress-report+xml": [],
-  "application/vnd.oma.push": [],
-  "application/vnd.oma.scidm.messages+xml": [],
-  "application/vnd.oma.xcap-directory+xml": [],
-  "application/vnd.omads-email+xml": [],
-  "application/vnd.omads-file+xml": [],
-  "application/vnd.omads-folder+xml": [],
-  "application/vnd.omaloc-supl-init": [],
-  "application/vnd.openofficeorg.extension": [
-    "oxt"
-  ],
-  "application/vnd.openxmlformats-officedocument.custom-properties+xml": [],
-  "application/vnd.openxmlformats-officedocument.customxmlproperties+xml": [],
-  "application/vnd.openxmlformats-officedocument.drawing+xml": [],
-  "application/vnd.openxmlformats-officedocument.drawingml.chart+xml": [],
-  "application/vnd.openxmlformats-officedocument.drawingml.chartshapes+xml": [],
-  "application/vnd.openxmlformats-officedocument.drawingml.diagramcolors+xml": [],
-  "application/vnd.openxmlformats-officedocument.drawingml.diagramdata+xml": [],
-  "application/vnd.openxmlformats-officedocument.drawingml.diagramlayout+xml": [],
-  "application/vnd.openxmlformats-officedocument.drawingml.diagramstyle+xml": [],
-  "application/vnd.openxmlformats-officedocument.extended-properties+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.commentauthors+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.comments+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.handoutmaster+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.notesmaster+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.notesslide+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
-    "pptx"
-  ],
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.presprops+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.slide": [
-    "sldx"
-  ],
-  "application/vnd.openxmlformats-officedocument.presentationml.slide+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.slidelayout+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.slidemaster+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.slideshow": [
-    "ppsx"
-  ],
-  "application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.slideupdateinfo+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.tablestyles+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.tags+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.template": [
-    "potx"
-  ],
-  "application/vnd.openxmlformats-officedocument.presentationml.template.main+xml": [],
-  "application/vnd.openxmlformats-officedocument.presentationml.viewprops+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.calcchain+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.connections+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.dialogsheet+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.externallink+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotcachedefinition+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotcacherecords+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.pivottable+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.querytable+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.revisionheaders+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.revisionlog+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedstrings+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-    "xlsx"
-  ],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheetmetadata+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.tablesinglecells+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.template": [
-    "xltx"
-  ],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.usernames+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.volatiledependencies+xml": [],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml": [],
-  "application/vnd.openxmlformats-officedocument.theme+xml": [],
-  "application/vnd.openxmlformats-officedocument.themeoverride+xml": [],
-  "application/vnd.openxmlformats-officedocument.vmldrawing": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
-    "docx"
-  ],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document.glossary+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.fonttable+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.template": [
-    "dotx"
-  ],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.template.main+xml": [],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.websettings+xml": [],
-  "application/vnd.openxmlformats-package.core-properties+xml": [],
-  "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml": [],
-  "application/vnd.openxmlformats-package.relationships+xml": [],
-  "application/vnd.quobject-quoxdocument": [],
-  "application/vnd.osa.netdeploy": [],
-  "application/vnd.osgeo.mapguide.package": [
-    "mgp"
-  ],
-  "application/vnd.osgi.bundle": [],
-  "application/vnd.osgi.dp": [
-    "dp"
-  ],
-  "application/vnd.osgi.subsystem": [
-    "esa"
-  ],
-  "application/vnd.otps.ct-kip+xml": [],
-  "application/vnd.palm": [
-    "pdb",
-    "pqa",
-    "oprc"
-  ],
-  "application/vnd.paos.xml": [],
-  "application/vnd.pawaafile": [
-    "paw"
-  ],
-  "application/vnd.pg.format": [
-    "str"
-  ],
-  "application/vnd.pg.osasli": [
-    "ei6"
-  ],
-  "application/vnd.piaccess.application-licence": [],
-  "application/vnd.picsel": [
-    "efif"
-  ],
-  "application/vnd.pmi.widget": [
-    "wg"
-  ],
-  "application/vnd.poc.group-advertisement+xml": [],
-  "application/vnd.pocketlearn": [
-    "plf"
-  ],
-  "application/vnd.powerbuilder6": [
-    "pbd"
-  ],
-  "application/vnd.powerbuilder6-s": [],
-  "application/vnd.powerbuilder7": [],
-  "application/vnd.powerbuilder7-s": [],
-  "application/vnd.powerbuilder75": [],
-  "application/vnd.powerbuilder75-s": [],
-  "application/vnd.preminet": [],
-  "application/vnd.previewsystems.box": [
-    "box"
-  ],
-  "application/vnd.proteus.magazine": [
-    "mgz"
-  ],
-  "application/vnd.publishare-delta-tree": [
-    "qps"
-  ],
-  "application/vnd.pvi.ptid1": [
-    "ptid"
-  ],
-  "application/vnd.pwg-multiplexed": [],
-  "application/vnd.pwg-xhtml-print+xml": [],
-  "application/vnd.qualcomm.brew-app-res": [],
-  "application/vnd.quark.quarkxpress": [
-    "qxd",
-    "qxt",
-    "qwd",
-    "qwt",
-    "qxl",
-    "qxb"
-  ],
-  "application/vnd.radisys.moml+xml": [],
-  "application/vnd.radisys.msml+xml": [],
-  "application/vnd.radisys.msml-audit+xml": [],
-  "application/vnd.radisys.msml-audit-conf+xml": [],
-  "application/vnd.radisys.msml-audit-conn+xml": [],
-  "application/vnd.radisys.msml-audit-dialog+xml": [],
-  "application/vnd.radisys.msml-audit-stream+xml": [],
-  "application/vnd.radisys.msml-conf+xml": [],
-  "application/vnd.radisys.msml-dialog+xml": [],
-  "application/vnd.radisys.msml-dialog-base+xml": [],
-  "application/vnd.radisys.msml-dialog-fax-detect+xml": [],
-  "application/vnd.radisys.msml-dialog-fax-sendrecv+xml": [],
-  "application/vnd.radisys.msml-dialog-group+xml": [],
-  "application/vnd.radisys.msml-dialog-speech+xml": [],
-  "application/vnd.radisys.msml-dialog-transform+xml": [],
-  "application/vnd.rainstor.data": [],
-  "application/vnd.rapid": [],
-  "application/vnd.realvnc.bed": [
-    "bed"
-  ],
-  "application/vnd.recordare.musicxml": [
-    "mxl"
-  ],
-  "application/vnd.recordare.musicxml+xml": [
-    "musicxml"
-  ],
-  "application/vnd.renlearn.rlprint": [],
-  "application/vnd.rig.cryptonote": [
-    "cryptonote"
-  ],
-  "application/vnd.rim.cod": [
-    "cod"
-  ],
-  "application/vnd.rn-realmedia": [
-    "rm"
-  ],
-  "application/vnd.rn-realmedia-vbr": [
-    "rmvb"
-  ],
-  "application/vnd.route66.link66+xml": [
-    "link66"
-  ],
-  "application/vnd.rs-274x": [],
-  "application/vnd.ruckus.download": [],
-  "application/vnd.s3sms": [],
-  "application/vnd.sailingtracker.track": [
-    "st"
-  ],
-  "application/vnd.sbm.cid": [],
-  "application/vnd.sbm.mid2": [],
-  "application/vnd.scribus": [],
-  "application/vnd.sealed.3df": [],
-  "application/vnd.sealed.csf": [],
-  "application/vnd.sealed.doc": [],
-  "application/vnd.sealed.eml": [],
-  "application/vnd.sealed.mht": [],
-  "application/vnd.sealed.net": [],
-  "application/vnd.sealed.ppt": [],
-  "application/vnd.sealed.tiff": [],
-  "application/vnd.sealed.xls": [],
-  "application/vnd.sealedmedia.softseal.html": [],
-  "application/vnd.sealedmedia.softseal.pdf": [],
-  "application/vnd.seemail": [
-    "see"
-  ],
-  "application/vnd.sema": [
-    "sema"
-  ],
-  "application/vnd.semd": [
-    "semd"
-  ],
-  "application/vnd.semf": [
-    "semf"
-  ],
-  "application/vnd.shana.informed.formdata": [
-    "ifm"
-  ],
-  "application/vnd.shana.informed.formtemplate": [
-    "itp"
-  ],
-  "application/vnd.shana.informed.interchange": [
-    "iif"
-  ],
-  "application/vnd.shana.informed.package": [
-    "ipk"
-  ],
-  "application/vnd.simtech-mindmapper": [
-    "twd",
-    "twds"
-  ],
-  "application/vnd.smaf": [
-    "mmf"
-  ],
-  "application/vnd.smart.notebook": [],
-  "application/vnd.smart.teacher": [
-    "teacher"
-  ],
-  "application/vnd.software602.filler.form+xml": [],
-  "application/vnd.software602.filler.form-xml-zip": [],
-  "application/vnd.solent.sdkm+xml": [
-    "sdkm",
-    "sdkd"
-  ],
-  "application/vnd.spotfire.dxp": [
-    "dxp"
-  ],
-  "application/vnd.spotfire.sfs": [
-    "sfs"
-  ],
-  "application/vnd.sss-cod": [],
-  "application/vnd.sss-dtf": [],
-  "application/vnd.sss-ntf": [],
-  "application/vnd.stardivision.calc": [
-    "sdc"
-  ],
-  "application/vnd.stardivision.draw": [
-    "sda"
-  ],
-  "application/vnd.stardivision.impress": [
-    "sdd"
-  ],
-  "application/vnd.stardivision.math": [
-    "smf"
-  ],
-  "application/vnd.stardivision.writer": [
-    "sdw",
-    "vor"
-  ],
-  "application/vnd.stardivision.writer-global": [
-    "sgl"
-  ],
-  "application/vnd.stepmania.package": [
-    "smzip"
-  ],
-  "application/vnd.stepmania.stepchart": [
-    "sm"
-  ],
-  "application/vnd.street-stream": [],
-  "application/vnd.sun.xml.calc": [
-    "sxc"
-  ],
-  "application/vnd.sun.xml.calc.template": [
-    "stc"
-  ],
-  "application/vnd.sun.xml.draw": [
-    "sxd"
-  ],
-  "application/vnd.sun.xml.draw.template": [
-    "std"
-  ],
-  "application/vnd.sun.xml.impress": [
-    "sxi"
-  ],
-  "application/vnd.sun.xml.impress.template": [
-    "sti"
-  ],
-  "application/vnd.sun.xml.math": [
-    "sxm"
-  ],
-  "application/vnd.sun.xml.writer": [
-    "sxw"
-  ],
-  "application/vnd.sun.xml.writer.global": [
-    "sxg"
-  ],
-  "application/vnd.sun.xml.writer.template": [
-    "stw"
-  ],
-  "application/vnd.sun.wadl+xml": [],
-  "application/vnd.sus-calendar": [
-    "sus",
-    "susp"
-  ],
-  "application/vnd.svd": [
-    "svd"
-  ],
-  "application/vnd.swiftview-ics": [],
-  "application/vnd.symbian.install": [
-    "sis",
-    "sisx"
-  ],
-  "application/vnd.syncml+xml": [
-    "xsm"
-  ],
-  "application/vnd.syncml.dm+wbxml": [
-    "bdm"
-  ],
-  "application/vnd.syncml.dm+xml": [
-    "xdm"
-  ],
-  "application/vnd.syncml.dm.notification": [],
-  "application/vnd.syncml.ds.notification": [],
-  "application/vnd.tao.intent-module-archive": [
-    "tao"
-  ],
-  "application/vnd.tcpdump.pcap": [
-    "pcap",
-    "cap",
-    "dmp"
-  ],
-  "application/vnd.tmobile-livetv": [
-    "tmo"
-  ],
-  "application/vnd.trid.tpt": [
-    "tpt"
-  ],
-  "application/vnd.triscape.mxs": [
-    "mxs"
-  ],
-  "application/vnd.trueapp": [
-    "tra"
-  ],
-  "application/vnd.truedoc": [],
-  "application/vnd.ubisoft.webplayer": [],
-  "application/vnd.ufdl": [
-    "ufd",
-    "ufdl"
-  ],
-  "application/vnd.uiq.theme": [
-    "utz"
-  ],
-  "application/vnd.umajin": [
-    "umj"
-  ],
-  "application/vnd.unity": [
-    "unityweb"
-  ],
-  "application/vnd.uoml+xml": [
-    "uoml"
-  ],
-  "application/vnd.uplanet.alert": [],
-  "application/vnd.uplanet.alert-wbxml": [],
-  "application/vnd.uplanet.bearer-choice": [],
-  "application/vnd.uplanet.bearer-choice-wbxml": [],
-  "application/vnd.uplanet.cacheop": [],
-  "application/vnd.uplanet.cacheop-wbxml": [],
-  "application/vnd.uplanet.channel": [],
-  "application/vnd.uplanet.channel-wbxml": [],
-  "application/vnd.uplanet.list": [],
-  "application/vnd.uplanet.list-wbxml": [],
-  "application/vnd.uplanet.listcmd": [],
-  "application/vnd.uplanet.listcmd-wbxml": [],
-  "application/vnd.uplanet.signal": [],
-  "application/vnd.vcx": [
-    "vcx"
-  ],
-  "application/vnd.vd-study": [],
-  "application/vnd.vectorworks": [],
-  "application/vnd.verimatrix.vcas": [],
-  "application/vnd.vidsoft.vidconference": [],
-  "application/vnd.visio": [
-    "vsd",
-    "vst",
-    "vss",
-    "vsw"
-  ],
-  "application/vnd.visionary": [
-    "vis"
-  ],
-  "application/vnd.vividence.scriptfile": [],
-  "application/vnd.vsf": [
-    "vsf"
-  ],
-  "application/vnd.wap.sic": [],
-  "application/vnd.wap.slc": [],
-  "application/vnd.wap.wbxml": [
-    "wbxml"
-  ],
-  "application/vnd.wap.wmlc": [
-    "wmlc"
-  ],
-  "application/vnd.wap.wmlscriptc": [
-    "wmlsc"
-  ],
-  "application/vnd.webturbo": [
-    "wtb"
-  ],
-  "application/vnd.wfa.wsc": [],
-  "application/vnd.wmc": [],
-  "application/vnd.wmf.bootstrap": [],
-  "application/vnd.wolfram.mathematica": [],
-  "application/vnd.wolfram.mathematica.package": [],
-  "application/vnd.wolfram.player": [
-    "nbp"
-  ],
-  "application/vnd.wordperfect": [
-    "wpd"
-  ],
-  "application/vnd.wqd": [
-    "wqd"
-  ],
-  "application/vnd.wrq-hp3000-labelled": [],
-  "application/vnd.wt.stf": [
-    "stf"
-  ],
-  "application/vnd.wv.csp+wbxml": [],
-  "application/vnd.wv.csp+xml": [],
-  "application/vnd.wv.ssp+xml": [],
-  "application/vnd.xara": [
-    "xar"
-  ],
-  "application/vnd.xfdl": [
-    "xfdl"
-  ],
-  "application/vnd.xfdl.webform": [],
-  "application/vnd.xmi+xml": [],
-  "application/vnd.xmpie.cpkg": [],
-  "application/vnd.xmpie.dpkg": [],
-  "application/vnd.xmpie.plan": [],
-  "application/vnd.xmpie.ppkg": [],
-  "application/vnd.xmpie.xlim": [],
-  "application/vnd.yamaha.hv-dic": [
-    "hvd"
-  ],
-  "application/vnd.yamaha.hv-script": [
-    "hvs"
-  ],
-  "application/vnd.yamaha.hv-voice": [
-    "hvp"
-  ],
-  "application/vnd.yamaha.openscoreformat": [
-    "osf"
-  ],
-  "application/vnd.yamaha.openscoreformat.osfpvg+xml": [
-    "osfpvg"
-  ],
-  "application/vnd.yamaha.remote-setup": [],
-  "application/vnd.yamaha.smaf-audio": [
-    "saf"
-  ],
-  "application/vnd.yamaha.smaf-phrase": [
-    "spf"
-  ],
-  "application/vnd.yamaha.through-ngn": [],
-  "application/vnd.yamaha.tunnel-udpencap": [],
-  "application/vnd.yellowriver-custom-menu": [
-    "cmp"
-  ],
-  "application/vnd.zul": [
-    "zir",
-    "zirz"
-  ],
-  "application/vnd.zzazz.deck+xml": [
-    "zaz"
-  ],
-  "application/voicexml+xml": [
-    "vxml"
-  ],
-  "application/vq-rtcpxr": [],
-  "application/watcherinfo+xml": [],
-  "application/whoispp-query": [],
-  "application/whoispp-response": [],
-  "application/widget": [
-    "wgt"
-  ],
-  "application/winhlp": [
-    "hlp"
-  ],
-  "application/wita": [],
-  "application/wordperfect5.1": [],
-  "application/wsdl+xml": [
-    "wsdl"
-  ],
-  "application/wspolicy+xml": [
-    "wspolicy"
-  ],
-  "application/x-7z-compressed": [
-    "7z"
-  ],
-  "application/x-abiword": [
-    "abw"
-  ],
-  "application/x-ace-compressed": [
-    "ace"
-  ],
-  "application/x-amf": [],
-  "application/x-apple-diskimage": [
-    "dmg"
-  ],
-  "application/x-authorware-bin": [
-    "aab",
-    "x32",
-    "u32",
-    "vox"
-  ],
-  "application/x-authorware-map": [
-    "aam"
-  ],
-  "application/x-authorware-seg": [
-    "aas"
-  ],
-  "application/x-bcpio": [
-    "bcpio"
-  ],
-  "application/x-bittorrent": [
-    "torrent"
-  ],
-  "application/x-blorb": [
-    "blb",
-    "blorb"
-  ],
-  "application/x-bzip": [
-    "bz"
-  ],
-  "application/x-bzip2": [
-    "bz2",
-    "boz"
-  ],
-  "application/x-cbr": [
-    "cbr",
-    "cba",
-    "cbt",
-    "cbz",
-    "cb7"
-  ],
-  "application/x-cdlink": [
-    "vcd"
-  ],
-  "application/x-cfs-compressed": [
-    "cfs"
-  ],
-  "application/x-chat": [
-    "chat"
-  ],
-  "application/x-chess-pgn": [
-    "pgn"
-  ],
-  "application/x-conference": [
-    "nsc"
-  ],
-  "application/x-compress": [],
-  "application/x-cpio": [
-    "cpio"
-  ],
-  "application/x-csh": [
-    "csh"
-  ],
-  "application/x-debian-package": [
-    "deb",
-    "udeb"
-  ],
-  "application/x-dgc-compressed": [
-    "dgc"
-  ],
-  "application/x-director": [
-    "dir",
-    "dcr",
-    "dxr",
-    "cst",
-    "cct",
-    "cxt",
-    "w3d",
-    "fgd",
-    "swa"
-  ],
-  "application/x-doom": [
-    "wad"
-  ],
-  "application/x-dtbncx+xml": [
-    "ncx"
-  ],
-  "application/x-dtbook+xml": [
-    "dtb"
-  ],
-  "application/x-dtbresource+xml": [
-    "res"
-  ],
-  "application/x-dvi": [
-    "dvi"
-  ],
-  "application/x-envoy": [
-    "evy"
-  ],
-  "application/x-eva": [
-    "eva"
-  ],
-  "application/x-font-bdf": [
-    "bdf"
-  ],
-  "application/x-font-dos": [],
-  "application/x-font-framemaker": [],
-  "application/x-font-ghostscript": [
-    "gsf"
-  ],
-  "application/x-font-libgrx": [],
-  "application/x-font-linux-psf": [
-    "psf"
-  ],
-  "application/x-font-otf": [
-    "otf"
-  ],
-  "application/x-font-pcf": [
-    "pcf"
-  ],
-  "application/x-font-snf": [
-    "snf"
-  ],
-  "application/x-font-speedo": [],
-  "application/x-font-sunos-news": [],
-  "application/x-font-ttf": [
-    "ttf",
-    "ttc"
-  ],
-  "application/x-font-type1": [
-    "pfa",
-    "pfb",
-    "pfm",
-    "afm"
-  ],
-  "application/font-woff": [
-    "woff"
-  ],
-  "application/x-font-vfont": [],
-  "application/x-freearc": [
-    "arc"
-  ],
-  "application/x-futuresplash": [
-    "spl"
-  ],
-  "application/x-gca-compressed": [
-    "gca"
-  ],
-  "application/x-glulx": [
-    "ulx"
-  ],
-  "application/x-gnumeric": [
-    "gnumeric"
-  ],
-  "application/x-gramps-xml": [
-    "gramps"
-  ],
-  "application/x-gtar": [
-    "gtar"
-  ],
-  "application/x-gzip": [],
-  "application/x-hdf": [
-    "hdf"
-  ],
-  "application/x-install-instructions": [
-    "install"
-  ],
-  "application/x-iso9660-image": [
-    "iso"
-  ],
-  "application/x-java-jnlp-file": [
-    "jnlp"
-  ],
-  "application/x-latex": [
-    "latex"
-  ],
-  "application/x-lzh-compressed": [
-    "lzh",
-    "lha"
-  ],
-  "application/x-mie": [
-    "mie"
-  ],
-  "application/x-mobipocket-ebook": [
-    "prc",
-    "mobi"
-  ],
-  "application/x-ms-application": [
-    "application"
-  ],
-  "application/x-ms-shortcut": [
-    "lnk"
-  ],
-  "application/x-ms-wmd": [
-    "wmd"
-  ],
-  "application/x-ms-wmz": [
-    "wmz"
-  ],
-  "application/x-ms-xbap": [
-    "xbap"
-  ],
-  "application/x-msaccess": [
-    "mdb"
-  ],
-  "application/x-msbinder": [
-    "obd"
-  ],
-  "application/x-mscardfile": [
-    "crd"
-  ],
-  "application/x-msclip": [
-    "clp"
-  ],
-  "application/x-msdownload": [
-    "exe",
-    "dll",
-    "com",
-    "bat",
-    "msi"
-  ],
-  "application/x-msmediaview": [
-    "mvb",
-    "m13",
-    "m14"
-  ],
-  "application/x-msmetafile": [
-    "wmf",
-    "wmz",
-    "emf",
-    "emz"
-  ],
-  "application/x-msmoney": [
-    "mny"
-  ],
-  "application/x-mspublisher": [
-    "pub"
-  ],
-  "application/x-msschedule": [
-    "scd"
-  ],
-  "application/x-msterminal": [
-    "trm"
-  ],
-  "application/x-mswrite": [
-    "wri"
-  ],
-  "application/x-netcdf": [
-    "nc",
-    "cdf"
-  ],
-  "application/x-nzb": [
-    "nzb"
-  ],
-  "application/x-pkcs12": [
-    "p12",
-    "pfx"
-  ],
-  "application/x-pkcs7-certificates": [
-    "p7b",
-    "spc"
-  ],
-  "application/x-pkcs7-certreqresp": [
-    "p7r"
-  ],
-  "application/x-rar-compressed": [
-    "rar"
-  ],
-  "application/x-research-info-systems": [
-    "ris"
-  ],
-  "application/x-sh": [
-    "sh"
-  ],
-  "application/x-shar": [
-    "shar"
-  ],
-  "application/x-shockwave-flash": [
-    "swf"
-  ],
-  "application/x-silverlight-app": [
-    "xap"
-  ],
-  "application/x-sql": [
-    "sql"
-  ],
-  "application/x-stuffit": [
-    "sit"
-  ],
-  "application/x-stuffitx": [
-    "sitx"
-  ],
-  "application/x-subrip": [
-    "srt"
-  ],
-  "application/x-sv4cpio": [
-    "sv4cpio"
-  ],
-  "application/x-sv4crc": [
-    "sv4crc"
-  ],
-  "application/x-t3vm-image": [
-    "t3"
-  ],
-  "application/x-tads": [
-    "gam"
-  ],
-  "application/x-tar": [
-    "tar"
-  ],
-  "application/x-tcl": [
-    "tcl"
-  ],
-  "application/x-tex": [
-    "tex"
-  ],
-  "application/x-tex-tfm": [
-    "tfm"
-  ],
-  "application/x-texinfo": [
-    "texinfo",
-    "texi"
-  ],
-  "application/x-tgif": [
-    "obj"
-  ],
-  "application/x-ustar": [
-    "ustar"
-  ],
-  "application/x-wais-source": [
-    "src"
-  ],
-  "application/x-x509-ca-cert": [
-    "der",
-    "crt"
-  ],
-  "application/x-xfig": [
-    "fig"
-  ],
-  "application/x-xliff+xml": [
-    "xlf"
-  ],
-  "application/x-xpinstall": [
-    "xpi"
-  ],
-  "application/x-xz": [
-    "xz"
-  ],
-  "application/x-zmachine": [
-    "z1",
-    "z2",
-    "z3",
-    "z4",
-    "z5",
-    "z6",
-    "z7",
-    "z8"
-  ],
-  "application/x400-bp": [],
-  "application/xaml+xml": [
-    "xaml"
-  ],
-  "application/xcap-att+xml": [],
-  "application/xcap-caps+xml": [],
-  "application/xcap-diff+xml": [
-    "xdf"
-  ],
-  "application/xcap-el+xml": [],
-  "application/xcap-error+xml": [],
-  "application/xcap-ns+xml": [],
-  "application/xcon-conference-info-diff+xml": [],
-  "application/xcon-conference-info+xml": [],
-  "application/xenc+xml": [
-    "xenc"
-  ],
-  "application/xhtml+xml": [
-    "xhtml",
-    "xht"
-  ],
-  "application/xhtml-voice+xml": [],
-  "application/xml": [
-    "xml",
-    "xsl"
-  ],
-  "application/xml-dtd": [
-    "dtd"
-  ],
-  "application/xml-external-parsed-entity": [],
-  "application/xmpp+xml": [],
-  "application/xop+xml": [
-    "xop"
-  ],
-  "application/xproc+xml": [
-    "xpl"
-  ],
-  "application/xslt+xml": [
-    "xslt"
-  ],
-  "application/xspf+xml": [
-    "xspf"
-  ],
-  "application/xv+xml": [
-    "mxml",
-    "xhvml",
-    "xvml",
-    "xvm"
-  ],
-  "application/yang": [
-    "yang"
-  ],
-  "application/yin+xml": [
-    "yin"
-  ],
-  "application/zip": [
-    "zip"
-  ],
-  "audio/1d-interleaved-parityfec": [],
-  "audio/32kadpcm": [],
-  "audio/3gpp": [],
-  "audio/3gpp2": [],
-  "audio/ac3": [],
-  "audio/adpcm": [
-    "adp"
-  ],
-  "audio/amr": [],
-  "audio/amr-wb": [],
-  "audio/amr-wb+": [],
-  "audio/asc": [],
-  "audio/atrac-advanced-lossless": [],
-  "audio/atrac-x": [],
-  "audio/atrac3": [],
-  "audio/basic": [
-    "au",
-    "snd"
-  ],
-  "audio/bv16": [],
-  "audio/bv32": [],
-  "audio/clearmode": [],
-  "audio/cn": [],
-  "audio/dat12": [],
-  "audio/dls": [],
-  "audio/dsr-es201108": [],
-  "audio/dsr-es202050": [],
-  "audio/dsr-es202211": [],
-  "audio/dsr-es202212": [],
-  "audio/dv": [],
-  "audio/dvi4": [],
-  "audio/eac3": [],
-  "audio/evrc": [],
-  "audio/evrc-qcp": [],
-  "audio/evrc0": [],
-  "audio/evrc1": [],
-  "audio/evrcb": [],
-  "audio/evrcb0": [],
-  "audio/evrcb1": [],
-  "audio/evrcwb": [],
-  "audio/evrcwb0": [],
-  "audio/evrcwb1": [],
-  "audio/example": [],
-  "audio/fwdred": [],
-  "audio/g719": [],
-  "audio/g722": [],
-  "audio/g7221": [],
-  "audio/g723": [],
-  "audio/g726-16": [],
-  "audio/g726-24": [],
-  "audio/g726-32": [],
-  "audio/g726-40": [],
-  "audio/g728": [],
-  "audio/g729": [],
-  "audio/g7291": [],
-  "audio/g729d": [],
-  "audio/g729e": [],
-  "audio/gsm": [],
-  "audio/gsm-efr": [],
-  "audio/gsm-hr-08": [],
-  "audio/ilbc": [],
-  "audio/ip-mr_v2.5": [],
-  "audio/isac": [],
-  "audio/l16": [],
-  "audio/l20": [],
-  "audio/l24": [],
-  "audio/l8": [],
-  "audio/lpc": [],
-  "audio/midi": [
-    "mid",
-    "midi",
-    "kar",
-    "rmi"
-  ],
-  "audio/mobile-xmf": [],
-  "audio/mp4": [
-    "mp4a"
-  ],
-  "audio/mp4a-latm": [],
-  "audio/mpa": [],
-  "audio/mpa-robust": [],
-  "audio/mpeg": [
-    "mpga",
-    "mp2",
-    "mp2a",
-    "mp3",
-    "m2a",
-    "m3a"
-  ],
-  "audio/mpeg4-generic": [],
-  "audio/musepack": [],
-  "audio/ogg": [
-    "oga",
-    "ogg",
-    "spx"
-  ],
-  "audio/opus": [],
-  "audio/parityfec": [],
-  "audio/pcma": [],
-  "audio/pcma-wb": [],
-  "audio/pcmu-wb": [],
-  "audio/pcmu": [],
-  "audio/prs.sid": [],
-  "audio/qcelp": [],
-  "audio/red": [],
-  "audio/rtp-enc-aescm128": [],
-  "audio/rtp-midi": [],
-  "audio/rtx": [],
-  "audio/s3m": [
-    "s3m"
-  ],
-  "audio/silk": [
-    "sil"
-  ],
-  "audio/smv": [],
-  "audio/smv0": [],
-  "audio/smv-qcp": [],
-  "audio/sp-midi": [],
-  "audio/speex": [],
-  "audio/t140c": [],
-  "audio/t38": [],
-  "audio/telephone-event": [],
-  "audio/tone": [],
-  "audio/uemclip": [],
-  "audio/ulpfec": [],
-  "audio/vdvi": [],
-  "audio/vmr-wb": [],
-  "audio/vnd.3gpp.iufp": [],
-  "audio/vnd.4sb": [],
-  "audio/vnd.audiokoz": [],
-  "audio/vnd.celp": [],
-  "audio/vnd.cisco.nse": [],
-  "audio/vnd.cmles.radio-events": [],
-  "audio/vnd.cns.anp1": [],
-  "audio/vnd.cns.inf1": [],
-  "audio/vnd.dece.audio": [
-    "uva",
-    "uvva"
-  ],
-  "audio/vnd.digital-winds": [
-    "eol"
-  ],
-  "audio/vnd.dlna.adts": [],
-  "audio/vnd.dolby.heaac.1": [],
-  "audio/vnd.dolby.heaac.2": [],
-  "audio/vnd.dolby.mlp": [],
-  "audio/vnd.dolby.mps": [],
-  "audio/vnd.dolby.pl2": [],
-  "audio/vnd.dolby.pl2x": [],
-  "audio/vnd.dolby.pl2z": [],
-  "audio/vnd.dolby.pulse.1": [],
-  "audio/vnd.dra": [
-    "dra"
-  ],
-  "audio/vnd.dts": [
-    "dts"
-  ],
-  "audio/vnd.dts.hd": [
-    "dtshd"
-  ],
-  "audio/vnd.dvb.file": [],
-  "audio/vnd.everad.plj": [],
-  "audio/vnd.hns.audio": [],
-  "audio/vnd.lucent.voice": [
-    "lvp"
-  ],
-  "audio/vnd.ms-playready.media.pya": [
-    "pya"
-  ],
-  "audio/vnd.nokia.mobile-xmf": [],
-  "audio/vnd.nortel.vbk": [],
-  "audio/vnd.nuera.ecelp4800": [
-    "ecelp4800"
-  ],
-  "audio/vnd.nuera.ecelp7470": [
-    "ecelp7470"
-  ],
-  "audio/vnd.nuera.ecelp9600": [
-    "ecelp9600"
-  ],
-  "audio/vnd.octel.sbc": [],
-  "audio/vnd.qcelp": [],
-  "audio/vnd.rhetorex.32kadpcm": [],
-  "audio/vnd.rip": [
-    "rip"
-  ],
-  "audio/vnd.sealedmedia.softseal.mpeg": [],
-  "audio/vnd.vmx.cvsd": [],
-  "audio/vorbis": [],
-  "audio/vorbis-config": [],
-  "audio/webm": [
-    "weba"
-  ],
-  "audio/x-aac": [
-    "aac"
-  ],
-  "audio/x-aiff": [
-    "aif",
-    "aiff",
-    "aifc"
-  ],
-  "audio/x-caf": [
-    "caf"
-  ],
-  "audio/x-flac": [
-    "flac"
-  ],
-  "audio/x-matroska": [
-    "mka"
-  ],
-  "audio/x-mpegurl": [
-    "m3u"
-  ],
-  "audio/x-ms-wax": [
-    "wax"
-  ],
-  "audio/x-ms-wma": [
-    "wma"
-  ],
-  "audio/x-pn-realaudio": [
-    "ram",
-    "ra"
-  ],
-  "audio/x-pn-realaudio-plugin": [
-    "rmp"
-  ],
-  "audio/x-tta": [],
-  "audio/x-wav": [
-    "wav"
-  ],
-  "audio/xm": [
-    "xm"
-  ],
-  "chemical/x-cdx": [
-    "cdx"
-  ],
-  "chemical/x-cif": [
-    "cif"
-  ],
-  "chemical/x-cmdf": [
-    "cmdf"
-  ],
-  "chemical/x-cml": [
-    "cml"
-  ],
-  "chemical/x-csml": [
-    "csml"
-  ],
-  "chemical/x-pdb": [],
-  "chemical/x-xyz": [
-    "xyz"
-  ],
-  "image/bmp": [
-    "bmp"
-  ],
-  "image/cgm": [
-    "cgm"
-  ],
-  "image/example": [],
-  "image/fits": [],
-  "image/g3fax": [
-    "g3"
-  ],
-  "image/gif": [
-    "gif"
-  ],
-  "image/ief": [
-    "ief"
-  ],
-  "image/jp2": [],
-  "image/jpeg": [
-    "jpeg",
-    "jpg",
-    "jpe"
-  ],
-  "image/jpm": [],
-  "image/jpx": [],
-  "image/ktx": [
-    "ktx"
-  ],
-  "image/naplps": [],
-  "image/png": [
-    "png"
-  ],
-  "image/prs.btif": [
-    "btif"
-  ],
-  "image/prs.pti": [],
-  "image/sgi": [
-    "sgi"
-  ],
-  "image/svg+xml": [
-    "svg",
-    "svgz"
-  ],
-  "image/t38": [],
-  "image/tiff": [
-    "tiff",
-    "tif"
-  ],
-  "image/tiff-fx": [],
-  "image/vnd.adobe.photoshop": [
-    "psd"
-  ],
-  "image/vnd.cns.inf2": [],
-  "image/vnd.dece.graphic": [
-    "uvi",
-    "uvvi",
-    "uvg",
-    "uvvg"
-  ],
-  "image/vnd.dvb.subtitle": [
-    "sub"
-  ],
-  "image/vnd.djvu": [
-    "djvu",
-    "djv"
-  ],
-  "image/vnd.dwg": [
-    "dwg"
-  ],
-  "image/vnd.dxf": [
-    "dxf"
-  ],
-  "image/vnd.fastbidsheet": [
-    "fbs"
-  ],
-  "image/vnd.fpx": [
-    "fpx"
-  ],
-  "image/vnd.fst": [
-    "fst"
-  ],
-  "image/vnd.fujixerox.edmics-mmr": [
-    "mmr"
-  ],
-  "image/vnd.fujixerox.edmics-rlc": [
-    "rlc"
-  ],
-  "image/vnd.globalgraphics.pgb": [],
-  "image/vnd.microsoft.icon": [],
-  "image/vnd.mix": [],
-  "image/vnd.ms-modi": [
-    "mdi"
-  ],
-  "image/vnd.ms-photo": [
-    "wdp"
-  ],
-  "image/vnd.net-fpx": [
-    "npx"
-  ],
-  "image/vnd.radiance": [],
-  "image/vnd.sealed.png": [],
-  "image/vnd.sealedmedia.softseal.gif": [],
-  "image/vnd.sealedmedia.softseal.jpg": [],
-  "image/vnd.svf": [],
-  "image/vnd.wap.wbmp": [
-    "wbmp"
-  ],
-  "image/vnd.xiff": [
-    "xif"
-  ],
-  "image/webp": [
-    "webp"
-  ],
-  "image/x-3ds": [
-    "3ds"
-  ],
-  "image/x-cmu-raster": [
-    "ras"
-  ],
-  "image/x-cmx": [
-    "cmx"
-  ],
-  "image/x-freehand": [
-    "fh",
-    "fhc",
-    "fh4",
-    "fh5",
-    "fh7"
-  ],
-  "image/x-icon": [
-    "ico"
-  ],
-  "image/x-mrsid-image": [
-    "sid"
-  ],
-  "image/x-pcx": [
-    "pcx"
-  ],
-  "image/x-pict": [
-    "pic",
-    "pct"
-  ],
-  "image/x-portable-anymap": [
-    "pnm"
-  ],
-  "image/x-portable-bitmap": [
-    "pbm"
-  ],
-  "image/x-portable-graymap": [
-    "pgm"
-  ],
-  "image/x-portable-pixmap": [
-    "ppm"
-  ],
-  "image/x-rgb": [
-    "rgb"
-  ],
-  "image/x-tga": [
-    "tga"
-  ],
-  "image/x-xbitmap": [
-    "xbm"
-  ],
-  "image/x-xpixmap": [
-    "xpm"
-  ],
-  "image/x-xwindowdump": [
-    "xwd"
-  ],
-  "message/cpim": [],
-  "message/delivery-status": [],
-  "message/disposition-notification": [],
-  "message/example": [],
-  "message/external-body": [],
-  "message/feedback-report": [],
-  "message/global": [],
-  "message/global-delivery-status": [],
-  "message/global-disposition-notification": [],
-  "message/global-headers": [],
-  "message/http": [],
-  "message/imdn+xml": [],
-  "message/news": [],
-  "message/partial": [],
-  "message/rfc822": [
-    "eml",
-    "mime"
-  ],
-  "message/s-http": [],
-  "message/sip": [],
-  "message/sipfrag": [],
-  "message/tracking-status": [],
-  "message/vnd.si.simp": [],
-  "model/example": [],
-  "model/iges": [
-    "igs",
-    "iges"
-  ],
-  "model/mesh": [
-    "msh",
-    "mesh",
-    "silo"
-  ],
-  "model/vnd.collada+xml": [
-    "dae"
-  ],
-  "model/vnd.dwf": [
-    "dwf"
-  ],
-  "model/vnd.flatland.3dml": [],
-  "model/vnd.gdl": [
-    "gdl"
-  ],
-  "model/vnd.gs-gdl": [],
-  "model/vnd.gs.gdl": [],
-  "model/vnd.gtw": [
-    "gtw"
-  ],
-  "model/vnd.moml+xml": [],
-  "model/vnd.mts": [
-    "mts"
-  ],
-  "model/vnd.parasolid.transmit.binary": [],
-  "model/vnd.parasolid.transmit.text": [],
-  "model/vnd.vtu": [
-    "vtu"
-  ],
-  "model/vrml": [
-    "wrl",
-    "vrml"
-  ],
-  "model/x3d+binary": [
-    "x3db",
-    "x3dbz"
-  ],
-  "model/x3d+vrml": [
-    "x3dv",
-    "x3dvz"
-  ],
-  "model/x3d+xml": [
-    "x3d",
-    "x3dz"
-  ],
-  "multipart/alternative": [],
-  "multipart/appledouble": [],
-  "multipart/byteranges": [],
-  "multipart/digest": [],
-  "multipart/encrypted": [],
-  "multipart/example": [],
-  "multipart/form-data": [],
-  "multipart/header-set": [],
-  "multipart/mixed": [],
-  "multipart/parallel": [],
-  "multipart/related": [],
-  "multipart/report": [],
-  "multipart/signed": [],
-  "multipart/voice-message": [],
-  "text/1d-interleaved-parityfec": [],
-  "text/cache-manifest": [
-    "appcache"
-  ],
-  "text/calendar": [
-    "ics",
-    "ifb"
-  ],
-  "text/css": [
-    "css"
-  ],
-  "text/csv": [
-    "csv"
-  ],
-  "text/directory": [],
-  "text/dns": [],
-  "text/ecmascript": [],
-  "text/enriched": [],
-  "text/example": [],
-  "text/fwdred": [],
-  "text/html": [
-    "html",
-    "htm"
-  ],
-  "text/javascript": [],
-  "text/n3": [
-    "n3"
-  ],
-  "text/parityfec": [],
-  "text/plain": [
-    "txt",
-    "text",
-    "conf",
-    "def",
-    "list",
-    "log",
-    "in"
-  ],
-  "text/prs.fallenstein.rst": [],
-  "text/prs.lines.tag": [
-    "dsc"
-  ],
-  "text/vnd.radisys.msml-basic-layout": [],
-  "text/red": [],
-  "text/rfc822-headers": [],
-  "text/richtext": [
-    "rtx"
-  ],
-  "text/rtf": [],
-  "text/rtp-enc-aescm128": [],
-  "text/rtx": [],
-  "text/sgml": [
-    "sgml",
-    "sgm"
-  ],
-  "text/t140": [],
-  "text/tab-separated-values": [
-    "tsv"
-  ],
-  "text/troff": [
-    "t",
-    "tr",
-    "roff",
-    "man",
-    "me",
-    "ms"
-  ],
-  "text/turtle": [
-    "ttl"
-  ],
-  "text/ulpfec": [],
-  "text/uri-list": [
-    "uri",
-    "uris",
-    "urls"
-  ],
-  "text/vcard": [
-    "vcard"
-  ],
-  "text/vnd.abc": [],
-  "text/vnd.curl": [
-    "curl"
-  ],
-  "text/vnd.curl.dcurl": [
-    "dcurl"
-  ],
-  "text/vnd.curl.scurl": [
-    "scurl"
-  ],
-  "text/vnd.curl.mcurl": [
-    "mcurl"
-  ],
-  "text/vnd.dmclientscript": [],
-  "text/vnd.dvb.subtitle": [
-    "sub"
-  ],
-  "text/vnd.esmertec.theme-descriptor": [],
-  "text/vnd.fly": [
-    "fly"
-  ],
-  "text/vnd.fmi.flexstor": [
-    "flx"
-  ],
-  "text/vnd.graphviz": [
-    "gv"
-  ],
-  "text/vnd.in3d.3dml": [
-    "3dml"
-  ],
-  "text/vnd.in3d.spot": [
-    "spot"
-  ],
-  "text/vnd.iptc.newsml": [],
-  "text/vnd.iptc.nitf": [],
-  "text/vnd.latex-z": [],
-  "text/vnd.motorola.reflex": [],
-  "text/vnd.ms-mediapackage": [],
-  "text/vnd.net2phone.commcenter.command": [],
-  "text/vnd.si.uricatalogue": [],
-  "text/vnd.sun.j2me.app-descriptor": [
-    "jad"
-  ],
-  "text/vnd.trolltech.linguist": [],
-  "text/vnd.wap.si": [],
-  "text/vnd.wap.sl": [],
-  "text/vnd.wap.wml": [
-    "wml"
-  ],
-  "text/vnd.wap.wmlscript": [
-    "wmls"
-  ],
-  "text/x-asm": [
-    "s",
-    "asm"
-  ],
-  "text/x-c": [
-    "c",
-    "cc",
-    "cxx",
-    "cpp",
-    "h",
-    "hh",
-    "dic"
-  ],
-  "text/x-fortran": [
-    "f",
-    "for",
-    "f77",
-    "f90"
-  ],
-  "text/x-java-source": [
-    "java"
-  ],
-  "text/x-opml": [
-    "opml"
-  ],
-  "text/x-pascal": [
-    "p",
-    "pas"
-  ],
-  "text/x-nfo": [
-    "nfo"
-  ],
-  "text/x-setext": [
-    "etx"
-  ],
-  "text/x-sfv": [
-    "sfv"
-  ],
-  "text/x-uuencode": [
-    "uu"
-  ],
-  "text/x-vcalendar": [
-    "vcs"
-  ],
-  "text/x-vcard": [
-    "vcf"
-  ],
-  "text/xml": [],
-  "text/xml-external-parsed-entity": [],
-  "video/1d-interleaved-parityfec": [],
-  "video/3gpp": [
-    "3gp"
-  ],
-  "video/3gpp-tt": [],
-  "video/3gpp2": [
-    "3g2"
-  ],
-  "video/bmpeg": [],
-  "video/bt656": [],
-  "video/celb": [],
-  "video/dv": [],
-  "video/example": [],
-  "video/h261": [
-    "h261"
-  ],
-  "video/h263": [
-    "h263"
-  ],
-  "video/h263-1998": [],
-  "video/h263-2000": [],
-  "video/h264": [
-    "h264"
-  ],
-  "video/h264-rcdo": [],
-  "video/h264-svc": [],
-  "video/jpeg": [
-    "jpgv"
-  ],
-  "video/jpeg2000": [],
-  "video/jpm": [
-    "jpm",
-    "jpgm"
-  ],
-  "video/mj2": [
-    "mj2",
-    "mjp2"
-  ],
-  "video/mp1s": [],
-  "video/mp2p": [],
-  "video/mp2t": [],
-  "video/mp4": [
-    "mp4",
-    "mp4v",
-    "mpg4"
-  ],
-  "video/mp4v-es": [],
-  "video/mpeg": [
-    "mpeg",
-    "mpg",
-    "mpe",
-    "m1v",
-    "m2v"
-  ],
-  "video/mpeg4-generic": [],
-  "video/mpv": [],
-  "video/nv": [],
-  "video/ogg": [
-    "ogv"
-  ],
-  "video/parityfec": [],
-  "video/pointer": [],
-  "video/quicktime": [
-    "qt",
-    "mov"
-  ],
-  "video/raw": [],
-  "video/rtp-enc-aescm128": [],
-  "video/rtx": [],
-  "video/smpte292m": [],
-  "video/ulpfec": [],
-  "video/vc1": [],
-  "video/vnd.cctv": [],
-  "video/vnd.dece.hd": [
-    "uvh",
-    "uvvh"
-  ],
-  "video/vnd.dece.mobile": [
-    "uvm",
-    "uvvm"
-  ],
-  "video/vnd.dece.mp4": [],
-  "video/vnd.dece.pd": [
-    "uvp",
-    "uvvp"
-  ],
-  "video/vnd.dece.sd": [
-    "uvs",
-    "uvvs"
-  ],
-  "video/vnd.dece.video": [
-    "uvv",
-    "uvvv"
-  ],
-  "video/vnd.directv.mpeg": [],
-  "video/vnd.directv.mpeg-tts": [],
-  "video/vnd.dlna.mpeg-tts": [],
-  "video/vnd.dvb.file": [
-    "dvb"
-  ],
-  "video/vnd.fvt": [
-    "fvt"
-  ],
-  "video/vnd.hns.video": [],
-  "video/vnd.iptvforum.1dparityfec-1010": [],
-  "video/vnd.iptvforum.1dparityfec-2005": [],
-  "video/vnd.iptvforum.2dparityfec-1010": [],
-  "video/vnd.iptvforum.2dparityfec-2005": [],
-  "video/vnd.iptvforum.ttsavc": [],
-  "video/vnd.iptvforum.ttsmpeg2": [],
-  "video/vnd.motorola.video": [],
-  "video/vnd.motorola.videop": [],
-  "video/vnd.mpegurl": [
-    "mxu",
-    "m4u"
-  ],
-  "video/vnd.ms-playready.media.pyv": [
-    "pyv"
-  ],
-  "video/vnd.nokia.interleaved-multimedia": [],
-  "video/vnd.nokia.videovoip": [],
-  "video/vnd.objectvideo": [],
-  "video/vnd.sealed.mpeg1": [],
-  "video/vnd.sealed.mpeg4": [],
-  "video/vnd.sealed.swf": [],
-  "video/vnd.sealedmedia.softseal.mov": [],
-  "video/vnd.uvvu.mp4": [
-    "uvu",
-    "uvvu"
-  ],
-  "video/vnd.vivo": [
-    "viv"
-  ],
-  "video/webm": [
-    "webm"
-  ],
-  "video/x-f4v": [
-    "f4v"
-  ],
-  "video/x-fli": [
-    "fli"
-  ],
-  "video/x-flv": [
-    "flv"
-  ],
-  "video/x-m4v": [
-    "m4v"
-  ],
-  "video/x-matroska": [
-    "mkv",
-    "mk3d",
-    "mks"
-  ],
-  "video/x-mng": [
-    "mng"
-  ],
-  "video/x-ms-asf": [
-    "asf",
-    "asx"
-  ],
-  "video/x-ms-vob": [
-    "vob"
-  ],
-  "video/x-ms-wm": [
-    "wm"
-  ],
-  "video/x-ms-wmv": [
-    "wmv"
-  ],
-  "video/x-ms-wmx": [
-    "wmx"
-  ],
-  "video/x-ms-wvx": [
-    "wvx"
-  ],
-  "video/x-msvideo": [
-    "avi"
-  ],
-  "video/x-sgi-movie": [
-    "movie"
-  ],
-  "video/x-smv": [
-    "smv"
-  ],
-  "x-conference/x-cooltalk": [
-    "ice"
-  ]
-}
-
-},{}],77:[function(require,module,exports){
-module.exports={
-  "text/vtt": [
-    "vtt"
-  ],
-  "application/x-chrome-extension": [
-    "crx"
-  ],
-  "text/x-component": [
-    "htc"
-  ],
-  "text/cache-manifest": [
-    "manifest"
-  ],
-  "application/octet-stream": [
-    "buffer"
-  ],
-  "application/mp4": [
-    "m4p"
-  ],
-  "audio/mp4": [
-    "m4a"
-  ],
-  "video/MP2T": [
-    "ts"
-  ],
-  "application/x-web-app-manifest+json": [
-    "webapp"
-  ],
-  "text/x-lua": [
-    "lua"
-  ],
-  "application/x-lua-bytecode": [
-    "luac"
-  ],
-  "text/x-markdown": [
-    "markdown",
-    "md",
-    "mkd"
-  ],
-  "text/plain": [
-    "ini"
-  ],
-  "application/dash+xml": [
-    "mdp"
-  ],
-  "font/opentype": [
-    "otf"
-  ],
-  "application/json": [
-    "map"
-  ],
-  "application/xml": [
-    "xsd"
-  ]
-}
-
-},{}],78:[function(require,module,exports){
-(function (Buffer){
-//     uuid.js
-//
-//     Copyright (c) 2010-2012 Robert Kieffer
-//     MIT License - http://opensource.org/licenses/mit-license.php
-
-(function() {
-  var _global = this;
-
-  // Unique ID creation requires a high quality random # generator.  We feature
-  // detect to determine the best RNG source, normalizing to a function that
-  // returns 128-bits of randomness, since that's what's usually required
-  var _rng;
-
-  // Node.js crypto-based RNG - http://nodejs.org/docs/v0.6.2/api/crypto.html
-  //
-  // Moderately fast, high quality
-  if (typeof(require) == 'function') {
-    try {
-      var _rb = require('crypto').randomBytes;
-      _rng = _rb && function() {return _rb(16);};
-    } catch(e) {}
-  }
-
-  if (!_rng && _global.crypto && crypto.getRandomValues) {
-    // WHATWG crypto-based RNG - http://wiki.whatwg.org/wiki/Crypto
-    //
-    // Moderately fast, high quality
-    var _rnds8 = new Uint8Array(16);
-    _rng = function whatwgRNG() {
-      crypto.getRandomValues(_rnds8);
-      return _rnds8;
-    };
-  }
-
-  if (!_rng) {
-    // Math.random()-based (RNG)
-    //
-    // If all else fails, use Math.random().  It's fast, but is of unspecified
-    // quality.
-    var  _rnds = new Array(16);
-    _rng = function() {
-      for (var i = 0, r; i < 16; i++) {
-        if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
-        _rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
-      }
-
-      return _rnds;
-    };
-  }
-
-  // Buffer class to use
-  var BufferClass = typeof(Buffer) == 'function' ? Buffer : Array;
-
-  // Maps for number <-> hex string conversion
-  var _byteToHex = [];
-  var _hexToByte = {};
-  for (var i = 0; i < 256; i++) {
-    _byteToHex[i] = (i + 0x100).toString(16).substr(1);
-    _hexToByte[_byteToHex[i]] = i;
-  }
-
-  // **`parse()` - Parse a UUID into it's component bytes**
-  function parse(s, buf, offset) {
-    var i = (buf && offset) || 0, ii = 0;
-
-    buf = buf || [];
-    s.toLowerCase().replace(/[0-9a-f]{2}/g, function(oct) {
-      if (ii < 16) { // Don't overflow!
-        buf[i + ii++] = _hexToByte[oct];
-      }
-    });
-
-    // Zero out remaining bytes if string was short
-    while (ii < 16) {
-      buf[i + ii++] = 0;
-    }
-
-    return buf;
-  }
-
-  // **`unparse()` - Convert UUID byte array (ala parse()) into a string**
-  function unparse(buf, offset) {
-    var i = offset || 0, bth = _byteToHex;
-    return  bth[buf[i++]] + bth[buf[i++]] +
-            bth[buf[i++]] + bth[buf[i++]] + '-' +
-            bth[buf[i++]] + bth[buf[i++]] + '-' +
-            bth[buf[i++]] + bth[buf[i++]] + '-' +
-            bth[buf[i++]] + bth[buf[i++]] + '-' +
-            bth[buf[i++]] + bth[buf[i++]] +
-            bth[buf[i++]] + bth[buf[i++]] +
-            bth[buf[i++]] + bth[buf[i++]];
-  }
-
-  // **`v1()` - Generate time-based UUID**
-  //
-  // Inspired by https://github.com/LiosK/UUID.js
-  // and http://docs.python.org/library/uuid.html
-
-  // random #'s we need to init node and clockseq
-  var _seedBytes = _rng();
-
-  // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
-  var _nodeId = [
-    _seedBytes[0] | 0x01,
-    _seedBytes[1], _seedBytes[2], _seedBytes[3], _seedBytes[4], _seedBytes[5]
-  ];
-
-  // Per 4.2.2, randomize (14 bit) clockseq
-  var _clockseq = (_seedBytes[6] << 8 | _seedBytes[7]) & 0x3fff;
-
-  // Previous uuid creation time
-  var _lastMSecs = 0, _lastNSecs = 0;
-
-  // See https://github.com/broofa/node-uuid for API details
-  function v1(options, buf, offset) {
-    var i = buf && offset || 0;
-    var b = buf || [];
-
-    options = options || {};
-
-    var clockseq = options.clockseq != null ? options.clockseq : _clockseq;
-
-    // UUID timestamps are 100 nano-second units since the Gregorian epoch,
-    // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
-    // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
-    // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
-    var msecs = options.msecs != null ? options.msecs : new Date().getTime();
-
-    // Per 4.2.1.2, use count of uuid's generated during the current clock
-    // cycle to simulate higher resolution clock
-    var nsecs = options.nsecs != null ? options.nsecs : _lastNSecs + 1;
-
-    // Time since last uuid creation (in msecs)
-    var dt = (msecs - _lastMSecs) + (nsecs - _lastNSecs)/10000;
-
-    // Per 4.2.1.2, Bump clockseq on clock regression
-    if (dt < 0 && options.clockseq == null) {
-      clockseq = clockseq + 1 & 0x3fff;
-    }
-
-    // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
-    // time interval
-    if ((dt < 0 || msecs > _lastMSecs) && options.nsecs == null) {
-      nsecs = 0;
-    }
-
-    // Per 4.2.1.2 Throw error if too many uuids are requested
-    if (nsecs >= 10000) {
-      throw new Error('uuid.v1(): Can\'t create more than 10M uuids/sec');
-    }
-
-    _lastMSecs = msecs;
-    _lastNSecs = nsecs;
-    _clockseq = clockseq;
-
-    // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
-    msecs += 12219292800000;
-
-    // `time_low`
-    var tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
-    b[i++] = tl >>> 24 & 0xff;
-    b[i++] = tl >>> 16 & 0xff;
-    b[i++] = tl >>> 8 & 0xff;
-    b[i++] = tl & 0xff;
-
-    // `time_mid`
-    var tmh = (msecs / 0x100000000 * 10000) & 0xfffffff;
-    b[i++] = tmh >>> 8 & 0xff;
-    b[i++] = tmh & 0xff;
-
-    // `time_high_and_version`
-    b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
-    b[i++] = tmh >>> 16 & 0xff;
-
-    // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
-    b[i++] = clockseq >>> 8 | 0x80;
-
-    // `clock_seq_low`
-    b[i++] = clockseq & 0xff;
-
-    // `node`
-    var node = options.node || _nodeId;
-    for (var n = 0; n < 6; n++) {
-      b[i + n] = node[n];
-    }
-
-    return buf ? buf : unparse(b);
-  }
-
-  // **`v4()` - Generate random UUID**
-
-  // See https://github.com/broofa/node-uuid for API details
-  function v4(options, buf, offset) {
-    // Deprecated - 'format' argument, as supported in v1.2
-    var i = buf && offset || 0;
-
-    if (typeof(options) == 'string') {
-      buf = options == 'binary' ? new BufferClass(16) : null;
-      options = null;
-    }
-    options = options || {};
-
-    var rnds = options.random || (options.rng || _rng)();
-
-    // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
-    rnds[6] = (rnds[6] & 0x0f) | 0x40;
-    rnds[8] = (rnds[8] & 0x3f) | 0x80;
-
-    // Copy bytes to buffer, if provided
-    if (buf) {
-      for (var ii = 0; ii < 16; ii++) {
-        buf[i + ii] = rnds[ii];
-      }
-    }
-
-    return buf || unparse(rnds);
-  }
-
-  // Export public API
-  var uuid = v4;
-  uuid.v1 = v1;
-  uuid.v4 = v4;
-  uuid.parse = parse;
-  uuid.unparse = unparse;
-  uuid.BufferClass = BufferClass;
-
-  if (typeof define === 'function' && define.amd) {
-    // Publish as AMD module
-    define(function() {return uuid;});
-  } else if (typeof(module) != 'undefined' && module.exports) {
-    // Publish as node.js module
-    module.exports = uuid;
-  } else {
-    // Publish as global (in browsers)
-    var _previousRoot = _global.uuid;
-
-    // **`noConflict()` - (browser only) to reset global 'uuid' var**
-    uuid.noConflict = function() {
-      _global.uuid = _previousRoot;
-      return uuid;
-    };
-
-    _global.uuid = uuid;
-  }
-}).call(this);
-
-}).call(this,require("buffer").Buffer)
-},{"buffer":17,"crypto":24}],79:[function(require,module,exports){
-module.exports = require('./lib');
-
-},{"./lib":80}],80:[function(require,module,exports){
-// Load modules
-
-var Stringify = require('./stringify');
-var Parse = require('./parse');
-
-
-// Declare internals
-
-var internals = {};
-
-
-module.exports = {
-    stringify: Stringify,
-    parse: Parse
-};
-
-},{"./parse":81,"./stringify":82}],81:[function(require,module,exports){
-// Load modules
-
-var Utils = require('./utils');
-
-
-// Declare internals
-
-var internals = {
-    depth: 5,
-    arrayLimit: 20,
-    parametersLimit: 1000
-};
-
-
-internals.parseValues = function (str) {
-
-    var obj = {};
-    var parts = str.split('&').slice(0, internals.parametersLimit);
-
-    for (var i = 0, il = parts.length; i < il; ++i) {
-        var part = parts[i];
-        var pos = part.indexOf(']=') === -1 ? part.indexOf('=') : part.indexOf(']=') + 1;
-
-        if (pos === -1) {
-            obj[Utils.decode(part)] = '';
-        }
-        else {
-            var key = Utils.decode(part.slice(0, pos));
-            var val = Utils.decode(part.slice(pos + 1));
-
-            if (!obj[key]) {
-                obj[key] = val;
-            }
-            else {
-                obj[key] = [].concat(obj[key]).concat(val);
-            }
-        }
-    }
-
-    return obj;
-};
-
-
-internals.parseObject = function (chain, val) {
-
-    if (!chain.length) {
-        return val;
-    }
-
-    var root = chain.shift();
-
-    var obj = {};
-    if (root === '[]') {
-        obj = [];
-        obj = obj.concat(internals.parseObject(chain, val));
-    }
-    else {
-        var cleanRoot = root[0] === '[' && root[root.length - 1] === ']' ? root.slice(1, root.length - 1) : root;
-        var index = parseInt(cleanRoot, 10);
-        if (!isNaN(index) &&
-            root !== cleanRoot &&
-            index <= internals.arrayLimit) {
-
-            obj = [];
-            obj[index] = internals.parseObject(chain, val);
-        }
-        else {
-            obj[cleanRoot] = internals.parseObject(chain, val);
-        }
-    }
-
-    return obj;
-};
-
-
-internals.parseKeys = function (key, val, depth) {
-
-    if (!key) {
-        return;
-    }
-
-    depth = typeof depth === 'undefined' ? internals.depth : depth;
-
-    // The regex chunks
-
-    var parent = /^([^\[\]]*)/;
-    var child = /(\[[^\[\]]*\])/g;
-
-    // Get the parent
-
-    var segment = parent.exec(key);
-
-    // Don't allow them to overwrite object prototype properties
-
-    if (Object.prototype.hasOwnProperty(segment[1])) {
-        return;
-    }
-
-    // Stash the parent if it exists
-
-    var keys = [];
-    if (segment[1]) {
-        keys.push(segment[1]);
-    }
-
-    // Loop through children appending to the array until we hit depth
-
-    var i = 0;
-    while ((segment = child.exec(key)) !== null && i < depth) {
-
-        ++i;
-        if (!Object.prototype.hasOwnProperty(segment[1].replace(/\[|\]/g, ''))) {
-            keys.push(segment[1]);
-        }
-    }
-
-    // If there's a remainder, just add whatever is left
-
-    if (segment) {
-        keys.push('[' + key.slice(segment.index) + ']');
-    }
-
-    return internals.parseObject(keys, val);
-};
-
-
-module.exports = function (str, depth) {
-
-    if (str === '' ||
-        str === null ||
-        typeof str === 'undefined') {
-
-        return {};
-    }
-
-    var tempObj = typeof str === 'string' ? internals.parseValues(str) : Utils.clone(str);
-    var obj = {};
-
-    // Iterate over the keys and setup the new object
-
-    for (var key in tempObj) {
-        if (tempObj.hasOwnProperty(key)) {
-            var newObj = internals.parseKeys(key, tempObj[key], depth);
-            obj = Utils.merge(obj, newObj);
-        }
-    }
-
-    return Utils.compact(obj);
-};
-
-
-
-},{"./utils":83}],82:[function(require,module,exports){
-(function (Buffer){
-// Load modules
-
-
-// Declare internals
-
-var internals = {};
-
-
-internals.stringify = function (obj, prefix) {
-
-    if (Buffer.isBuffer(obj)) {
-        obj = obj.toString();
-    }
-    else if (obj instanceof Date) {
-        obj = obj.toISOString();
-    }
-
-    if (typeof obj === 'string' ||
-        typeof obj === 'number' ||
-        typeof obj === 'boolean') {
-
-        return [prefix + '=' + encodeURIComponent(obj)];
-    }
-
-    if (obj === null) {
-        return [prefix];
-    }
-
-    var values = [];
-
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            values = values.concat(internals.stringify(obj[key], prefix + '[' + encodeURIComponent(key) + ']'));
-        }
-    }
-
-    return values;
-};
-
-
-module.exports = function (obj) {
-
-    var keys = [];
-
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            keys = keys.concat(internals.stringify(obj[key], encodeURIComponent(key)));
-        }
-    }
-
-    return keys.join('&');
-};
-
-}).call(this,require("buffer").Buffer)
-},{"buffer":17}],83:[function(require,module,exports){
-(function (Buffer){
-// Load modules
-
-
-// Declare internals
-
-var internals = {};
-
-
-exports.arrayToObject = function (source) {
-
-    var obj = {};
-    for (var i = 0, il = source.length; i < il; ++i) {
-        if (source[i] !== undefined &&
-            source[i] !== null) {
-
-            obj[i] = source[i];
-        }
-    }
-
-    return obj;
-};
-
-
-exports.clone = function (source) {
-
-    if (typeof source !== 'object' ||
-        source === null) {
-
-        return source;
-    }
-
-    if (Buffer.isBuffer(source)) {
-        return source.toString();
-    }
-
-    var obj = Array.isArray(source) ? [] : {};
-    for (var i in source) {
-        if (source.hasOwnProperty(i)) {
-            obj[i] = exports.clone(source[i]);
-        }
-    }
-
-    return obj;
-};
-
-
-exports.merge = function (target, source) {
-
-    if (!source) {
-        return target;
-    }
-
-    var obj = exports.clone(target);
-
-    if (Array.isArray(source)) {
-        for (var i = 0, il = source.length; i < il; ++i) {
-            if (source[i] !== undefined) {
-                obj[i] = source[i];
-            }
-        }
-
-        return obj;
-    }
-
-    if (Array.isArray(obj)) {
-        obj = exports.arrayToObject(obj);
-    }
-
-    var keys = Object.keys(source);
-    for (var k = 0, kl = keys.length; k < kl; ++k) {
-        var key = keys[k];
-        var value = source[key];
-
-        if (value &&
-            typeof value === 'object') {
-
-            if (!obj[key]) {
-                obj[key] = exports.clone(value);
-            }
-            else {
-                obj[key] = exports.merge(obj[key], value);
-            }
-        }
-        else {
-            obj[key] = value;
-        }
-    }
-
-    return obj;
-};
-
-
-exports.decode = function (str) {
-
-    try {
-        return decodeURIComponent(str.replace(/\+/g, ' '));
-    } catch (e) {
-        return str;
-    }
-};
-
-
-exports.compact = function (obj) {
-
-    if (typeof obj !== 'object') {
-        return obj;
-    }
-
-    var compacted = {};
-
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            if (Array.isArray(obj[key])) {
-                compacted[key] = [];
-
-                for (var i = 0, l = obj[key].length; i < l; i++) {
-                    if (obj[key].hasOwnProperty(i) &&
-                        obj[key][i]) {
-
-                        compacted[key].push(obj[key][i]);
-                    }
-                }
-            }
-            else {
-                compacted[key] = exports.compact(obj[key]);
-            }
-        }
-    }
-
-    return compacted;
-};
-
-}).call(this,require("buffer").Buffer)
-},{"buffer":17}],84:[function(require,module,exports){
-(function (process,Buffer){
-var optional = require('./lib/optional')
-  , http = require('http')
-  , https = optional('https')
-  , tls = optional('tls')
-  , url = require('url')
-  , util = require('util')
-  , stream = require('stream')
-  , qs = require('qs')
-  , querystring = require('querystring')
-  , crypto = require('crypto')
-  , zlib = require('zlib')
-
-  , oauth = optional('oauth-sign')
-  , hawk = optional('hawk')
-  , aws = optional('aws-sign2')
-  , httpSignature = optional('http-signature')
-  , uuid = require('node-uuid')
-  , mime = require('mime-types')
-  , tunnel = optional('tunnel-agent')
-  , _safeStringify = require('json-stringify-safe')
-  , stringstream = optional('stringstream')
-
-  , ForeverAgent = require('forever-agent')
-  , FormData = optional('form-data')
-
-  , cookies = require('./lib/cookies')
-  , globalCookieJar = cookies.jar()
-
-  , copy = require('./lib/copy')
-  , debug = require('./lib/debug')
-  , getSafe = require('./lib/getSafe')
-  , net = require('net')
-  ;
-
-function safeStringify (obj) {
-  var ret
-  try { ret = JSON.stringify(obj) }
-  catch (e) { ret = _safeStringify(obj) }
-  return ret
-}
-
-var globalPool = {}
-var isUrl = /^https?:|^unix:/
-
-
-// Hacky fix for pre-0.4.4 https
-if (https && !https.Agent) {
-  https.Agent = function (options) {
-    http.Agent.call(this, options)
-  }
-  util.inherits(https.Agent, http.Agent)
-  https.Agent.prototype._getConnection = function (host, port, cb) {
-    var s = tls.connect(port, host, this.options, function () {
-      // do other checks here?
-      if (cb) cb()
-    })
-    return s
-  }
-}
-
-function isReadStream (rs) {
-  return rs.readable && rs.path && rs.mode;
-}
-
-function toBase64 (str) {
-  return (new Buffer(str || "", "ascii")).toString("base64")
-}
-
-function md5 (str) {
-  return crypto.createHash('md5').update(str).digest('hex')
-}
-
-function Request (options) {
-  stream.Stream.call(this)
-  this.readable = true
-  this.writable = true
-
-  if (typeof options === 'string') {
-    options = {uri:options}
-  }
-
-  var reserved = Object.keys(Request.prototype)
-  for (var i in options) {
-    if (reserved.indexOf(i) === -1) {
-      this[i] = options[i]
-    } else {
-      if (typeof options[i] === 'function') {
-        delete options[i]
-      }
-    }
-  }
-
-  if (options.method) {
-    this.explicitMethod = true
-  }
-
-  this.canTunnel = options.tunnel !== false && tunnel;
-
-  this.init(options)
-}
-util.inherits(Request, stream.Stream)
-Request.prototype.init = function (options) {
-  // init() contains all the code to setup the request object.
-  // the actual outgoing request is not started until start() is called
-  // this function is called from both the constructor and on redirect.
-  var self = this
-  if (!options) options = {}
-
-  if (!self.method) self.method = options.method || 'GET'
-  self.localAddress = options.localAddress
-
-  debug(options)
-  if (!self.pool && self.pool !== false) self.pool = globalPool
-  self.dests = self.dests || []
-  self.__isRequestRequest = true
-
-  // Protect against double callback
-  if (!self._callback && self.callback) {
-    self._callback = self.callback
-    self.callback = function () {
-      if (self._callbackCalled) return // Print a warning maybe?
-      self._callbackCalled = true
-      self._callback.apply(self, arguments)
-    }
-    self.on('error', self.callback.bind())
-    self.on('complete', self.callback.bind(self, null))
-  }
-
-  if (self.url && !self.uri) {
-    // People use this property instead all the time so why not just support it.
-    self.uri = self.url
-    delete self.url
-  }
-
-  if (!self.uri) {
-    // this will throw if unhandled but is handleable when in a redirect
-    return self.emit('error', new Error("options.uri is a required argument"))
-  } else {
-    if (typeof self.uri == "string") self.uri = url.parse(self.uri)
-  }
-
-  if (self.strictSSL === false) {
-    self.rejectUnauthorized = false
-  }
-
-  if(!self.hasOwnProperty('proxy')) {
-    // check for HTTP(S)_PROXY environment variables
-    if(self.uri.protocol == "http:") {
-        self.proxy = process.env.HTTP_PROXY || process.env.http_proxy || null;
-    } else if(self.uri.protocol == "https:") {
-        self.proxy = process.env.HTTPS_PROXY || process.env.https_proxy || 
-                     process.env.HTTP_PROXY || process.env.http_proxy || null;
-    }
-  }
-  
-  if (self.proxy) {
-    if (typeof self.proxy == 'string') self.proxy = url.parse(self.proxy)
-
-    // do the HTTP CONNECT dance using koichik/node-tunnel
-    if (http.globalAgent && self.uri.protocol === "https:" && self.canTunnel) {
-      var tunnelFn = self.proxy.protocol === "http:"
-                   ? tunnel.httpsOverHttp : tunnel.httpsOverHttps
-
-      var tunnelOptions = { proxy: { host: self.proxy.hostname
-                                   , port: +self.proxy.port
-                                   , proxyAuth: self.proxy.auth
-                                   , headers: { Host: self.uri.hostname + ':' +
-                                        (self.uri.port || self.uri.protocol === 'https:' ? 443 : 80) }}
-                          , rejectUnauthorized: self.rejectUnauthorized
-                          , ca: this.ca
-                          , cert:this.cert
-                          , key: this.key}
-
-      self.agent = tunnelFn(tunnelOptions)
-      self.tunnel = true
-    }
-  }
-
-  if (!self.uri.pathname) {self.uri.pathname = '/'}
-
-  if (!self.uri.host && !self.protocol=='unix:') {
-    // Invalid URI: it may generate lot of bad errors, like "TypeError: Cannot call method 'indexOf' of undefined" in CookieJar
-    // Detect and reject it as soon as possible
-    var faultyUri = url.format(self.uri)
-    var message = 'Invalid URI "' + faultyUri + '"'
-    if (Object.keys(options).length === 0) {
-      // No option ? This can be the sign of a redirect
-      // As this is a case where the user cannot do anything (they didn't call request directly with this URL)
-      // they should be warned that it can be caused by a redirection (can save some hair)
-      message += '. This can be caused by a crappy redirection.'
-    }
-    self.emit('error', new Error(message))
-    return // This error was fatal
-  }
-
-  self._redirectsFollowed = self._redirectsFollowed || 0
-  self.maxRedirects = (self.maxRedirects !== undefined) ? self.maxRedirects : 10
-  self.followRedirect = (self.followRedirect !== undefined) ? self.followRedirect : true
-  self.followAllRedirects = (self.followAllRedirects !== undefined) ? self.followAllRedirects : false
-  if (self.followRedirect || self.followAllRedirects)
-    self.redirects = self.redirects || []
-
-  self.headers = self.headers ? copy(self.headers) : {}
-
-  self.setHost = false
-  if (!self.hasHeader('host')) {
-    self.setHeader('host', self.uri.hostname)
-    if (self.uri.port) {
-      if ( !(self.uri.port === 80 && self.uri.protocol === 'http:') &&
-           !(self.uri.port === 443 && self.uri.protocol === 'https:') )
-      self.setHeader('host', self.getHeader('host') + (':'+self.uri.port) )
-    }
-    self.setHost = true
-  }
-
-  self.jar(self._jar || options.jar)
-
-  if (!self.uri.port) {
-    if (self.uri.protocol == 'http:') {self.uri.port = 80}
-    else if (self.uri.protocol == 'https:') {self.uri.port = 443}
-  }
-
-  if (self.proxy && !self.tunnel) {
-    self.port = self.proxy.port
-    self.host = self.proxy.hostname
-  } else {
-    self.port = self.uri.port
-    self.host = self.uri.hostname
-  }
-
-  self.clientErrorHandler = function (error) {
-    if (self._aborted) return
-    if (self.req && self.req._reusedSocket && error.code === 'ECONNRESET'
-        && self.agent.addRequestNoreuse) {
-      self.agent = { addRequest: self.agent.addRequestNoreuse.bind(self.agent) }
-      self.start()
-      self.req.end()
-      return
-    }
-    if (self.timeout && self.timeoutTimer) {
-      clearTimeout(self.timeoutTimer)
-      self.timeoutTimer = null
-    }
-    self.emit('error', error)
-  }
-
-  self._parserErrorHandler = function (error) {
-    if (this.res) {
-      if (this.res.request) {
-        this.res.request.emit('error', error)
-      } else {
-        this.res.emit('error', error)
-      }
-    } else {
-      this._httpMessage.emit('error', error)
-    }
-  }
-
-  self._buildRequest = function(){
-    var self = this;
-
-    if (options.form) {
-      self.form(options.form)
-    }
-
-    if (options.qs) self.qs(options.qs)
-
-    if (self.uri.path) {
-      self.path = self.uri.path
-    } else {
-      self.path = self.uri.pathname + (self.uri.search || "")
-    }
-
-    if (self.path.length === 0) self.path = '/'
-
-
-    // Auth must happen last in case signing is dependent on other headers
-    if (options.oauth) {
-      self.oauth(options.oauth)
-    }
-
-    if (options.aws) {
-      self.aws(options.aws)
-    }
-
-    if (options.hawk) {
-      self.hawk(options.hawk)
-    }
-
-    if (options.httpSignature) {
-      self.httpSignature(options.httpSignature)
-    }
-
-    if (options.auth) {
-      if (Object.prototype.hasOwnProperty.call(options.auth, 'username')) options.auth.user = options.auth.username
-      if (Object.prototype.hasOwnProperty.call(options.auth, 'password')) options.auth.pass = options.auth.password
-
-      self.auth(
-        options.auth.user,
-        options.auth.pass,
-        options.auth.sendImmediately,
-        options.auth.bearer
-      )
-    }
-
-    if (self.gzip && !self.hasHeader('accept-encoding')) {
-      self.setHeader('accept-encoding', 'gzip')
-    }
-
-    if (self.uri.auth && !self.hasHeader('authorization')) {
-      var authPieces = self.uri.auth.split(':').map(function(item){ return querystring.unescape(item) })
-      self.auth(authPieces[0], authPieces.slice(1).join(':'), true)
-    }
-    if (self.proxy && self.proxy.auth && !self.hasHeader('proxy-authorization') && !self.tunnel) {
-      self.setHeader('proxy-authorization', "Basic " + toBase64(self.proxy.auth.split(':').map(function(item){ return querystring.unescape(item)}).join(':')))
-    }
-
-
-    if (self.proxy && !self.tunnel) self.path = (self.uri.protocol + '//' + self.uri.host + self.path)
-
-    if (options.json) {
-      self.json(options.json)
-    } else if (options.multipart) {
-      self.boundary = uuid()
-      self.multipart(options.multipart)
-    }
-
-    if (self.body) {
-      var length = 0
-      if (!Buffer.isBuffer(self.body)) {
-        if (Array.isArray(self.body)) {
-          for (var i = 0; i < self.body.length; i++) {
-            length += self.body[i].length
-          }
-        } else {
-          self.body = new Buffer(self.body)
-          length = self.body.length
-        }
-      } else {
-        length = self.body.length
-      }
-      if (length) {
-        if (!self.hasHeader('content-length')) self.setHeader('content-length', length)
-      } else {
-        throw new Error('Argument error, options.body.')
-      }
-    }
-
-    var protocol = self.proxy && !self.tunnel ? self.proxy.protocol : self.uri.protocol
-      , defaultModules = {'http:':http, 'https:':https, 'unix:':http}
-      , httpModules = self.httpModules || {}
-      ;
-    self.httpModule = httpModules[protocol] || defaultModules[protocol]
-
-    if (!self.httpModule) return this.emit('error', new Error("Invalid protocol: " + protocol))
-
-    if (options.ca) self.ca = options.ca
-
-    if (!self.agent) {
-      if (options.agentOptions) self.agentOptions = options.agentOptions
-
-      if (options.agentClass) {
-        self.agentClass = options.agentClass
-      } else if (options.forever) {
-        self.agentClass = protocol === 'http:' ? ForeverAgent : ForeverAgent.SSL
-      } else {
-        self.agentClass = self.httpModule.Agent
-      }
-    }
-
-    if (self.pool === false) {
-      self.agent = false
-    } else {
-      self.agent = self.agent || self.getAgent()
-      if (self.maxSockets) {
-        // Don't use our pooling if node has the refactored client
-        self.agent.maxSockets = self.maxSockets
-      }
-      if (self.pool.maxSockets) {
-        // Don't use our pooling if node has the refactored client
-        self.agent.maxSockets = self.pool.maxSockets
-      }
-    }
-
-    self.on('pipe', function (src) {
-      if (self.ntick && self._started) throw new Error("You cannot pipe to this stream after the outbound request has started.")
-      self.src = src
-      if (isReadStream(src)) {
-        if (!self.hasHeader('content-type')) self.setHeader('content-type', mime.lookup(src.path))
-      } else {
-        if (src.headers) {
-          for (var i in src.headers) {
-            if (!self.hasHeader(i)) {
-              self.setHeader(i, src.headers[i])
-            }
-          }
-        }
-        if (self._json && !self.hasHeader('content-type'))
-          self.setHeader('content-type', 'application/json')
-        if (src.method && !self.explicitMethod) {
-          self.method = src.method
-        }
-      }
-
-      // self.on('pipe', function () {
-      //   console.error("You have already piped to this stream. Pipeing twice is likely to break the request.")
-      // })
-    })
-
-    process.nextTick(function () {
-      if (self._aborted) return
-
-      var end = function () {
-        if (self._form) {
-          self._form.pipe(self)
-        }
-        if (self.body) {
-          if (Array.isArray(self.body)) {
-            self.body.forEach(function (part) {
-              self.write(part)
-            })
-          } else {
-            self.write(self.body)
-          }
-          self.end()
-        } else if (self.requestBodyStream) {
-          console.warn("options.requestBodyStream is deprecated, please pass the request object to stream.pipe.")
-          self.requestBodyStream.pipe(self)
-        } else if (!self.src) {
-          if (self.method !== 'GET' && typeof self.method !== 'undefined') {
-            self.setHeader('content-length', 0)
-          }
-          self.end()
-        }
-      }
-
-      if (self._form && !self.hasHeader('content-length')) {
-        // Before ending the request, we had to compute the length of the whole form, asyncly
-        self.setHeaders(self._form.getHeaders())
-        self._form.getLength(function (err, length) {
-          if (!err) {
-            self.setHeader('content-length', length)
-          }
-          end()
-        })
-      } else {
-        end()
-      }
-
-      self.ntick = true
-    })
-
-  } // End _buildRequest
-
-  self._handleUnixSocketURI = function(self){
-    // Parse URI and extract a socket path (tested as a valid socket using net.connect), and a http style path suffix
-    // Thus http requests can be made to a socket using the uri unix://tmp/my.socket/urlpath
-    // and a request for '/urlpath' will be sent to the unix socket at /tmp/my.socket
-
-    self.unixsocket = true;
-
-    var full_path = self.uri.href.replace(self.uri.protocol+'/', '');
-
-    var lookup = full_path.split('/');
-    var error_connecting = true;
-
-    var lookup_table = {};
-    do { lookup_table[lookup.join('/')]={} } while(lookup.pop())
-    for (r in lookup_table){
-      try_next(r);
-    }
-
-    function try_next(table_row){
-      var client = net.connect( table_row );
-      client.path = table_row
-      client.on('error', function(){ lookup_table[this.path].error_connecting=true; this.end(); });
-      client.on('connect', function(){ lookup_table[this.path].error_connecting=false; this.end(); });
-      table_row.client = client;
-    }
-
-    wait_for_socket_response();
-
-    response_counter = 0;
-
-    function wait_for_socket_response(){
-      var detach;
-      if('undefined' == typeof setImmediate ) detach = process.nextTick
-      else detach = setImmediate;
-      detach(function(){
-        // counter to prevent infinite blocking waiting for an open socket to be found.
-        response_counter++;
-        var trying = false;
-        for (r in lookup_table){
-          //console.log(r, lookup_table[r], lookup_table[r].error_connecting)
-          if('undefined' == typeof lookup_table[r].error_connecting)
-            trying = true;
-        }
-        if(trying && response_counter<1000)
-          wait_for_socket_response()
-        else
-          set_socket_properties();
-      })
-    }
-
-    function set_socket_properties(){
-      var host;
-      for (r in lookup_table){
-        if(lookup_table[r].error_connecting === false){
-          host = r
-        }
-      }
-      if(!host){
-        self.emit('error', new Error("Failed to connect to any socket in "+full_path))
-      }
-      var path = full_path.replace(host, '')
-
-      self.socketPath = host
-      self.uri.pathname = path
-      self.uri.href = path
-      self.uri.path = path
-      self.host = ''
-      self.hostname = ''
-      delete self.host
-      delete self.hostname
-      self._buildRequest();
-    }
-  }
-
-  // Intercept UNIX protocol requests to change properties to match socket
-  if(/^unix:/.test(self.uri.protocol)){
-    self._handleUnixSocketURI(self);
-  } else {
-    self._buildRequest();
-  }
-
-}
-
-// Must call this when following a redirect from https to http or vice versa
-// Attempts to keep everything as identical as possible, but update the
-// httpModule, Tunneling agent, and/or Forever Agent in use.
-Request.prototype._updateProtocol = function () {
-  var self = this
-  var protocol = self.uri.protocol
-
-  if (protocol === 'https:') {
-    // previously was doing http, now doing https
-    // if it's https, then we might need to tunnel now.
-    if (self.proxy && self.canTunnel) {
-      self.tunnel = true
-      var tunnelFn = self.proxy.protocol === 'http:'
-                   ? tunnel.httpsOverHttp : tunnel.httpsOverHttps
-      var tunnelOptions = { proxy: { host: self.proxy.hostname
-                                   , port: +self.proxy.port
-                                   , proxyAuth: self.proxy.auth }
-                          , rejectUnauthorized: self.rejectUnauthorized
-                          , ca: self.ca }
-      self.agent = tunnelFn(tunnelOptions)
-      return
-    }
-
-    self.httpModule = https
-    switch (self.agentClass) {
-      case ForeverAgent:
-        self.agentClass = ForeverAgent.SSL
-        break
-      case http.Agent:
-        self.agentClass = https.Agent
-        break
-      default:
-        // nothing we can do.  Just hope for the best.
-        return
-    }
-
-    // if there's an agent, we need to get a new one.
-    if (self.agent) self.agent = self.getAgent()
-
-  } else {
-    // previously was doing https, now doing http
-    // stop any tunneling.
-    if (self.tunnel) self.tunnel = false
-    self.httpModule = http
-    switch (self.agentClass) {
-      case ForeverAgent.SSL:
-        self.agentClass = ForeverAgent
-        break
-      case https.Agent:
-        self.agentClass = http.Agent
-        break
-      default:
-        // nothing we can do.  just hope for the best
-        return
-    }
-
-    // if there's an agent, then get a new one.
-    if (self.agent) {
-      self.agent = null
-      self.agent = self.getAgent()
-    }
-  }
-}
-
-Request.prototype.getAgent = function () {
-  var Agent = this.agentClass
-  var options = {}
-  if (this.agentOptions) {
-    for (var i in this.agentOptions) {
-      options[i] = this.agentOptions[i]
-    }
-  }
-  if (this.ca) options.ca = this.ca
-  if (this.ciphers) options.ciphers = this.ciphers
-  if (this.secureProtocol) options.secureProtocol = this.secureProtocol
-  if (this.secureOptions) options.secureOptions = this.secureOptions
-  if (typeof this.rejectUnauthorized !== 'undefined') options.rejectUnauthorized = this.rejectUnauthorized
-
-  if (this.cert && this.key) {
-    options.key = this.key
-    options.cert = this.cert
-  }
-
-  var poolKey = ''
-
-  // different types of agents are in different pools
-  if (Agent !== this.httpModule.Agent) {
-    poolKey += Agent.name
-  }
-
-  if (!this.httpModule.globalAgent) {
-    // node 0.4.x
-    options.host = this.host
-    options.port = this.port
-    if (poolKey) poolKey += ':'
-    poolKey += this.host + ':' + this.port
-  }
-
-  // ca option is only relevant if proxy or destination are https
-  var proxy = this.proxy
-  if (typeof proxy === 'string') proxy = url.parse(proxy)
-  var isHttps = (proxy && proxy.protocol === 'https:') || this.uri.protocol === 'https:'
-  if (isHttps) {
-    if (options.ca) {
-      if (poolKey) poolKey += ':'
-      poolKey += options.ca
-    }
-
-    if (typeof options.rejectUnauthorized !== 'undefined') {
-      if (poolKey) poolKey += ':'
-      poolKey += options.rejectUnauthorized
-    }
-
-    if (options.cert)
-      poolKey += options.cert.toString('ascii') + options.key.toString('ascii')
-
-    if (options.ciphers) {
-      if (poolKey) poolKey += ':'
-      poolKey += options.ciphers
-    }
-
-    if (options.secureProtocol) {
-      if (poolKey) poolKey += ':'
-      poolKey += options.secureProtocol
-    }
-
-    if (options.secureOptions) {
-      if (poolKey) poolKey += ':'
-      poolKey += options.secureOptions
-    }
-  }
-
-  if (this.pool === globalPool && !poolKey && Object.keys(options).length === 0 && this.httpModule.globalAgent) {
-    // not doing anything special.  Use the globalAgent
-    return this.httpModule.globalAgent
-  }
-
-  // we're using a stored agent.  Make sure it's protocol-specific
-  poolKey = this.uri.protocol + poolKey
-
-  // already generated an agent for this setting
-  if (this.pool[poolKey]) return this.pool[poolKey]
-
-  return this.pool[poolKey] = new Agent(options)
-}
-
-Request.prototype.start = function () {
-  // start() is called once we are ready to send the outgoing HTTP request.
-  // this is usually called on the first write(), end() or on nextTick()
-  var self = this
-
-  if (self._aborted) return
-
-  self._started = true
-  self.method = self.method || 'GET'
-  self.href = self.uri.href
-
-  if (self.src && self.src.stat && self.src.stat.size && !self.hasHeader('content-length')) {
-    self.setHeader('content-length', self.src.stat.size)
-  }
-  if (self._aws) {
-    self.aws(self._aws, true)
-  }
-
-  // We have a method named auth, which is completely different from the http.request
-  // auth option.  If we don't remove it, we're gonna have a bad time.
-  var reqOptions = copy(self)
-  delete reqOptions.auth
-
-  debug('make request', self.uri.href)
-  self.req = self.httpModule.request(reqOptions, self.onResponse.bind(self))
-
-  if (self.timeout && !self.timeoutTimer) {
-    self.timeoutTimer = setTimeout(function () {
-      self.req.abort()
-      var e = new Error("ETIMEDOUT")
-      e.code = "ETIMEDOUT"
-      self.emit("error", e)
-    }, self.timeout)
-
-    // Set additional timeout on socket - in case if remote
-    // server freeze after sending headers
-    if (self.req.setTimeout) { // only works on node 0.6+
-      self.req.setTimeout(self.timeout, function () {
-        if (self.req) {
-          self.req.abort()
-          var e = new Error("ESOCKETTIMEDOUT")
-          e.code = "ESOCKETTIMEDOUT"
-          self.emit("error", e)
-        }
-      })
-    }
-  }
-
-  self.req.on('error', self.clientErrorHandler)
-  self.req.on('drain', function() {
-    self.emit('drain')
-  })
-  self.on('end', function() {
-    if ( self.req.connection ) self.req.connection.removeListener('error', self._parserErrorHandler)
-  })
-  self.emit('request', self.req)
-}
-Request.prototype.onResponse = function (response) {
-  var self = this
-  debug('onResponse', self.uri.href, response.statusCode, response.headers)
-  response.on('end', function() {
-    debug('response end', self.uri.href, response.statusCode, response.headers)
-  });
-
-  // The check on response.connection is a workaround for browserify.
-  if (response.connection && response.connection.listeners('error').indexOf(self._parserErrorHandler) === -1) {
-    response.connection.setMaxListeners(0)
-    response.connection.once('error', self._parserErrorHandler)
-  }
-  if (self._aborted) {
-    debug('aborted', self.uri.href)
-    response.resume()
-    return
-  }
-  if (self._paused) response.pause()
-  // Check that response.resume is defined. Workaround for browserify.
-  else response.resume && response.resume()
-
-  self.response = response
-  response.request = self
-  response.toJSON = toJSON
-
-  // XXX This is different on 0.10, because SSL is strict by default
-  if (self.httpModule === https &&
-      self.strictSSL &&
-      !response.client.authorized) {
-    debug('strict ssl error', self.uri.href)
-    var sslErr = response.client.authorizationError
-    self.emit('error', new Error('SSL Error: '+ sslErr))
-    return
-  }
-
-  if (self.setHost && self.hasHeader('host')) delete self.headers[self.hasHeader('host')]
-  if (self.timeout && self.timeoutTimer) {
-    clearTimeout(self.timeoutTimer)
-    self.timeoutTimer = null
-  }
-
-  var targetCookieJar = (self._jar && self._jar.setCookie)?self._jar:globalCookieJar;
-  var addCookie = function (cookie) {
-    //set the cookie if it's domain in the href's domain.
-    try {
-      targetCookieJar.setCookie(cookie, self.uri.href, {ignoreError: true});
-    } catch (e) {
-      self.emit('error', e);
-    }
-  }
-
-  if (hasHeader('set-cookie', response.headers) && (!self._disableCookies)) {
-    var headerName = hasHeader('set-cookie', response.headers)
-    if (Array.isArray(response.headers[headerName])) response.headers[headerName].forEach(addCookie)
-    else addCookie(response.headers[headerName])
-  }
-
-  var redirectTo = null
-  if (response.statusCode >= 300 && response.statusCode < 400 && hasHeader('location', response.headers)) {
-    var location = response.headers[hasHeader('location', response.headers)]
-    debug('redirect', location)
-
-    if (self.followAllRedirects) {
-      redirectTo = location
-    } else if (self.followRedirect) {
-      switch (self.method) {
-        case 'PATCH':
-        case 'PUT':
-        case 'POST':
-        case 'DELETE':
-          // Do not follow redirects
-          break
-        default:
-          redirectTo = location
-          break
-      }
-    }
-  } else if (response.statusCode == 401 && self._hasAuth && !self._sentAuth) {
-    var authHeader = response.headers[hasHeader('www-authenticate', response.headers)]
-    var authVerb = authHeader && authHeader.split(' ')[0].toLowerCase()
-    debug('reauth', authVerb)
-
-    switch (authVerb) {
-      case 'basic':
-        self.auth(self._user, self._pass, true)
-        redirectTo = self.uri
-        break
-
-      case 'bearer':
-        self.auth(null, null, true, self._bearer)
-        redirectTo = self.uri
-        break
-
-      case 'digest':
-        // TODO: More complete implementation of RFC 2617.
-        //   - check challenge.algorithm
-        //   - support algorithm="MD5-sess"
-        //   - handle challenge.domain
-        //   - support qop="auth-int" only
-        //   - handle Authentication-Info (not necessarily?)
-        //   - check challenge.stale (not necessarily?)
-        //   - increase nc (not necessarily?)
-        // For reference:
-        // http://tools.ietf.org/html/rfc2617#section-3
-        // https://github.com/bagder/curl/blob/master/lib/http_digest.c
-
-        var challenge = {}
-        var re = /([a-z0-9_-]+)=(?:"([^"]+)"|([a-z0-9_-]+))/gi
-        for (;;) {
-          var match = re.exec(authHeader)
-          if (!match) break
-          challenge[match[1]] = match[2] || match[3];
-        }
-
-        var ha1 = md5(self._user + ':' + challenge.realm + ':' + self._pass)
-        var ha2 = md5(self.method + ':' + self.uri.path)
-        var qop = /(^|,)\s*auth\s*($|,)/.test(challenge.qop) && 'auth'
-        var nc = qop && '00000001'
-        var cnonce = qop && uuid().replace(/-/g, '')
-        var digestResponse = qop ? md5(ha1 + ':' + challenge.nonce + ':' + nc + ':' + cnonce + ':' + qop + ':' + ha2) : md5(ha1 + ':' + challenge.nonce + ':' + ha2)
-        var authValues = {
-          username: self._user,
-          realm: challenge.realm,
-          nonce: challenge.nonce,
-          uri: self.uri.path,
-          qop: qop,
-          response: digestResponse,
-          nc: nc,
-          cnonce: cnonce,
-          algorithm: challenge.algorithm,
-          opaque: challenge.opaque
-        }
-
-        authHeader = []
-        for (var k in authValues) {
-          if (!authValues[k]) {
-            //ignore
-          } else if (k === 'qop' || k === 'nc' || k === 'algorithm') {
-            authHeader.push(k + '=' + authValues[k])
-          } else {
-            authHeader.push(k + '="' + authValues[k] + '"')
-          }
-        }
-        authHeader = 'Digest ' + authHeader.join(', ')
-        self.setHeader('authorization', authHeader)
-        self._sentAuth = true
-
-        redirectTo = self.uri
-        break
-    }
-  }
-
-  if (redirectTo) {
-    debug('redirect to', redirectTo)
-
-    // ignore any potential response body.  it cannot possibly be useful
-    // to us at this point.
-    if (self._paused) response.resume()
-
-    if (self._redirectsFollowed >= self.maxRedirects) {
-      self.emit('error', new Error("Exceeded maxRedirects. Probably stuck in a redirect loop "+self.uri.href))
-      return
-    }
-    self._redirectsFollowed += 1
-
-    if (!isUrl.test(redirectTo)) {
-      redirectTo = url.resolve(self.uri.href, redirectTo)
-    }
-
-    var uriPrev = self.uri
-    self.uri = url.parse(redirectTo)
-
-    // handle the case where we change protocol from https to http or vice versa
-    if (self.uri.protocol !== uriPrev.protocol) {
-      self._updateProtocol()
-    }
-
-    self.redirects.push(
-      { statusCode : response.statusCode
-      , redirectUri: redirectTo
-      }
-    )
-    if (self.followAllRedirects && response.statusCode != 401 && response.statusCode != 307) self.method = 'GET'
-    // self.method = 'GET' // Force all redirects to use GET || commented out fixes #215
-    delete self.src
-    delete self.req
-    delete self.agent
-    delete self._started
-    if (response.statusCode != 401 && response.statusCode != 307) {
-      // Remove parameters from the previous response, unless this is the second request
-      // for a server that requires digest authentication.
-      delete self.body
-      delete self._form
-      if (self.headers) {
-        if (self.hasHeader('host')) delete self.headers[self.hasHeader('host')]
-        if (self.hasHeader('content-type')) delete self.headers[self.hasHeader('content-type')]
-        if (self.hasHeader('content-length')) delete self.headers[self.hasHeader('content-length')]
-      }
-    }
-
-    self.emit('redirect');
-
-    self.init()
-    return // Ignore the rest of the response
-  } else {
-    self._redirectsFollowed = self._redirectsFollowed || 0
-    // Be a good stream and emit end when the response is finished.
-    // Hack to emit end on close because of a core bug that never fires end
-    response.on('close', function () {
-      if (!self._ended) self.response.emit('end')
-    })
-
-    var dataStream
-    if (self.gzip) {
-      var contentEncoding = response.headers["content-encoding"] || "identity"
-      contentEncoding = contentEncoding.trim().toLowerCase()
-
-      if (contentEncoding === "gzip") {
-        dataStream = zlib.createGunzip()
-        response.pipe(dataStream)
-      } else {
-        // Since previous versions didn't check for Content-Encoding header,
-        // ignore any invalid values to preserve backwards-compatibility
-        if (contentEncoding !== "identity") {
-          debug("ignoring unrecognized Content-Encoding " + contentEncoding)
-        }
-        dataStream = response
-      }
-    } else {
-      dataStream = response
-    }
-
-    if (self.encoding) {
-      if (self.dests.length !== 0) {
-        console.error("Ignoring encoding parameter as this stream is being piped to another stream which makes the encoding option invalid.")
-      } else if (dataStream.setEncoding) {
-        dataStream.setEncoding(self.encoding)
-      } else {
-        // Should only occur on node pre-v0.9.4 (joyent/node@9b5abe5) with
-        // zlib streams.
-        // If/When support for 0.9.4 is dropped, this should be unnecessary.
-        dataStream = dataStream.pipe(stringstream(self.encoding))
-      }
-    }
-
-    self.emit('response', response)
-
-    self.dests.forEach(function (dest) {
-      self.pipeDest(dest)
-    })
-
-    dataStream.on("data", function (chunk) {
-      self._destdata = true
-      self.emit("data", chunk)
-    })
-    dataStream.on("end", function (chunk) {
-      self._ended = true
-      self.emit("end", chunk)
-    })
-    dataStream.on("close", function () {self.emit("close")})
-
-    if (self.callback) {
-      var buffer = []
-      var bodyLen = 0
-      self.on("data", function (chunk) {
-        buffer.push(chunk)
-        bodyLen += chunk.length
-      })
-      self.on("end", function () {
-        debug('end event', self.uri.href)
-        if (self._aborted) {
-          debug('aborted', self.uri.href)
-          return
-        }
-
-        if (buffer.length && Buffer.isBuffer(buffer[0])) {
-          debug('has body', self.uri.href, bodyLen)
-          var body = new Buffer(bodyLen)
-          var i = 0
-          buffer.forEach(function (chunk) {
-            chunk.copy(body, i, 0, chunk.length)
-            i += chunk.length
-          })
-          if (self.encoding === null) {
-            response.body = body
-          } else {
-            response.body = body.toString(self.encoding)
-          }
-        } else if (buffer.length) {
-          // The UTF8 BOM [0xEF,0xBB,0xBF] is converted to [0xFE,0xFF] in the JS UTC16/UCS2 representation.
-          // Strip this value out when the encoding is set to 'utf8', as upstream consumers won't expect it and it breaks JSON.parse().
-          if (self.encoding === 'utf8' && buffer[0].length > 0 && buffer[0][0] === "\uFEFF") {
-            buffer[0] = buffer[0].substring(1)
-          }
-          response.body = buffer.join('')
-        }
-
-        if (self._json) {
-          try {
-            response.body = JSON.parse(response.body)
-          } catch (e) {}
-        }
-        debug('emitting complete', self.uri.href)
-        if(response.body == undefined && !self._json) {
-          response.body = "";
-        }
-        self.emit('complete', response, response.body)
-      })
-    }
-    //if no callback
-    else{
-      self.on("end", function () {
-        if (self._aborted) {
-          debug('aborted', self.uri.href)
-          return
-        }
-        self.emit('complete', response);
-      });
-    }
-  }
-  debug('finish init function', self.uri.href)
-}
-
-Request.prototype.abort = function () {
-  this._aborted = true
-
-  if (this.req) {
-    this.req.abort()
-  }
-  else if (this.response) {
-    this.response.abort()
-  }
-
-  this.emit("abort")
-}
-
-Request.prototype.pipeDest = function (dest) {
-  var response = this.response
-  // Called after the response is received
-  if (dest.headers && !dest.headersSent) {
-    if (hasHeader('content-type', response.headers)) {
-      var ctname = hasHeader('content-type', response.headers)
-      if (dest.setHeader) dest.setHeader(ctname, response.headers[ctname])
-      else dest.headers[ctname] = response.headers[ctname]
-    }
-
-    if (hasHeader('content-length', response.headers)) {
-      var clname = hasHeader('content-length', response.headers)
-      if (dest.setHeader) dest.setHeader(clname, response.headers[clname])
-      else dest.headers[clname] = response.headers[clname]
-    }
-  }
-  if (dest.setHeader && !dest.headersSent) {
-    for (var i in response.headers) {
-      // If the response content is being decoded, the Content-Encoding header
-      // of the response doesn't represent the piped content, so don't pass it.
-      if (!this.gzip || i !== 'content-encoding') {
-        dest.setHeader(i, response.headers[i])
-      }
-    }
-    dest.statusCode = response.statusCode
-  }
-  if (this.pipefilter) this.pipefilter(response, dest)
-}
-
-// Composable API
-Request.prototype.setHeader = function (name, value, clobber) {
-  if (clobber === undefined) clobber = true
-  if (clobber || !this.hasHeader(name)) this.headers[name] = value
-  else this.headers[this.hasHeader(name)] += ',' + value
-  return this
-}
-Request.prototype.setHeaders = function (headers) {
-  for (var i in headers) {this.setHeader(i, headers[i])}
-  return this
-}
-Request.prototype.hasHeader = function (header, headers) {
-  var headers = Object.keys(headers || this.headers)
-    , lheaders = headers.map(function (h) {return h.toLowerCase()})
-    ;
-  header = header.toLowerCase()
-  for (var i=0;i<lheaders.length;i++) {
-    if (lheaders[i] === header) return headers[i]
-  }
-  return false
-}
-
-var hasHeader = Request.prototype.hasHeader
-
-Request.prototype.qs = function (q, clobber) {
-  var base
-  if (!clobber && this.uri.query) base = qs.parse(this.uri.query)
-  else base = {}
-
-  for (var i in q) {
-    base[i] = q[i]
-  }
-
-  if (qs.stringify(base) === ''){
-    return this
-  }
-
-  this.uri = url.parse(this.uri.href.split('?')[0] + '?' + qs.stringify(base))
-  this.url = this.uri
-  this.path = this.uri.path
-
-  return this
-}
-Request.prototype.form = function (form) {
-  if (form) {
-    this.setHeader('content-type', 'application/x-www-form-urlencoded; charset=utf-8')
-    this.body = (typeof form === 'string') ? form.toString('utf8') : qs.stringify(form).toString('utf8')
-    return this
-  }
-  // create form-data object
-  this._form = new FormData()
-  return this._form
-}
-Request.prototype.multipart = function (multipart) {
-  var self = this
-  self.body = []
-
-  if (!self.hasHeader('content-type')) {
-    self.setHeader('content-type', 'multipart/related; boundary=' + self.boundary)
-  } else {
-    var headerName = self.hasHeader('content-type');
-    self.setHeader(headerName, self.headers[headerName].split(';')[0] + '; boundary=' + self.boundary)
-  }
-
-  if (!multipart.forEach) throw new Error('Argument error, options.multipart.')
-
-  if (self.preambleCRLF) {
-    self.body.push(new Buffer('\r\n'))
-  }
-
-  multipart.forEach(function (part) {
-    var body = part.body
-    if(body == null) throw Error('Body attribute missing in multipart.')
-    delete part.body
-    var preamble = '--' + self.boundary + '\r\n'
-    Object.keys(part).forEach(function (key) {
-      preamble += key + ': ' + part[key] + '\r\n'
-    })
-    preamble += '\r\n'
-    self.body.push(new Buffer(preamble))
-    self.body.push(new Buffer(body))
-    self.body.push(new Buffer('\r\n'))
-  })
-  self.body.push(new Buffer('--' + self.boundary + '--'))
-  return self
-}
-Request.prototype.json = function (val) {
-  var self = this
-
-  if (!self.hasHeader('accept')) self.setHeader('accept', 'application/json')
-
-  this._json = true
-  if (typeof val === 'boolean') {
-    if (typeof this.body === 'object') {
-      this.body = safeStringify(this.body)
-      if (!self.hasHeader('content-type'))
-        self.setHeader('content-type', 'application/json')
-    }
-  } else {
-    this.body = safeStringify(val)
-    if (!self.hasHeader('content-type'))
-      self.setHeader('content-type', 'application/json')
-  }
-
-  return this
-}
-Request.prototype.getHeader = function (name, headers) {
-  var result, re, match
-  if (!headers) headers = this.headers
-  Object.keys(headers).forEach(function (key) {
-    if (key.length !== name.length) return
-    re = new RegExp(name, 'i')
-    match = key.match(re)
-    if (match) result = headers[key]
-  })
-  return result
-}
-var getHeader = Request.prototype.getHeader
-
-Request.prototype.auth = function (user, pass, sendImmediately, bearer) {
-  if (bearer !== undefined) {
-    this._bearer = bearer
-    this._hasAuth = true
-    if (sendImmediately || typeof sendImmediately == 'undefined') {
-      if (typeof bearer === 'function') {
-        bearer = bearer()
-      }
-      this.setHeader('authorization', 'Bearer ' + bearer)
-      this._sentAuth = true
-    }
-    return this
-  }
-  if (typeof user !== 'string' || (pass !== undefined && typeof pass !== 'string')) {
-    throw new Error('auth() received invalid user or password')
-  }
-  this._user = user
-  this._pass = pass
-  this._hasAuth = true
-  var header = typeof pass !== 'undefined' ? user + ':' + pass : user
-  if (sendImmediately || typeof sendImmediately == 'undefined') {
-    this.setHeader('authorization', 'Basic ' + toBase64(header))
-    this._sentAuth = true
-  }
-  return this
-}
-Request.prototype.aws = function (opts, now) {
-  if (!now) {
-    this._aws = opts
-    return this
-  }
-  var date = new Date()
-  this.setHeader('date', date.toUTCString())
-  var auth =
-    { key: opts.key
-    , secret: opts.secret
-    , verb: this.method.toUpperCase()
-    , date: date
-    , contentType: this.getHeader('content-type') || ''
-    , md5: this.getHeader('content-md5') || ''
-    , amazonHeaders: aws.canonicalizeHeaders(this.headers)
-    }
-  if (opts.bucket && this.path) {
-    auth.resource = '/' + opts.bucket + this.path
-  } else if (opts.bucket && !this.path) {
-    auth.resource = '/' + opts.bucket
-  } else if (!opts.bucket && this.path) {
-    auth.resource = this.path
-  } else if (!opts.bucket && !this.path) {
-    auth.resource = '/'
-  }
-  auth.resource = aws.canonicalizeResource(auth.resource)
-  this.setHeader('authorization', aws.authorization(auth))
-
-  return this
-}
-Request.prototype.httpSignature = function (opts) {
-  var req = this
-  httpSignature.signRequest({
-    getHeader: function(header) {
-      return getHeader(header, req.headers)
-    },
-    setHeader: function(header, value) {
-      req.setHeader(header, value)
-    },
-    method: this.method,
-    path: this.path
-  }, opts)
-  debug('httpSignature authorization', this.getHeader('authorization'))
-
-  return this
-}
-
-Request.prototype.hawk = function (opts) {
-  this.setHeader('Authorization', hawk.client.header(this.uri, this.method, opts).field)
-}
-
-Request.prototype.oauth = function (_oauth) {
-  var form
-  if (this.hasHeader('content-type') &&
-      this.getHeader('content-type').slice(0, 'application/x-www-form-urlencoded'.length) ===
-        'application/x-www-form-urlencoded'
-     ) {
-    form = qs.parse(this.body)
-  }
-  if (this.uri.query) {
-    form = qs.parse(this.uri.query)
-  }
-  if (!form) form = {}
-  var oa = {}
-  for (var i in form) oa[i] = form[i]
-  for (var i in _oauth) oa['oauth_'+i] = _oauth[i]
-  if (!oa.oauth_version) oa.oauth_version = '1.0'
-  if (!oa.oauth_timestamp) oa.oauth_timestamp = Math.floor( Date.now() / 1000 ).toString()
-  if (!oa.oauth_nonce) oa.oauth_nonce = uuid().replace(/-/g, '')
-
-  oa.oauth_signature_method = 'HMAC-SHA1'
-
-  var consumer_secret = oa.oauth_consumer_secret
-  delete oa.oauth_consumer_secret
-  var token_secret = oa.oauth_token_secret
-  delete oa.oauth_token_secret
-  var timestamp = oa.oauth_timestamp
-
-  var baseurl = this.uri.protocol + '//' + this.uri.host + this.uri.pathname
-  var signature = oauth.hmacsign(this.method, baseurl, oa, consumer_secret, token_secret)
-
-  // oa.oauth_signature = signature
-  for (var i in form) {
-    if ( i.slice(0, 'oauth_') in _oauth) {
-      // skip
-    } else {
-      delete oa['oauth_'+i]
-      if (i !== 'x_auth_mode') delete oa[i]
-    }
-  }
-  oa.oauth_timestamp = timestamp
-  var authHeader = 'OAuth '+Object.keys(oa).sort().map(function (i) {return i+'="'+oauth.rfc3986(oa[i])+'"'}).join(',')
-  authHeader += ',oauth_signature="' + oauth.rfc3986(signature) + '"'
-  this.setHeader('Authorization', authHeader)
-  return this
-}
-Request.prototype.jar = function (jar) {
-  var cookies
-
-  if (this._redirectsFollowed === 0) {
-    this.originalCookieHeader = this.getHeader('cookie')
-  }
-
-  if (!jar) {
-    // disable cookies
-    cookies = false
-    this._disableCookies = true
-  } else {
-    var targetCookieJar = (jar && jar.getCookieString)?jar:globalCookieJar;
-    var urihref = this.uri.href
-    //fetch cookie in the Specified host
-    if (targetCookieJar) {
-      cookies = targetCookieJar.getCookieString(urihref);
-    }
-  }
-
-  //if need cookie and cookie is not empty
-  if (cookies && cookies.length) {
-    if (this.originalCookieHeader) {
-      // Don't overwrite existing Cookie header
-      this.setHeader('cookie', this.originalCookieHeader + '; ' + cookies)
-    } else {
-      this.setHeader('cookie', cookies)
-    }
-  }
-  this._jar = jar
-  return this
-}
-
-
-// Stream API
-Request.prototype.pipe = function (dest, opts) {
-  if (this.response) {
-    if (this._destdata) {
-      throw new Error("You cannot pipe after data has been emitted from the response.")
-    } else if (this._ended) {
-      throw new Error("You cannot pipe after the response has been ended.")
-    } else {
-      stream.Stream.prototype.pipe.call(this, dest, opts)
-      this.pipeDest(dest)
-      return dest
-    }
-  } else {
-    this.dests.push(dest)
-    stream.Stream.prototype.pipe.call(this, dest, opts)
-    return dest
-  }
-}
-Request.prototype.write = function () {
-  if (!this._started) this.start()
-  return this.req.write.apply(this.req, arguments)
-}
-Request.prototype.end = function (chunk) {
-  if (chunk) this.write(chunk)
-  if (!this._started) this.start()
-  this.req.end()
-}
-Request.prototype.pause = function () {
-  if (!this.response) this._paused = true
-  else this.response.pause.apply(this.response, arguments)
-}
-Request.prototype.resume = function () {
-  if (!this.response) this._paused = false
-  else this.response.resume.apply(this.response, arguments)
-}
-Request.prototype.destroy = function () {
-  if (!this._ended) this.end()
-  else if (this.response) this.response.destroy()
-}
-
-function toJSON () {
-  return getSafe(this, '__' + (((1+Math.random())*0x10000)|0).toString(16))
-}
-
-Request.prototype.toJSON = toJSON
-
-
-module.exports = Request
-
-}).call(this,require('_process'),require("buffer").Buffer)
-},{"./lib/cookies":67,"./lib/copy":68,"./lib/debug":69,"./lib/getSafe":70,"./lib/optional":71,"_process":44,"buffer":17,"crypto":24,"forever-agent":72,"http":37,"json-stringify-safe":73,"mime-types":75,"net":1,"node-uuid":78,"qs":79,"querystring":48,"stream":60,"url":62,"util":64,"zlib":16}],85:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var RootView = require("../views/RootView");
 var View = require("../views/View");
@@ -20439,7 +8237,7 @@ FiddleClient.prototype.updateLayout = function(width, height) {
 
 
 module.exports = FiddleClient;
-},{"../controllers/EditorController":88,"../controllers/TargetController":93,"../utils/ClassUtils":97,"../views/EditorControllerView":100,"../views/RootView":110,"../views/TargetControllerView":113,"../views/View":115}],86:[function(require,module,exports){
+},{"../controllers/EditorController":55,"../controllers/TargetController":60,"../utils/ClassUtils":64,"../views/EditorControllerView":67,"../views/RootView":77,"../views/TargetControllerView":80,"../views/View":82}],53:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
@@ -20471,7 +8269,7 @@ ColorsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = ColorsEditor;
-},{"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"../views/ColorItem":99,"./Editor":87}],87:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"../views/ColorItem":66,"./Editor":54}],54:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
 
@@ -20522,7 +8320,7 @@ Editor.prototype.onSaved = function(data) {
 };
 
 module.exports = Editor;
-},{"../utils/APIConnection":96,"../utils/EventDispatcher":98}],88:[function(require,module,exports){
+},{"../utils/APIConnection":63,"../utils/EventDispatcher":65}],55:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var EditorView = require("../views/EditorView");
 var Editor = require("../controllers/Editor");
@@ -20643,7 +8441,7 @@ EditorController.prototype.onSaved = function(textureJson) {
 };
 
 module.exports = EditorController;
-},{"../controllers/ColorsEditor":86,"../controllers/Editor":87,"../controllers/GraphicsEditor":89,"../controllers/Menu":90,"../controllers/PositionsEditor":91,"../controllers/StringsEditor":92,"../utils/EventDispatcher":98,"../views/EditorView":101,"../views/MenuItem":107,"../views/MenuView":108}],89:[function(require,module,exports){
+},{"../controllers/ColorsEditor":53,"../controllers/Editor":54,"../controllers/GraphicsEditor":56,"../controllers/Menu":57,"../controllers/PositionsEditor":58,"../controllers/StringsEditor":59,"../utils/EventDispatcher":65,"../views/EditorView":68,"../views/MenuItem":74,"../views/MenuView":75}],56:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
@@ -20710,7 +8508,7 @@ GraphicsEditor.prototype.onUploaded = function(data) {
 };
 
 module.exports = GraphicsEditor;
-},{"../../../lib/Resources":116,"../utils/APIConnection":96,"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"../views/ImageItem":103,"../views/SelectButton":111,"./Editor":87}],90:[function(require,module,exports){
+},{"../../../lib/Resources":83,"../utils/APIConnection":63,"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"../views/ImageItem":70,"../views/SelectButton":78,"./Editor":54}],57:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var MenuItem = require("../views/MenuItem");
 
@@ -20754,7 +8552,7 @@ Menu.prototype.onMenuItemClick = function(menuItem) {
 
 module.exports = Menu;
 
-},{"../utils/EventDispatcher":98,"../views/MenuItem":107}],91:[function(require,module,exports){
+},{"../utils/EventDispatcher":65,"../views/MenuItem":74}],58:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
@@ -20789,7 +8587,7 @@ PositionsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = PositionsEditor;
-},{"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"../views/PositionItem":109,"./Editor":87}],92:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"../views/PositionItem":76,"./Editor":54}],59:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var Editor = require("./Editor");
 var StringItem = require("../views/StringItem");
@@ -20817,7 +8615,7 @@ StringsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = StringsEditor;
-},{"../utils/ClassUtils":97,"../views/StringItem":112,"./Editor":87}],93:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../views/StringItem":79,"./Editor":54}],60:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var Menu = require("../controllers/Menu");
 var MenuItem = require("../views/MenuItem");
@@ -20877,10 +8675,10 @@ TargetController.prototype.onChangeView = function(item) {
 };
 
 module.exports = TargetController;
-},{"../controllers/Menu":90,"../models/Testcase":95,"../utils/EventDispatcher":98,"../views/IFrameView":102,"../views/MenuItem":107,"../views/MenuView":108}],94:[function(require,module,exports){
+},{"../controllers/Menu":57,"../models/Testcase":62,"../utils/EventDispatcher":65,"../views/IFrameView":69,"../views/MenuItem":74,"../views/MenuView":75}],61:[function(require,module,exports){
 FiddleClient = require("./app/FiddleClient");
 Resources = require("../../lib/Resources");
-},{"../../lib/Resources":116,"./app/FiddleClient":85}],95:[function(require,module,exports){
+},{"../../lib/Resources":83,"./app/FiddleClient":52}],62:[function(require,module,exports){
 function Testcase(id, name, url) {
 	this.id = id;
 	this.name = name;
@@ -20888,7 +8686,7 @@ function Testcase(id, name, url) {
 };
 
 module.exports = Testcase;
-},{}],96:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 var EventDispatcher = require("./EventDispatcher");
 
 function APIConnection(basePath, session) {
@@ -20961,7 +8759,7 @@ APIConnection.prototype.onReadyStateChange = function(xmlhttp) {
 
 
 module.exports = APIConnection;
-},{"./EventDispatcher":98}],97:[function(require,module,exports){
+},{"./EventDispatcher":65}],64:[function(require,module,exports){
 function ClassUtils() {
 	
 };
@@ -20973,7 +8771,7 @@ ClassUtils.extends = function(object, inherits_from) {
 
 
 module.exports = ClassUtils;
-},{}],98:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 /**
@@ -21116,7 +8914,7 @@ EventDispatcher.init = function(cls) {
 }
 
 module.exports = EventDispatcher;
-},{}],99:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -21176,7 +8974,7 @@ ColorItem.prototype.getValue = function() {
 };
 
 module.exports = ColorItem;
-},{"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"./InputView":105,"./ListItem":106,"./View":115}],100:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"./InputView":72,"./ListItem":73,"./View":82}],67:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21215,7 +9013,7 @@ EditorControllerView.prototype.updateLayout = function(width, height) {
 
 module.exports = EditorControllerView;
 
-},{"../utils/ClassUtils":97,"./View":115}],101:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],68:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21246,7 +9044,7 @@ EditorView.prototype.updateLayout = function(width, height) {
 
 module.exports = EditorView;
 
-},{"../utils/ClassUtils":97,"./View":115}],102:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],69:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21279,7 +9077,7 @@ IFrameView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = IFrameView;
-},{"../utils/ClassUtils":97,"./View":115}],103:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],70:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -21335,7 +9133,7 @@ ImageItem.prototype.getValues = function() {
 
 
 module.exports = ImageItem;
-},{"../../../lib/Resources":116,"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"./ImageView":104,"./ListItem":106,"./SelectButton":111}],104:[function(require,module,exports){
+},{"../../../lib/Resources":83,"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"./ImageView":71,"./ListItem":73,"./SelectButton":78}],71:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21409,7 +9207,7 @@ ImageView.prototype.updateLayout = function(width, height) {
 
 
 module.exports = ImageView;
-},{"../utils/ClassUtils":97,"./View":115}],105:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],72:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -21444,7 +9242,7 @@ InputView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = InputView;
-},{"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"./View":115}],106:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"./View":82}],73:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 var Text = require("./Text");
@@ -21478,7 +9276,7 @@ ListItem.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = ListItem;
-},{"../utils/ClassUtils":97,"./Text":114,"./View":115}],107:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./Text":81,"./View":82}],74:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -21524,7 +9322,7 @@ MenuItem.prototype.updateLayout = function(width, height) {
 
 module.exports = MenuItem;
 
-},{"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"./Text":114,"./View":115}],108:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"./Text":81,"./View":82}],75:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21568,7 +9366,7 @@ MenuView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = MenuView;
-},{"../utils/ClassUtils":97,"./View":115}],109:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],76:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -21630,7 +9428,7 @@ PositionItem.prototype.getValues = function() {
 };
 
 module.exports = PositionItem;
-},{"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"./InputView":105,"./ListItem":106,"./Text":114}],110:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"./InputView":72,"./ListItem":73,"./Text":81}],77:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21646,7 +9444,7 @@ ClassUtils.extends(RootView, View);
 
 module.exports = RootView;
 
-},{"../utils/ClassUtils":97,"./View":115}],111:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],78:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -21672,7 +9470,7 @@ SelectButton.prototype.onChange = function() {
 
 module.exports = SelectButton;
 
-},{"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"./View":115}],112:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"./View":82}],79:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -21735,7 +9533,7 @@ StringItem.prototype.onChanged = function(files) {
 
 
 module.exports = StringItem;
-},{"../../../lib/Resources":116,"../utils/ClassUtils":97,"../utils/EventDispatcher":98,"./ImageView":104,"./InputView":105,"./ListItem":106,"./SelectButton":111,"./Text":114}],113:[function(require,module,exports){
+},{"../../../lib/Resources":83,"../utils/ClassUtils":64,"../utils/EventDispatcher":65,"./ImageView":71,"./InputView":72,"./ListItem":73,"./SelectButton":78,"./Text":81}],80:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21768,7 +9566,7 @@ TargetControllerView.prototype.updateLayout = function(width, height) {
 
 module.exports = TargetControllerView;
 
-},{"../utils/ClassUtils":97,"./View":115}],114:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],81:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -21790,7 +9588,7 @@ Text.prototype.updateLayout = function(width, height) {
 
 module.exports = Text;
 
-},{"../utils/ClassUtils":97,"./View":115}],115:[function(require,module,exports){
+},{"../utils/ClassUtils":64,"./View":82}],82:[function(require,module,exports){
 function View(elementType, className) {
 	this._domElement = document.createElement(elementType ? elementType : View.Div);
 	this._frame = {
@@ -22003,7 +9801,7 @@ Object.defineProperty(View.prototype, "color", {
 
 
 module.exports = View;
-},{}],116:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 
 
 var PIXI = require("pixi.js");
@@ -22653,4 +10451,1565 @@ Resources.JsonLoader.prototype.onError = function () {
 
 
 module.exports = Resources;
-},{"../client/js/utils/EventDispatcher":98,"pixi.js":65,"request":66}]},{},[94]);
+},{"../client/js/utils/EventDispatcher":65,"pixi.js":51,"request":85}],84:[function(require,module,exports){
+module.exports = ForeverAgent
+ForeverAgent.SSL = ForeverAgentSSL
+
+var util = require('util')
+  , Agent = require('http').Agent
+  , net = require('net')
+  , tls = require('tls')
+  , AgentSSL = require('https').Agent
+
+function ForeverAgent(options) {
+  var self = this
+  self.options = options || {}
+  self.requests = {}
+  self.sockets = {}
+  self.freeSockets = {}
+  self.maxSockets = self.options.maxSockets || Agent.defaultMaxSockets
+  self.minSockets = self.options.minSockets || ForeverAgent.defaultMinSockets
+  self.on('free', function(socket, host, port) {
+    var name = host + ':' + port
+    if (self.requests[name] && self.requests[name].length) {
+      self.requests[name].shift().onSocket(socket)
+    } else if (self.sockets[name].length < self.minSockets) {
+      if (!self.freeSockets[name]) self.freeSockets[name] = []
+      self.freeSockets[name].push(socket)
+      
+      // if an error happens while we don't use the socket anyway, meh, throw the socket away
+      function onIdleError() {
+        socket.destroy()
+      }
+      socket._onIdleError = onIdleError
+      socket.on('error', onIdleError)
+    } else {
+      // If there are no pending requests just destroy the
+      // socket and it will get removed from the pool. This
+      // gets us out of timeout issues and allows us to
+      // default to Connection:keep-alive.
+      socket.destroy();
+    }
+  })
+
+}
+util.inherits(ForeverAgent, Agent)
+
+ForeverAgent.defaultMinSockets = 5
+
+
+ForeverAgent.prototype.createConnection = net.createConnection
+ForeverAgent.prototype.addRequestNoreuse = Agent.prototype.addRequest
+ForeverAgent.prototype.addRequest = function(req, host, port) {
+  var name = host + ':' + port
+  if (this.freeSockets[name] && this.freeSockets[name].length > 0 && !req.useChunkedEncodingByDefault) {
+    var idleSocket = this.freeSockets[name].pop()
+    idleSocket.removeListener('error', idleSocket._onIdleError)
+    delete idleSocket._onIdleError
+    req._reusedSocket = true
+    req.onSocket(idleSocket)
+  } else {
+    this.addRequestNoreuse(req, host, port)
+  }
+}
+
+ForeverAgent.prototype.removeSocket = function(s, name, host, port) {
+  if (this.sockets[name]) {
+    var index = this.sockets[name].indexOf(s);
+    if (index !== -1) {
+      this.sockets[name].splice(index, 1);
+    }
+  } else if (this.sockets[name] && this.sockets[name].length === 0) {
+    // don't leak
+    delete this.sockets[name];
+    delete this.requests[name];
+  }
+  
+  if (this.freeSockets[name]) {
+    var index = this.freeSockets[name].indexOf(s)
+    if (index !== -1) {
+      this.freeSockets[name].splice(index, 1)
+      if (this.freeSockets[name].length === 0) {
+        delete this.freeSockets[name]
+      }
+    }
+  }
+
+  if (this.requests[name] && this.requests[name].length) {
+    // If we have pending requests and a socket gets closed a new one
+    // needs to be created to take over in the pool for the one that closed.
+    this.createSocket(name, host, port).emit('free');
+  }
+}
+
+function ForeverAgentSSL (options) {
+  ForeverAgent.call(this, options)
+}
+util.inherits(ForeverAgentSSL, ForeverAgent)
+
+ForeverAgentSSL.prototype.createConnection = createConnectionSSL
+ForeverAgentSSL.prototype.addRequestNoreuse = AgentSSL.prototype.addRequest
+
+function createConnectionSSL (port, host, options) {
+  options.port = port
+  options.host = host
+  return tls.connect(options)
+}
+
+},{"http":23,"https":27,"net":1,"tls":1,"util":50}],85:[function(require,module,exports){
+(function (process,Buffer){
+// Copyright 2010-2012 Mikeal Rogers
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+
+var http = require('http')
+  , https = false
+  , tls = false
+  , url = require('url')
+  , util = require('util')
+  , stream = require('stream')
+  , qs = require('querystring')
+  , mimetypes = require('./mimetypes')
+  , oauth = require('./oauth')
+  , uuid = require('./uuid')
+  , ForeverAgent = require('./forever')
+  , Cookie = require('./vendor/cookie')
+  , CookieJar = require('./vendor/cookie/jar')
+  , cookieJar = new CookieJar
+  , tunnel = require('./tunnel')
+  ;
+  
+if (process.logging) {
+  var log = process.logging('request')
+}
+
+try {
+  https = require('https')
+} catch (e) {}
+
+try {
+  tls = require('tls')
+} catch (e) {}
+
+function toBase64 (str) {
+  return (new Buffer(str || "", "ascii")).toString("base64")
+}
+
+// Hacky fix for pre-0.4.4 https
+if (https && !https.Agent) {
+  https.Agent = function (options) {
+    http.Agent.call(this, options)
+  }
+  util.inherits(https.Agent, http.Agent)
+  https.Agent.prototype._getConnection = function(host, port, cb) {
+    var s = tls.connect(port, host, this.options, function() {
+      // do other checks here?
+      if (cb) cb()
+    })
+    return s
+  }
+}
+
+function isReadStream (rs) {
+  if (rs.readable && rs.path && rs.mode) {
+    return true
+  }
+}
+
+function copy (obj) {
+  var o = {}
+  Object.keys(obj).forEach(function (i) {
+    o[i] = obj[i]
+  })
+  return o
+}
+
+var isUrl = /^https?:/
+
+var globalPool = {}
+
+function Request (options) {
+  stream.Stream.call(this)
+  this.readable = true
+  this.writable = true
+
+  if (typeof options === 'string') {
+    options = {uri:options}
+  }
+  
+  var reserved = Object.keys(Request.prototype)
+  for (var i in options) {
+    if (reserved.indexOf(i) === -1) {
+      this[i] = options[i]
+    } else {
+      if (typeof options[i] === 'function') {
+        delete options[i]
+      }
+    }
+  }
+  options = copy(options)
+  
+  this.init(options)
+}
+util.inherits(Request, stream.Stream)
+Request.prototype.init = function (options) {
+  var self = this
+  
+  if (!options) options = {}
+  
+  if (!self.pool) self.pool = globalPool
+  self.dests = []
+  self.__isRequestRequest = true
+  
+  // Protect against double callback
+  if (!self._callback && self.callback) {
+    self._callback = self.callback
+    self.callback = function () {
+      if (self._callbackCalled) return // Print a warning maybe?
+      self._callback.apply(self, arguments)
+      self._callbackCalled = true
+    }
+  }
+
+  if (self.url) {
+    // People use this property instead all the time so why not just support it.
+    self.uri = self.url
+    delete self.url
+  }
+
+  if (!self.uri) {
+    throw new Error("options.uri is a required argument")
+  } else {
+    if (typeof self.uri == "string") self.uri = url.parse(self.uri)
+  }
+  if (self.proxy) {
+    if (typeof self.proxy == 'string') self.proxy = url.parse(self.proxy)
+
+    // do the HTTP CONNECT dance using koichik/node-tunnel
+    if (http.globalAgent && self.uri.protocol === "https:") {
+      self.tunnel = true
+      var tunnelFn = self.proxy.protocol === "http:"
+                   ? tunnel.httpsOverHttp : tunnel.httpsOverHttps
+
+      var tunnelOptions = { proxy: { host: self.proxy.hostname
+                                   , port: +self.proxy.port }
+                          , ca: this.ca }
+
+      self.agent = tunnelFn(tunnelOptions)
+      self.tunnel = true
+    }
+  }
+
+  self._redirectsFollowed = self._redirectsFollowed || 0
+  self.maxRedirects = (self.maxRedirects !== undefined) ? self.maxRedirects : 10
+  self.followRedirect = (self.followRedirect !== undefined) ? self.followRedirect : true
+  self.followAllRedirects = (self.followAllRedirects !== undefined) ? self.followAllRedirects : false;
+  if (self.followRedirect || self.followAllRedirects)
+    self.redirects = self.redirects || []
+
+  self.headers = self.headers ? copy(self.headers) : {}
+
+  self.setHost = false
+  if (!self.headers.host) {
+    self.headers.host = self.uri.hostname
+    if (self.uri.port) {
+      if ( !(self.uri.port === 80 && self.uri.protocol === 'http:') &&
+           !(self.uri.port === 443 && self.uri.protocol === 'https:') )
+      self.headers.host += (':'+self.uri.port)
+    }
+    self.setHost = true
+  }
+  
+  self.jar(options.jar)
+
+  if (!self.uri.pathname) {self.uri.pathname = '/'}
+  if (!self.uri.port) {
+    if (self.uri.protocol == 'http:') {self.uri.port = 80}
+    else if (self.uri.protocol == 'https:') {self.uri.port = 443}
+  }
+
+  if (self.proxy && !self.tunnel) {
+    self.port = self.proxy.port
+    self.host = self.proxy.hostname
+  } else {
+    self.port = self.uri.port
+    self.host = self.uri.hostname
+  }
+
+  if (self.onResponse === true) {
+    self.onResponse = self.callback
+    delete self.callback
+  }
+
+  self.clientErrorHandler = function (error) {
+    if (self._aborted) return
+    
+    if (self.setHost) delete self.headers.host
+    if (self.req._reusedSocket && error.code === 'ECONNRESET'
+        && self.agent.addRequestNoreuse) {
+      self.agent = { addRequest: self.agent.addRequestNoreuse.bind(self.agent) }
+      self.start()
+      self.req.end()
+      return
+    }
+    if (self.timeout && self.timeoutTimer) {
+        clearTimeout(self.timeoutTimer);
+        self.timeoutTimer = null;
+    }
+    self.emit('error', error)
+  }
+  if (self.onResponse) self.on('error', function (e) {self.onResponse(e)})
+  if (self.callback) self.on('error', function (e) {self.callback(e)})
+
+  if (options.form) {
+    self.form(options.form)
+  }
+
+  if (options.oauth) {
+    self.oauth(options.oauth)
+  }
+
+  if (self.uri.auth && !self.headers.authorization) {
+    self.headers.authorization = "Basic " + toBase64(self.uri.auth.split(':').map(function(item){ return qs.unescape(item)}).join(':'))
+  }
+  if (self.proxy && self.proxy.auth && !self.headers['proxy-authorization'] && !self.tunnel) {
+    self.headers['proxy-authorization'] = "Basic " + toBase64(self.proxy.auth.split(':').map(function(item){ return qs.unescape(item)}).join(':'))
+  }
+
+  if (options.qs) self.qs(options.qs)
+
+  if (self.uri.path) {
+    self.path = self.uri.path
+  } else {
+    self.path = self.uri.pathname + (self.uri.search || "")
+  }
+
+  if (self.path.length === 0) self.path = '/'
+
+  if (self.proxy && !self.tunnel) self.path = (self.uri.protocol + '//' + self.uri.host + self.path)
+
+  if (options.json) {
+    self.json(options.json)
+  } else if (options.multipart) {
+    self.multipart(options.multipart)
+  }
+
+  if (self.body) {
+    var length = 0
+    if (!Buffer.isBuffer(self.body)) {
+      if (Array.isArray(self.body)) {
+        for (var i = 0; i < self.body.length; i++) {
+          length += self.body[i].length
+        }
+      } else {
+        self.body = new Buffer(self.body)
+        length = self.body.length
+      }
+    } else {
+      length = self.body.length
+    }
+    if (length) {
+      self.headers['content-length'] = length
+    } else {
+      throw new Error('Argument error, options.body.')
+    }
+  }
+
+  var protocol = self.proxy && !self.tunnel ? self.proxy.protocol : self.uri.protocol
+    , defaultModules = {'http:':http, 'https:':https}
+    , httpModules = self.httpModules || {}
+    ;
+  self.httpModule = httpModules[protocol] || defaultModules[protocol]
+
+  if (!self.httpModule) throw new Error("Invalid protocol")
+
+  if (options.ca) self.ca = options.ca
+
+  if (!self.agent) {
+    if (options.agentOptions) self.agentOptions = options.agentOptions
+
+    if (options.agentClass) {
+      self.agentClass = options.agentClass
+    } else if (options.forever) {
+      self.agentClass = protocol === 'http:' ? ForeverAgent : ForeverAgent.SSL
+    } else {
+      self.agentClass = self.httpModule.Agent
+    }
+  }
+
+  if (self.pool === false) {
+    self.agent = false
+  } else {
+    self.agent = self.agent || self.getAgent()
+    if (self.maxSockets) {
+      // Don't use our pooling if node has the refactored client
+      self.agent.maxSockets = self.maxSockets
+    }
+    if (self.pool.maxSockets) {
+      // Don't use our pooling if node has the refactored client
+      self.agent.maxSockets = self.pool.maxSockets
+    }
+  }
+
+  self.once('pipe', function (src) {
+    if (self.ntick) throw new Error("You cannot pipe to this stream after the first nextTick() after creation of the request stream.")
+    self.src = src
+    if (isReadStream(src)) {
+      if (!self.headers['content-type'] && !self.headers['Content-Type'])
+        self.headers['content-type'] = mimetypes.lookup(src.path.slice(src.path.lastIndexOf('.')+1))
+    } else {
+      if (src.headers) {
+        for (var i in src.headers) {
+          if (!self.headers[i]) {
+            self.headers[i] = src.headers[i]
+          }
+        }
+      }
+      if (src.method && !self.method) {
+        self.method = src.method
+      }
+    }
+
+    self.on('pipe', function () {
+      console.error("You have already piped to this stream. Pipeing twice is likely to break the request.")
+    })
+  })
+
+  process.nextTick(function () {
+    if (self._aborted) return
+    
+    if (self.body) {
+      if (Array.isArray(self.body)) {
+        self.body.forEach(function(part) {
+          self.write(part)
+        })
+      } else {
+        self.write(self.body)
+      }
+      self.end()
+    } else if (self.requestBodyStream) {
+      console.warn("options.requestBodyStream is deprecated, please pass the request object to stream.pipe.")
+      self.requestBodyStream.pipe(self)
+    } else if (!self.src) {
+      self.headers['content-length'] = 0
+      self.end()
+    }
+    self.ntick = true
+  })
+}
+
+Request.prototype.getAgent = function () {
+  var Agent = this.agentClass
+  var options = {}
+  if (this.agentOptions) {
+    for (var i in this.agentOptions) {
+      options[i] = this.agentOptions[i]
+    }
+  }
+  if (this.ca) options.ca = this.ca
+
+  var poolKey = ''
+
+  // different types of agents are in different pools
+  if (Agent !== this.httpModule.Agent) {
+    poolKey += Agent.name
+  }
+
+  if (!this.httpModule.globalAgent) {
+    // node 0.4.x
+    options.host = this.host
+    options.port = this.port
+    if (poolKey) poolKey += ':'
+    poolKey += this.host + ':' + this.port
+  }
+
+  if (options.ca) {
+    if (poolKey) poolKey += ':'
+    poolKey += options.ca
+  }
+
+  if (!poolKey && Agent === this.httpModule.Agent && this.httpModule.globalAgent) {
+    // not doing anything special.  Use the globalAgent
+    return this.httpModule.globalAgent
+  }
+
+  // already generated an agent for this setting
+  if (this.pool[poolKey]) return this.pool[poolKey]
+
+  return this.pool[poolKey] = new Agent(options)
+}
+
+Request.prototype.start = function () {
+  var self = this
+  
+  if (self._aborted) return
+  
+  self._started = true
+  self.method = self.method || 'GET'
+  self.href = self.uri.href
+  if (log) log('%method %href', self)
+  self.req = self.httpModule.request(self, function (response) {
+    if (self._aborted) return
+    if (self._paused) response.pause()
+    
+    self.response = response
+    response.request = self
+
+    if (self.httpModule === https &&
+        self.strictSSL &&
+        !response.client.authorized) {
+      var sslErr = response.client.authorizationError
+      self.emit('error', new Error('SSL Error: '+ sslErr))
+      return
+    }
+
+    if (self.setHost) delete self.headers.host
+    if (self.timeout && self.timeoutTimer) {
+        clearTimeout(self.timeoutTimer);
+        self.timeoutTimer = null;
+    }  
+    
+    if (response.headers['set-cookie'] && (!self._disableCookies)) {
+      response.headers['set-cookie'].forEach(function(cookie) {
+        if (self._jar) self._jar.add(new Cookie(cookie))
+        else cookieJar.add(new Cookie(cookie))
+      })
+    }
+
+    if (response.statusCode >= 300 && response.statusCode < 400  &&
+        (self.followAllRedirects ||
+         (self.followRedirect && (self.method !== 'PUT' && self.method !== 'POST' && self.method !== 'DELETE'))) &&
+        response.headers.location) {
+      if (self._redirectsFollowed >= self.maxRedirects) {
+        self.emit('error', new Error("Exceeded maxRedirects. Probably stuck in a redirect loop."))
+        return
+      }
+      self._redirectsFollowed += 1
+
+      if (!isUrl.test(response.headers.location)) {
+        response.headers.location = url.resolve(self.uri.href, response.headers.location)
+      }
+      self.uri = response.headers.location
+      self.redirects.push(
+        { statusCode : response.statusCode
+        , redirectUri: response.headers.location 
+        }
+      )
+      self.method = 'GET'; // Force all redirects to use GET
+      delete self.req
+      delete self.agent
+      delete self._started
+      if (self.headers) {
+        delete self.headers.host
+      }
+      if (log) log('Redirect to %uri', self)
+      self.init()
+      return // Ignore the rest of the response
+    } else {
+      self._redirectsFollowed = self._redirectsFollowed || 0
+      // Be a good stream and emit end when the response is finished.
+      // Hack to emit end on close because of a core bug that never fires end
+      response.on('close', function () {
+        if (!self._ended) self.response.emit('end')
+      })
+
+      if (self.encoding) {
+        if (self.dests.length !== 0) {
+          console.error("Ingoring encoding parameter as this stream is being piped to another stream which makes the encoding option invalid.")
+        } else {
+          response.setEncoding(self.encoding)
+        }
+      }
+
+      self.dests.forEach(function (dest) {
+        self.pipeDest(dest)
+      })
+
+      response.on("data", function (chunk) {
+        self._destdata = true
+        self.emit("data", chunk)
+      })
+      response.on("end", function (chunk) {
+        self._ended = true
+        self.emit("end", chunk)
+      })
+      response.on("close", function () {self.emit("close")})
+
+      self.emit('response', response)
+
+      if (self.onResponse) {
+        self.onResponse(null, response)
+      }
+      if (self.callback) {
+        var buffer = []
+        var bodyLen = 0
+        self.on("data", function (chunk) {
+          buffer.push(chunk)
+          bodyLen += chunk.length
+        })
+        self.on("end", function () {
+          if (self._aborted) return
+          
+          if (buffer.length && Buffer.isBuffer(buffer[0])) {
+            var body = new Buffer(bodyLen)
+            var i = 0
+            buffer.forEach(function (chunk) {
+              chunk.copy(body, i, 0, chunk.length)
+              i += chunk.length
+            })
+            if (self.encoding === null) {
+              response.body = body
+            } else {
+              response.body = body.toString()
+            }
+          } else if (buffer.length) {
+            response.body = buffer.join('')
+          }
+
+          if (self._json) {
+            try {
+              response.body = JSON.parse(response.body)
+            } catch (e) {}
+          }
+
+          self.callback(null, response, response.body)
+        })
+      }
+    }
+  })
+
+  if (self.timeout && !self.timeoutTimer) {
+    self.timeoutTimer = setTimeout(function() {
+      self.req.abort()
+      var e = new Error("ETIMEDOUT")
+      e.code = "ETIMEDOUT"
+      self.emit("error", e)
+    }, self.timeout)
+    
+    // Set additional timeout on socket - in case if remote
+    // server freeze after sending headers
+    if (self.req.setTimeout) { // only works on node 0.6+
+      self.req.setTimeout(self.timeout, function(){
+          if (self.req) {
+              self.req.abort()
+              var e = new Error("ESOCKETTIMEDOUT")
+              e.code = "ESOCKETTIMEDOUT"
+              self.emit("error", e)
+          }
+      })
+    }
+  }
+  
+  self.req.on('error', self.clientErrorHandler)
+  
+  self.emit('request', self.req)
+}
+
+Request.prototype.abort = function() {
+  this._aborted = true;
+  
+  if (this.req) {
+    this.req.abort()
+  }
+  else if (this.response) {
+    this.response.abort()
+  }
+  
+  this.emit("abort")
+}
+
+Request.prototype.pipeDest = function (dest) {
+  var response = this.response
+  // Called after the response is received
+  if (dest.headers) {
+    dest.headers['content-type'] = response.headers['content-type']
+    if (response.headers['content-length']) {
+      dest.headers['content-length'] = response.headers['content-length']
+    }
+  }
+  if (dest.setHeader) {
+    for (var i in response.headers) {
+      dest.setHeader(i, response.headers[i])
+    }
+    dest.statusCode = response.statusCode
+  }
+  if (this.pipefilter) this.pipefilter(response, dest)
+}
+
+// Composable API
+Request.prototype.setHeader = function (name, value, clobber) {
+  if (clobber === undefined) clobber = true
+  if (clobber || !this.headers.hasOwnProperty(name)) this.headers[name] = value
+  else this.headers[name] += ',' + value
+  return this
+}
+Request.prototype.setHeaders = function (headers) {
+  for (i in headers) {this.setHeader(i, headers[i])}
+  return this
+}
+Request.prototype.qs = function (q, clobber) {
+  var uri = {
+  	protocol: this.uri.protocol,
+  	host: this.uri.host,
+  	pathname: this.uri.pathname,
+  	query: clobber ? q : qs.parse(this.uri.query),
+  	hash: this.uri.hash
+  };
+  if (!clobber) for (var i in q) uri.query[i] = q[i]
+
+  this.uri= url.parse(url.format(uri))
+
+  return this
+}
+Request.prototype.form = function (form) {
+  this.headers['content-type'] = 'application/x-www-form-urlencoded; charset=utf-8'
+  this.body = qs.stringify(form).toString('utf8')
+  return this
+}
+Request.prototype.multipart = function (multipart) {
+  var self = this
+  self.body = []
+
+  if (!self.headers['content-type']) {
+    self.headers['content-type'] = 'multipart/related;boundary="frontier"';
+  } else {
+    self.headers['content-type'] = self.headers['content-type'].split(';')[0] + ';boundary="frontier"';
+  }
+
+  if (!multipart.forEach) throw new Error('Argument error, options.multipart.')
+
+  multipart.forEach(function (part) {
+    var body = part.body
+    if(!body) throw Error('Body attribute missing in multipart.')
+    delete part.body
+    var preamble = '--frontier\r\n'
+    Object.keys(part).forEach(function(key){
+      preamble += key + ': ' + part[key] + '\r\n'
+    })
+    preamble += '\r\n'
+    self.body.push(new Buffer(preamble))
+    self.body.push(new Buffer(body))
+    self.body.push(new Buffer('\r\n'))
+  })
+  self.body.push(new Buffer('--frontier--'))
+  return self
+}
+Request.prototype.json = function (val) {
+  this.setHeader('content-type', 'application/json')
+  this.setHeader('accept', 'application/json')
+  this._json = true
+  if (typeof val === 'boolean') {
+    if (typeof this.body === 'object') this.body = JSON.stringify(this.body)
+  } else {
+    this.body = JSON.stringify(val)
+  }
+  return this
+}
+Request.prototype.oauth = function (_oauth) {
+  var form
+  if (this.headers['content-type'] && 
+      this.headers['content-type'].slice(0, 'application/x-www-form-urlencoded'.length) ===
+        'application/x-www-form-urlencoded' 
+     ) {
+    form = qs.parse(this.body)
+  }
+  if (this.uri.query) {
+    form = qs.parse(this.uri.query)
+  } 
+  if (!form) form = {}
+  var oa = {}
+  for (var i in form) oa[i] = form[i]
+  for (var i in _oauth) oa['oauth_'+i] = _oauth[i]
+  if (!oa.oauth_version) oa.oauth_version = '1.0'
+  if (!oa.oauth_timestamp) oa.oauth_timestamp = Math.floor( (new Date()).getTime() / 1000 ).toString()
+  if (!oa.oauth_nonce) oa.oauth_nonce = uuid().replace(/-/g, '')
+  
+  oa.oauth_signature_method = 'HMAC-SHA1'
+  
+  var consumer_secret = oa.oauth_consumer_secret
+  delete oa.oauth_consumer_secret
+  var token_secret = oa.oauth_token_secret
+  delete oa.oauth_token_secret
+  
+  var baseurl = this.uri.protocol + '//' + this.uri.host + this.uri.pathname
+  var signature = oauth.hmacsign(this.method, baseurl, oa, consumer_secret, token_secret)
+  
+  // oa.oauth_signature = signature
+  for (var i in form) {
+    if ( i.slice(0, 'oauth_') in _oauth) {
+      // skip 
+    } else {
+      delete oa['oauth_'+i]
+    }
+  }
+  this.headers.authorization = 
+    'OAuth '+Object.keys(oa).sort().map(function (i) {return i+'="'+oauth.rfc3986(oa[i])+'"'}).join(',')
+  this.headers.authorization += ',oauth_signature="'+oauth.rfc3986(signature)+'"'
+  return this
+}
+Request.prototype.jar = function (jar) {
+  var cookies
+  
+  if (this._redirectsFollowed === 0) {
+    this.originalCookieHeader = this.headers.cookie
+  }
+  
+  if (jar === false) {
+    // disable cookies
+    cookies = false;
+    this._disableCookies = true;
+  } else if (jar) {
+    // fetch cookie from the user defined cookie jar
+    cookies = jar.get({ url: this.uri.href })
+  } else {
+    // fetch cookie from the global cookie jar
+    cookies = cookieJar.get({ url: this.uri.href })
+  }
+  
+  if (cookies && cookies.length) {
+    var cookieString = cookies.map(function (c) {
+      return c.name + "=" + c.value
+    }).join("; ")
+
+    if (this.originalCookieHeader) {
+      // Don't overwrite existing Cookie header
+      this.headers.cookie = this.originalCookieHeader + '; ' + cookieString
+    } else {
+      this.headers.cookie = cookieString
+    }
+  }
+  this._jar = jar
+  return this
+}
+
+
+// Stream API
+Request.prototype.pipe = function (dest, opts) {
+  if (this.response) {
+    if (this._destdata) {
+      throw new Error("You cannot pipe after data has been emitted from the response.")
+    } else if (this._ended) {
+      throw new Error("You cannot pipe after the response has been ended.")
+    } else {
+      stream.Stream.prototype.pipe.call(this, dest, opts)
+      this.pipeDest(dest)
+      return dest
+    }
+  } else {
+    this.dests.push(dest)
+    stream.Stream.prototype.pipe.call(this, dest, opts)
+    return dest
+  }
+}
+Request.prototype.write = function () {
+  if (!this._started) this.start()
+  this.req.write.apply(this.req, arguments)
+}
+Request.prototype.end = function (chunk) {
+  if (chunk) this.write(chunk)
+  if (!this._started) this.start()
+  this.req.end()
+}
+Request.prototype.pause = function () {
+  if (!this.response) this._paused = true
+  else this.response.pause.apply(this.response, arguments)
+}
+Request.prototype.resume = function () {
+  if (!this.response) this._paused = false
+  else this.response.resume.apply(this.response, arguments)
+}
+Request.prototype.destroy = function () {
+  if (!this._ended) this.end()
+}
+
+// organize params for post, put, head, del
+function initParams(uri, options, callback) {
+  if ((typeof options === 'function') && !callback) callback = options;
+  if (typeof options === 'object') {
+    options.uri = uri;
+  } else if (typeof uri === 'string') {
+    options = {uri:uri};
+  } else {
+    options = uri;
+    uri = options.uri;
+  }
+  return { uri: uri, options: options, callback: callback };
+}
+
+function request (uri, options, callback) {
+  if ((typeof options === 'function') && !callback) callback = options;
+  if (typeof options === 'object') {
+    options.uri = uri;
+  } else if (typeof uri === 'string') {
+    options = {uri:uri};
+  } else {
+    options = uri;
+  }
+
+  if (callback) options.callback = callback;
+  var r = new Request(options)
+  return r
+}
+
+module.exports = request
+
+request.defaults = function (options) {
+  var def = function (method) {
+    var d = function (uri, opts, callback) {
+      var params = initParams(uri, opts, callback);
+      for (var i in options) {
+        if (params.options[i] === undefined) params.options[i] = options[i]
+      }
+      return method(params.uri, params.options, params.callback)
+    }
+    return d
+  }
+  var de = def(request)
+  de.get = def(request.get)
+  de.post = def(request.post)
+  de.put = def(request.put)
+  de.head = def(request.head)
+  de.del = def(request.del)
+  de.cookie = def(request.cookie)
+  de.jar = def(request.jar)
+  return de
+}
+
+request.forever = function (agentOptions, optionsArg) {
+  var options = {}
+  if (optionsArg) {
+    for (option in optionsArg) {
+      options[option] = optionsArg[option]
+    }
+  }
+  if (agentOptions) options.agentOptions = agentOptions
+  options.forever = true
+  return request.defaults(options)
+}
+
+request.get = request
+request.post = function (uri, options, callback) {
+  var params = initParams(uri, options, callback);
+  params.options.method = 'POST';
+  return request(params.uri, params.options, params.callback)
+}
+request.put = function (uri, options, callback) {
+  var params = initParams(uri, options, callback);
+  params.options.method = 'PUT'
+  return request(params.uri, params.options, params.callback)
+}
+request.head = function (uri, options, callback) {
+  var params = initParams(uri, options, callback);
+  params.options.method = 'HEAD'
+  if (params.options.body || 
+      params.options.requestBodyStream || 
+      (params.options.json && typeof params.options.json !== 'boolean') || 
+      params.options.multipart) {
+    throw new Error("HTTP HEAD requests MUST NOT include a request body.")
+  }
+  return request(params.uri, params.options, params.callback)
+}
+request.del = function (uri, options, callback) {
+  var params = initParams(uri, options, callback);
+  params.options.method = 'DELETE'
+  return request(params.uri, params.options, params.callback)
+}
+request.jar = function () {
+  return new CookieJar
+}
+request.cookie = function (str) {
+  if (str && str.uri) str = str.uri
+  if (typeof str !== 'string') throw new Error("The cookie function only accepts STRING as param")
+  return new Cookie(str)
+}
+
+}).call(this,require('_process'),require("buffer").Buffer)
+},{"./forever":84,"./mimetypes":86,"./oauth":87,"./tunnel":88,"./uuid":89,"./vendor/cookie":90,"./vendor/cookie/jar":91,"_process":30,"buffer":4,"http":23,"https":27,"querystring":34,"stream":46,"tls":1,"url":48,"util":50}],86:[function(require,module,exports){
+// from http://github.com/felixge/node-paperboy
+exports.types = {
+  "3gp":"video/3gpp",
+  "aiff":"audio/x-aiff",
+  "arj":"application/x-arj-compressed",
+  "asf":"video/x-ms-asf",
+  "asx":"video/x-ms-asx",
+  "au":"audio/ulaw",
+  "avi":"video/x-msvideo",
+  "bcpio":"application/x-bcpio",
+  "ccad":"application/clariscad",
+  "cod":"application/vnd.rim.cod",
+  "com":"application/x-msdos-program",
+  "cpio":"application/x-cpio",
+  "cpt":"application/mac-compactpro",
+  "csh":"application/x-csh",
+  "css":"text/css",
+  "deb":"application/x-debian-package",
+  "dl":"video/dl",
+  "doc":"application/msword",
+  "drw":"application/drafting",
+  "dvi":"application/x-dvi",
+  "dwg":"application/acad",
+  "dxf":"application/dxf",
+  "dxr":"application/x-director",
+  "etx":"text/x-setext",
+  "ez":"application/andrew-inset",
+  "fli":"video/x-fli",
+  "flv":"video/x-flv",
+  "gif":"image/gif",
+  "gl":"video/gl",
+  "gtar":"application/x-gtar",
+  "gz":"application/x-gzip",
+  "hdf":"application/x-hdf",
+  "hqx":"application/mac-binhex40",
+  "html":"text/html",
+  "ice":"x-conference/x-cooltalk",
+  "ico":"image/x-icon",
+  "ief":"image/ief",
+  "igs":"model/iges",
+  "ips":"application/x-ipscript",
+  "ipx":"application/x-ipix",
+  "jad":"text/vnd.sun.j2me.app-descriptor",
+  "jar":"application/java-archive",
+  "jpeg":"image/jpeg",
+  "jpg":"image/jpeg",
+  "js":"text/javascript",
+  "json":"application/json",
+  "latex":"application/x-latex",
+  "lsp":"application/x-lisp",
+  "lzh":"application/octet-stream",
+  "m":"text/plain",
+  "m3u":"audio/x-mpegurl",
+  "m4v":"video/mp4",
+  "man":"application/x-troff-man",
+  "me":"application/x-troff-me",
+  "midi":"audio/midi",
+  "mif":"application/x-mif",
+  "mime":"www/mime",
+  "mkv":"  video/x-matrosk",
+  "movie":"video/x-sgi-movie",
+  "mp4":"video/mp4",
+  "mp41":"video/mp4",
+  "mp42":"video/mp4",
+  "mpg":"video/mpeg",
+  "mpga":"audio/mpeg",
+  "ms":"application/x-troff-ms",
+  "mustache":"text/plain",
+  "nc":"application/x-netcdf",
+  "oda":"application/oda",
+  "ogm":"application/ogg",
+  "pbm":"image/x-portable-bitmap",
+  "pdf":"application/pdf",
+  "pgm":"image/x-portable-graymap",
+  "pgn":"application/x-chess-pgn",
+  "pgp":"application/pgp",
+  "pm":"application/x-perl",
+  "png":"image/png",
+  "pnm":"image/x-portable-anymap",
+  "ppm":"image/x-portable-pixmap",
+  "ppz":"application/vnd.ms-powerpoint",
+  "pre":"application/x-freelance",
+  "prt":"application/pro_eng",
+  "ps":"application/postscript",
+  "qt":"video/quicktime",
+  "ra":"audio/x-realaudio",
+  "rar":"application/x-rar-compressed",
+  "ras":"image/x-cmu-raster",
+  "rgb":"image/x-rgb",
+  "rm":"audio/x-pn-realaudio",
+  "rpm":"audio/x-pn-realaudio-plugin",
+  "rtf":"text/rtf",
+  "rtx":"text/richtext",
+  "scm":"application/x-lotusscreencam",
+  "set":"application/set",
+  "sgml":"text/sgml",
+  "sh":"application/x-sh",
+  "shar":"application/x-shar",
+  "silo":"model/mesh",
+  "sit":"application/x-stuffit",
+  "skt":"application/x-koan",
+  "smil":"application/smil",
+  "snd":"audio/basic",
+  "sol":"application/solids",
+  "spl":"application/x-futuresplash",
+  "src":"application/x-wais-source",
+  "stl":"application/SLA",
+  "stp":"application/STEP",
+  "sv4cpio":"application/x-sv4cpio",
+  "sv4crc":"application/x-sv4crc",
+  "svg":"image/svg+xml",
+  "swf":"application/x-shockwave-flash",
+  "tar":"application/x-tar",
+  "tcl":"application/x-tcl",
+  "tex":"application/x-tex",
+  "texinfo":"application/x-texinfo",
+  "tgz":"application/x-tar-gz",
+  "tiff":"image/tiff",
+  "tr":"application/x-troff",
+  "tsi":"audio/TSP-audio",
+  "tsp":"application/dsptype",
+  "tsv":"text/tab-separated-values",
+  "unv":"application/i-deas",
+  "ustar":"application/x-ustar",
+  "vcd":"application/x-cdlink",
+  "vda":"application/vda",
+  "vivo":"video/vnd.vivo",
+  "vrm":"x-world/x-vrml",
+  "wav":"audio/x-wav",
+  "wax":"audio/x-ms-wax",
+  "webm":"video/webm",
+  "wma":"audio/x-ms-wma",
+  "wmv":"video/x-ms-wmv",
+  "wmx":"video/x-ms-wmx",
+  "wrl":"model/vrml",
+  "wvx":"video/x-ms-wvx",
+  "xbm":"image/x-xbitmap",
+  "xlw":"application/vnd.ms-excel",
+  "xml":"text/xml",
+  "xpm":"image/x-xpixmap",
+  "xwd":"image/x-xwindowdump",
+  "xyz":"chemical/x-pdb",
+  "zip":"application/zip"
+};
+
+exports.lookup = function(ext, defaultType) {
+  defaultType = defaultType || 'application/octet-stream';
+
+  return (ext in exports.types)
+    ? exports.types[ext]
+    : defaultType;
+};
+},{}],87:[function(require,module,exports){
+var crypto = require('crypto')
+  , qs = require('querystring')
+  ;
+
+function sha1 (key, body) {
+  return crypto.createHmac('sha1', key).update(body).digest('base64')
+}
+
+function rfc3986 (str) {
+  return encodeURIComponent(str)
+    .replace('!','%21')
+    .replace('*','%2A')
+    .replace('(','%28')
+    .replace(')','%29')
+    .replace("'",'%27')
+    ;
+}
+
+function hmacsign (httpMethod, base_uri, params, consumer_secret, token_secret, body) {
+  // adapted from https://dev.twitter.com/docs/auth/oauth
+  var base = 
+    (httpMethod || 'GET') + "&" +
+    encodeURIComponent(  base_uri ) + "&" +
+    Object.keys(params).sort().map(function (i) {
+      // big WTF here with the escape + encoding but it's what twitter wants
+      return escape(rfc3986(i)) + "%3D" + escape(rfc3986(params[i]))
+    }).join("%26")
+  var key = consumer_secret + '&'
+  if (token_secret) key += token_secret
+  return sha1(key, base)
+}
+
+exports.hmacsign = hmacsign
+exports.rfc3986 = rfc3986
+},{"crypto":11,"querystring":34}],88:[function(require,module,exports){
+(function (process,Buffer){
+'use strict';
+
+var net = require('net');
+var tls = require('tls');
+var http = require('http');
+var https = require('https');
+var events = require('events');
+var assert = require('assert');
+var util = require('util');
+
+
+exports.httpOverHttp = httpOverHttp;
+exports.httpsOverHttp = httpsOverHttp;
+exports.httpOverHttps = httpOverHttps;
+exports.httpsOverHttps = httpsOverHttps;
+
+
+function httpOverHttp(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = http.request;
+  return agent;
+}
+
+function httpsOverHttp(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = http.request;
+  agent.createSocket = createSecureSocket;
+  return agent;
+}
+
+function httpOverHttps(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = https.request;
+  return agent;
+}
+
+function httpsOverHttps(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = https.request;
+  agent.createSocket = createSecureSocket;
+  return agent;
+}
+
+
+function TunnelingAgent(options) {
+  var self = this;
+  self.options = options || {};
+  self.proxyOptions = self.options.proxy || {};
+  self.maxSockets = self.options.maxSockets || http.Agent.defaultMaxSockets;
+  self.requests = [];
+  self.sockets = [];
+
+  self.on('free', function onFree(socket, host, port) {
+    for (var i = 0, len = self.requests.length; i < len; ++i) {
+      var pending = self.requests[i];
+      if (pending.host === host && pending.port === port) {
+        // Detect the request to connect same origin server,
+        // reuse the connection.
+        self.requests.splice(i, 1);
+        pending.request.onSocket(socket);
+        return;
+      }
+    }
+    socket.destroy();
+    self.removeSocket(socket);
+  });
+}
+util.inherits(TunnelingAgent, events.EventEmitter);
+
+TunnelingAgent.prototype.addRequest = function addRequest(req, host, port) {
+  var self = this;
+
+  if (self.sockets.length >= this.maxSockets) {
+    // We are over limit so we'll add it to the queue.
+    self.requests.push({host: host, port: port, request: req});
+    return;
+  }
+
+  // If we are under maxSockets create a new one.
+  self.createSocket({host: host, port: port, request: req}, function(socket) {
+    socket.on('free', onFree);
+    socket.on('close', onCloseOrRemove);
+    socket.on('agentRemove', onCloseOrRemove);
+    req.onSocket(socket);
+
+    function onFree() {
+      self.emit('free', socket, host, port);
+    }
+
+    function onCloseOrRemove(err) {
+      self.removeSocket();
+      socket.removeListener('free', onFree);
+      socket.removeListener('close', onCloseOrRemove);
+      socket.removeListener('agentRemove', onCloseOrRemove);
+    }
+  });
+};
+
+TunnelingAgent.prototype.createSocket = function createSocket(options, cb) {
+  var self = this;
+  var placeholder = {};
+  self.sockets.push(placeholder);
+
+  var connectOptions = mergeOptions({}, self.proxyOptions, {
+    method: 'CONNECT',
+    path: options.host + ':' + options.port,
+    agent: false
+  });
+  if (connectOptions.proxyAuth) {
+    connectOptions.headers = connectOptions.headers || {};
+    connectOptions.headers['Proxy-Authorization'] = 'Basic ' +
+        new Buffer(connectOptions.proxyAuth).toString('base64');
+  }
+
+  debug('making CONNECT request');
+  var connectReq = self.request(connectOptions);
+  connectReq.useChunkedEncodingByDefault = false; // for v0.6
+  connectReq.once('response', onResponse); // for v0.6
+  connectReq.once('upgrade', onUpgrade);   // for v0.6
+  connectReq.once('connect', onConnect);   // for v0.7 or later
+  connectReq.once('error', onError);
+  connectReq.end();
+
+  function onResponse(res) {
+    // Very hacky. This is necessary to avoid http-parser leaks.
+    res.upgrade = true;
+  }
+
+  function onUpgrade(res, socket, head) {
+    // Hacky.
+    process.nextTick(function() {
+      onConnect(res, socket, head);
+    });
+  }
+
+  function onConnect(res, socket, head) {
+    connectReq.removeAllListeners();
+    socket.removeAllListeners();
+
+    if (res.statusCode === 200) {
+      assert.equal(head.length, 0);
+      debug('tunneling connection has established');
+      self.sockets[self.sockets.indexOf(placeholder)] = socket;
+      cb(socket);
+    } else {
+      debug('tunneling socket could not be established, statusCode=%d',
+            res.statusCode);
+      var error = new Error('tunneling socket could not be established, ' +
+                            'sutatusCode=' + res.statusCode);
+      error.code = 'ECONNRESET';
+      options.request.emit('error', error);
+      self.removeSocket(placeholder);
+    }
+  }
+
+  function onError(cause) {
+    connectReq.removeAllListeners();
+
+    debug('tunneling socket could not be established, cause=%s\n',
+          cause.message, cause.stack);
+    var error = new Error('tunneling socket could not be established, ' +
+                          'cause=' + cause.message);
+    error.code = 'ECONNRESET';
+    options.request.emit('error', error);
+    self.removeSocket(placeholder);
+  }
+};
+
+TunnelingAgent.prototype.removeSocket = function removeSocket(socket) {
+  var pos = this.sockets.indexOf(socket)
+  if (pos === -1) {
+    return;
+  }
+  this.sockets.splice(pos, 1);
+
+  var pending = this.requests.shift();
+  if (pending) {
+    // If we have pending requests and a socket gets closed a new one
+    // needs to be created to take over in the pool for the one that closed.
+    this.createSocket(pending, function(socket) {
+      pending.request.onSocket(socket);
+    });
+  }
+};
+
+function createSecureSocket(options, cb) {
+  var self = this;
+  TunnelingAgent.prototype.createSocket.call(self, options, function(socket) {
+    // 0 is dummy port for v0.6
+    var secureSocket = tls.connect(0, mergeOptions({}, self.options, {
+      socket: socket
+    }));
+    cb(secureSocket);
+  });
+}
+
+
+function mergeOptions(target) {
+  for (var i = 1, len = arguments.length; i < len; ++i) {
+    var overrides = arguments[i];
+    if (typeof overrides === 'object') {
+      var keys = Object.keys(overrides);
+      for (var j = 0, keyLen = keys.length; j < keyLen; ++j) {
+        var k = keys[j];
+        if (overrides[k] !== undefined) {
+          target[k] = overrides[k];
+        }
+      }
+    }
+  }
+  return target;
+}
+
+
+var debug;
+if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
+  debug = function() {
+    var args = Array.prototype.slice.call(arguments);
+    if (typeof args[0] === 'string') {
+      args[0] = 'TUNNEL: ' + args[0];
+    } else {
+      args.unshift('TUNNEL:');
+    }
+    console.error.apply(console, args);
+  }
+} else {
+  debug = function() {};
+}
+exports.debug = debug; // for test
+
+}).call(this,require('_process'),require("buffer").Buffer)
+},{"_process":30,"assert":2,"buffer":4,"events":22,"http":23,"https":27,"net":1,"tls":1,"util":50}],89:[function(require,module,exports){
+module.exports = function () {
+  var s = [], itoh = '0123456789ABCDEF';
+ 
+  // Make array of random hex digits. The UUID only has 32 digits in it, but we
+  // allocate an extra items to make room for the '-'s we'll be inserting.
+  for (var i = 0; i <36; i++) s[i] = Math.floor(Math.random()*0x10);
+ 
+  // Conform to RFC-4122, section 4.4
+  s[14] = 4;  // Set 4 high bits of time_high field to version
+  s[19] = (s[19] & 0x3) | 0x8;  // Specify 2 high bits of clock sequence
+ 
+  // Convert to hex chars
+  for (var i = 0; i <36; i++) s[i] = itoh[s[i]];
+ 
+  // Insert '-'s
+  s[8] = s[13] = s[18] = s[23] = '-';
+ 
+  return s.join('');
+}
+
+},{}],90:[function(require,module,exports){
+/*!
+ * Tobi - Cookie
+ * Copyright(c) 2010 LearnBoost <dev@learnboost.com>
+ * MIT Licensed
+ */
+
+/**
+ * Module dependencies.
+ */
+
+var url = require('url');
+
+/**
+ * Initialize a new `Cookie` with the given cookie `str` and `req`.
+ *
+ * @param {String} str
+ * @param {IncomingRequest} req
+ * @api private
+ */
+
+var Cookie = exports = module.exports = function Cookie(str, req) {
+  this.str = str;
+
+  // First key is the name
+  this.name = str.substr(0, str.indexOf('=')).trim();
+
+  // Map the key/val pairs
+  str.split(/ *; */).reduce(function(obj, pair){
+   var p = pair.indexOf('=');
+   if(p > 0)
+    obj[pair.substring(0, p).trim()] = pair.substring(p + 1).trim();
+   else
+    obj[pair.trim()] = true;
+   return obj;
+  }, this);
+
+  // Assign value
+  this.value = this[this.name];
+
+  // Expires
+  this.expires = this.expires
+    ? new Date(this.expires)
+    : Infinity;
+
+  // Default or trim path
+  this.path = this.path
+    ? this.path.trim(): req 
+    ? url.parse(req.url).pathname: '/';
+};
+
+/**
+ * Return the original cookie string.
+ *
+ * @return {String}
+ * @api public
+ */
+
+Cookie.prototype.toString = function(){
+  return this.str;
+};
+
+},{"url":48}],91:[function(require,module,exports){
+/*!
+* Tobi - CookieJar
+* Copyright(c) 2010 LearnBoost <dev@learnboost.com>
+* MIT Licensed
+*/
+
+/**
+* Module dependencies.
+*/
+
+var url = require('url');
+
+/**
+* Initialize a new `CookieJar`.
+*
+* @api private
+*/
+
+var CookieJar = exports = module.exports = function CookieJar() {
+  this.cookies = [];
+};
+
+/**
+* Add the given `cookie` to the jar.
+*
+* @param {Cookie} cookie
+* @api private
+*/
+
+CookieJar.prototype.add = function(cookie){
+  this.cookies = this.cookies.filter(function(c){
+    // Avoid duplication (same path, same name)
+    return !(c.name == cookie.name && c.path == cookie.path);
+  });
+  this.cookies.push(cookie);
+};
+
+/**
+* Get cookies for the given `req`.
+*
+* @param {IncomingRequest} req
+* @return {Array}
+* @api private
+*/
+
+CookieJar.prototype.get = function(req){
+  var path = url.parse(req.url).pathname
+    , now = new Date
+    , specificity = {};
+  return this.cookies.filter(function(cookie){
+    if (0 == path.indexOf(cookie.path) && now < cookie.expires
+      && cookie.path.length > (specificity[cookie.name] || 0))
+      return specificity[cookie.name] = cookie.path.length;
+  });
+};
+
+/**
+* Return Cookie string for the given `req`.
+*
+* @param {IncomingRequest} req
+* @return {String}
+* @api private
+*/
+
+CookieJar.prototype.cookieString = function(req){
+  var cookies = this.get(req);
+  if (cookies.length) {
+    return cookies.map(function(cookie){
+      return cookie.name + '=' + cookie.value;
+    }).join('; ');
+  }
+};
+
+},{"url":48}]},{},[61]);

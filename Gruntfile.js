@@ -150,11 +150,16 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 
-	//grunt.registerTask('precommit', ['phplint:all', 'phpunit:unit']);
-	grunt.registerTask('default', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client']);
+	grunt.registerTask('debug', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client']);
 	grunt.registerTask('release', ['copy:release', 'browserify', 'concat_css:release', 'cssmin:release']);
-	//grunt.registerTask('browserify', ['browserify']);
 	grunt.registerTask('server', ['php']);
 
-
+	grunt.registerTask("default", function() {
+		console.log("Available tasks:");
+		console.log();
+		console.log("  release   - Build files for release.");
+		console.log("  debug     - Build files for for debug into the www folder.");
+		console.log("  server    - Start a debug server on port 8080 pointing");
+		console.log("              to the www folder. For debugging.");
+	});
 };

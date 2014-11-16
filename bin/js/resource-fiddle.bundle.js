@@ -422,10 +422,10 @@ PositionsEditor.prototype.init = function(resources) {
 
 	var positions = this.resources.getResourceObject().positions;
 
-	console.log("positions: ", positions);
+	//console.log("positions: ", positions);
 
 	for(var key in positions) {
-		console.log("create PositionItem: ", key, positions[key]);
+		//console.log("create PositionItem: ", key, positions[key]);
 		var item = new PositionItem(key, positions[key]);
 		this.view.addItem(item);
 		item.on(PositionItem.Changed, this.onChanged, this);

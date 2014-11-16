@@ -14,6 +14,7 @@
 		private $strings;
 
 		private $testcases;
+		private $texturePath;
 
 		private $groups;
 		private $targetURL;
@@ -37,6 +38,7 @@
 
 			$this->testcases = array();
 			$this->path  = "";
+			$this->texturePath = "textureFiles";
 		}
 
 		/**
@@ -94,6 +96,14 @@
 		public function addTestcase($id, $name, $url)
 		{
 			array_push($this->testcases, new Testcase($id, $name, $url));
+		}
+
+		/**
+		 *
+		 */
+		public function setTexturePath($texturePath)
+		{
+			$this->texturePath=$texturePath;
 		}
 
 		/**
@@ -204,7 +214,7 @@
 								}
 							});
 
-							var jsonUrl = document.location + "<?= $this->path; ?>textureFiles/<?= $this->session; ?>/texture.json";
+							var jsonUrl = document.location + "<?= $this->path; ?><?= $this->texturePath; ?>/<?= $this->session; ?>/texture.json";
 							console.log("\n\njsonUrl = ", jsonUrl, "\n\n");
 							resources.addSource(jsonUrl, true);
 
@@ -238,8 +248,37 @@
 		/**
 		 *
 		 */
+		private function initTexturePath()
+		{
+			$pathinfo=pathinfo($_SERVER["SCRIPT_FILENAME"]);
+			$dirname=$pathinfo["dirname"];			
+
+			$localTexturePath=$dirname."/".$this->texturePath;
+
+			if (!is_dir($localTexturePath)) {
+				$res=mkdir($localTexturePath);
+
+				if (!$res)
+					throw new Exception("Unable to create ".$localTexturePath);
+			}
+
+			$sessionPath=$localTexturePath."/".$this->session;
+
+			if (!is_dir($sessionPath)) {
+				$res=mkdir($sessionPath);
+
+				if (!$res)
+					throw new Exception("Unable to create ".$sessionPath);
+			}
+		}
+
+		/**
+		 *
+		 */
 		public function dispatch()
 		{
+			$this->initTexturePath();
+
 			$path=ResourceFiddle::getPath();
 
 			if ($path=="/") {

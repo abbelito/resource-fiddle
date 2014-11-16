@@ -86,6 +86,7 @@ $resourceFiddle->addTestcase("test2", "Second test", "testcase=test2");
 $resourceFiddle->addTestcase("test3", "Third test", "testcase=test3");
 $resourceFiddle->addTestcase("test4", "Fourth test", "testcase=test4");
 
+$resourceFiddle->setTexturePath("textureFiles");
 
 $resourceFiddle->setSession("bajs");
 

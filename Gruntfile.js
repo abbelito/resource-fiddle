@@ -1,14 +1,16 @@
+var fs = require("fs");
+
 module.exports = function(grunt) {
 
 	// Project configuration.
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
-		browserify: { 
-			
-      		'www/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
-      		'bin/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
-      		'www/js/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
-		
+		browserify: {
+
+			'www/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
+			'bin/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
+			'www/js/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
+
 		},
 		php: {
 			dist: {
@@ -22,111 +24,96 @@ module.exports = function(grunt) {
 		},
 		copy: {
 			client: {
-				files: [
-					{
-						expand: true, 
-						cwd: 'src/client/php/',
-						src: ['**'], 
-						dest: 'www/php'
-					},
-					{
-						expand: true, 
-						cwd: 'src/client/php/',
-						src: ['.htaccess'], 
-						dest: 'www/php'
-					},
-					{
-						expand: true,
-						cwd: 'src/client/test/',
-						src: ['*'],
-						dest: 'www',
-						filter: 'isFile'
-					},
-					{
-						expand: true, 
-						cwd: 'src/client/test/',
-						src: ['.htaccess'], 
-						dest: 'www'
-					},
-					{
-						expand: true,
-						cwd: 'res/',
-						src: ['*'],
-						dest: 'www/img',
-						filter: 'isFile'
-					}
-				]
+				files: [{
+					expand: true,
+					cwd: 'src/client/php/',
+					src: ['**'],
+					dest: 'www/php'
+				}, {
+					expand: true,
+					cwd: 'src/client/php/',
+					src: ['.htaccess'],
+					dest: 'www/php'
+				}, {
+					expand: true,
+					cwd: 'src/client/test/',
+					src: ['*'],
+					dest: 'www',
+					filter: 'isFile'
+				}, {
+					expand: true,
+					cwd: 'src/client/test/',
+					src: ['.htaccess'],
+					dest: 'www'
+				}, {
+					expand: true,
+					cwd: 'res/',
+					src: ['*'],
+					dest: 'www/img',
+					filter: 'isFile'
+				}]
 			},
 			target: {
-				files: [
-					{
-						expand: true,
-						cwd: 'src/target/php/',
-						src: ['**'],
-						dest: 'www/php'
-					},
-					{
-						expand: true,
-						cwd: 'src/target/',
-						src: ['*'],
-						dest: 'www',
-						filter: 'isFile'
-					}
-				]
+				files: [{
+					expand: true,
+					cwd: 'src/target/php/',
+					src: ['**'],
+					dest: 'www/php'
+				}, {
+					expand: true,
+					cwd: 'src/target/',
+					src: ['*'],
+					dest: 'www',
+					filter: 'isFile'
+				}]
 			},
 			release: {
-				files: [
-					{
-						expand: true,
-						cwd: 'src/client/php/',
-						src: ['**'],
-						dest: 'bin/php'
-					},
-					{
-						expand: true, 
-						cwd: 'src/client/php/',
-						src: ['.htaccess'], 
-						dest: 'bin/php'
-					},
-					{
-						expand: true, 
-						cwd: 'src/client/test/',
-						src: ['.htaccess'], 
-						dest: 'bin'
-					},
-					{
-						expand: true,
-						cwd: 'src/client/release/',
-						src: ['*'],
-						dest: 'bin',
-						filter: 'isFile'
-					},
-					{
-						expand: true,
-						cwd: 'res/',
-						src: ['*'],
-						dest: 'bin/img',
-						filter: 'isFile'
-					}
-				]
+				files: [{
+					expand: true,
+					cwd: 'src/client/php/',
+					src: ['**'],
+					dest: 'bin/php'
+				}, {
+					expand: true,
+					cwd: 'src/client/php/',
+					src: ['.htaccess'],
+					dest: 'bin/php'
+				}, {
+					expand: true,
+					cwd: 'src/client/test/',
+					src: ['.htaccess'],
+					dest: 'bin'
+				}, {
+					expand: true,
+					cwd: 'src/client/release/',
+					src: ['*'],
+					dest: 'bin',
+					filter: 'isFile'
+				}, {
+					expand: true,
+					cwd: 'res/',
+					src: ['*'],
+					dest: 'bin/img',
+					filter: 'isFile'
+				}]
 			}
 		},
 		concat_css: {
 			build: {
 				options: {
-				// Task-specific options go here.
+					// Task-specific options go here.
 				},
-			    files: {
-			      "www/css/client.bundle.css": ["src/client/css/**/*.css"]
-			    }
+				files: {
+					"www/css/client.bundle.css": ["src/client/css/**/*.css"]
+				}
 			},
 			release: {
 				options: {
-				// Task-specific options go here.
+					// Task-specific options go here.
 				},
-			    files: {
-			      "www/css/client.bundle.css": ["src/client/css/**/*.css"]
-			    }
+				files: {
+					"www/css/client.bundle.css": ["src/client/css/**/*.css"]
+				}
 			}
 		},
 		cssmin: {
@@ -143,6 +130,10 @@ module.exports = function(grunt) {
 		}
 	});
 
+	grunt.registerTask("fixDebugPermissions", function() {
+		fs.chmodSync("www", 0777);
+	});
+
 	grunt.loadNpmTasks('grunt-php');
 	grunt.loadNpmTasks('grunt-browserify');
 	grunt.loadNpmTasks('grunt-contrib-copy');
@@ -150,7 +141,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 
-	grunt.registerTask('debug', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client']);
+	grunt.registerTask('debug', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client', 'fixDebugPermissions']);
 	grunt.registerTask('release', ['copy:release', 'browserify', 'concat_css:release', 'cssmin:release']);
 	grunt.registerTask('server', ['php']);
 

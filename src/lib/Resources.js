@@ -466,8 +466,15 @@ Resources.JsonLoader.prototype.onJSONLoaded = function () {
         this.onError();
         return;
     }
-   
-    this.json = JSON.parse(this.ajaxRequest.responseText);
+
+    try {
+    	this.json = JSON.parse(this.ajaxRequest.responseText);
+    }
+    catch (e) {
+    	this.json = {};
+        this.onLoaded();
+    	return;
+    }
 
     if(this.json.frames)
     {

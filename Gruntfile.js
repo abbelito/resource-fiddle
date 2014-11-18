@@ -75,11 +75,6 @@ module.exports = function(grunt) {
 					dest: 'bin/php'
 				}, {
 					expand: true,
-					cwd: 'src/client/php/',
-					src: ['.htaccess'],
-					dest: 'bin/php'
-				}, {
-					expand: true,
 					cwd: 'src/client/test/',
 					src: ['.htaccess'],
 					dest: 'bin'

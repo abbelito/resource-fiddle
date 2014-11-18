@@ -301,7 +301,7 @@
 			if($routes->run($path) != false) {
 				return;
 			}
-			$contents= file_get_contents(__DIR__."/../".$path);
+			$contents = file_get_contents(__DIR__."/..".$path);
 			echo $contents;
 		}
 

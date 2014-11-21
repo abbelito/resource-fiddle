@@ -19,7 +19,6 @@
 		private $texturePath;
 
 		private $groups;
-		private $targetURL;
 
 		private $path;
 
@@ -66,14 +65,6 @@
 					break;
 				}
 			}
-		}
-
-		/**
-		 *
-		 */
-		public function setTarget($targetURL)
-		{
-			$this->targetURL  = $targetURL;
 		}
 
 		/**
@@ -226,10 +217,9 @@
 							<?php 
 							$count = count($this->testcases);
 							for($i = 0; $i < $count; $i++) {
-								$testcaseUrl1 = $this->targetURL . "?resources=";
-								$testcaseUrl2 = "&" . $this->testcases[$i]->url;
+								$testcaseUrl = $this->testcases[$i]->url . "&resources=";
 								?>
-								client.addTestcase("<?= $this->testcases[$i]->id ?>", "<?= $this->testcases[$i]->name ?>", "<?= $testcaseUrl1; ?>" + encodeURIComponent(jsonUrl) + "<?= $testcaseUrl2; ?>");
+								client.addTestcase("<?= $this->testcases[$i]->id ?>", "<?= $this->testcases[$i]->name ?>", "<?= $testcaseUrl; ?>" + encodeURIComponent(jsonUrl));
 								<?php
 							}
 							?>

@@ -81,16 +81,15 @@ $resourceFiddle->addResource(ResourceFiddle::$COLORS, "chipsColor2");
 $resourceFiddle->addResource(ResourceFiddle::$COLORS, "chipsColor3");
 $resourceFiddle->addResource(ResourceFiddle::$COLORS, "chipsColor4");
 
-$resourceFiddle->addTestcase("test1", "First test", "testcase=test1");
-$resourceFiddle->addTestcase("test2", "Second test", "testcase=test2");
-$resourceFiddle->addTestcase("test3", "Third test", "testcase=test3");
-$resourceFiddle->addTestcase("test4", "Fourth test", "testcase=test4");
+$resourceFiddle->addTestcase("test1", "First test", "target.php?testcase=test1");
+$resourceFiddle->addTestcase("test2", "Second test", "target.php?testcase=test2");
+$resourceFiddle->addTestcase("test3", "Third test", "target.php?testcase=test3");
+$resourceFiddle->addTestcase("test4", "Fourth test", "target.php?testcase=test4");
 
 $resourceFiddle->setTexturePath("textureFiles");
 
 $resourceFiddle->setSession("bajs");
 
-$resourceFiddle->setTarget("target.php");
 $resourceFiddle->setBasePath("");
 /*
 $resourceFiddle->addResource(ResourceFiddle::$GRAPHICS, "background");

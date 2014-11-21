@@ -446,7 +446,7 @@ Resources.prototype.getTextureFromSkin = function(textureid) {
  * @class Resources.JsonLoader
  */
 Resources.JsonLoader = function(url, crossorigin, noCache) {
-    PIXI.JsonLoader.call(this, url, crossorigin);
+    PIXI.JsonLoader.call(this, url + (noCache ? ("?timestamp="+Date.now()) : ""), crossorigin);
     this.noCache = noCache;
 };
 Resources.JsonLoader.prototype = Object.create(PIXI.JsonLoader.prototype);

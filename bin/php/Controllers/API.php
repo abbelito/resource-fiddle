@@ -42,7 +42,7 @@ class API {
 			array_push($images, $image);
 		}
 
-		usort($images, $this->sortOnSize);
+		usort($images, array($this,"sortOnSize"));
 
 		$originalImages = array();
 		$first = true;

@@ -112,6 +112,7 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 	}
 
 	if(this.loadCount == 0) {
+		//console.log("---------------\n(this.loadCount == 0)\n---------------");
 
 		for(var i = 0; i < this.sources.length; i++) {
 			for(var p in this.sources[i]) {
@@ -143,14 +144,15 @@ Resources.prototype.onLoaded = function(loader, loadIndex) {
 			}
 		}
 		if(this.resources.graphics.textures) {
-			this.textureCount = this.resources.graphics.textures.length;
-			for(var i = 0; i < this.resources.graphics.textures.length; i++) {
+			for(var i = this.textureCount; i < this.resources.graphics.textures.length; i++) {
+				this.textureCount = this.resources.graphics.textures.length;
 				var textureObject = this.resources.graphics.textures[i];
 				this.textures[textureObject.id] = new PIXI.Texture.fromImage(textureObject.file);
 				if(this.textures[textureObject.id].baseTexture.hasLoaded) {
 					this.onTextureLoaded();
 				}
 				else {
+					//console.log("adding listeners to: ", this.textures[textureObject.id].baseTexture.imageUrl);
 					this.textures[textureObject.id].baseTexture.addEventListener("loaded", this.onTextureLoaded.bind(this));
 					this.textures[textureObject.id].baseTexture.addEventListener("error", this.onTextureError.bind(this));
 				}
@@ -200,14 +202,15 @@ Resources.prototype.onError = function(loader, loadIndex) {
 			}
 		}
 		if(this.resources.graphics.textures) {
-			this.textureCount = this.resources.graphics.textures.length;
-			for(var i = 0; i < this.resources.graphics.textures.length; i++) {
+			for(var i = this.textureCount; i < this.resources.graphics.textures.length; i++) {
+				this.textureCount = this.resources.graphics.textures.length;
 				var textureObject = this.resources.graphics.textures[i];
 				this.textures[textureObject.id] = new PIXI.Texture.fromImage(textureObject.file);
 				if(this.textures[textureObject.id].baseTexture.hasLoaded) {
 					this.onTextureLoaded();
 				}
 				else {
+					//console.log("adding listeners to: ", this.textures[textureObject.id].baseTexture.imageUrl);
 					this.textures[textureObject.id].baseTexture.addEventListener("loaded", this.onTextureLoaded.bind(this));
 					this.textures[textureObject.id].baseTexture.addEventListener("error", this.onTextureError.bind(this));
 				}
@@ -222,6 +225,12 @@ Resources.prototype.onError = function(loader, loadIndex) {
 
 Resources.prototype.onTextureLoaded = function(event) {
 	this.texturesLoaded ++;
+	if(event && event.content) {
+		event.content.removeAllEventListeners();
+	}
+	//console.log("\n---------");
+	//console.log("Resources.prototype.onTextureLoaded: this.texturesLoaded = ", this.texturesLoaded, ", this.textureCount = ", this.textureCount, ", event = ", event);
+	//console.log("---------\n");
 	if(this.texturesLoaded >= this.textureCount) {
 		this.trigger(Resources.Loaded);
 	}

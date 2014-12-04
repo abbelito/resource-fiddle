@@ -9,7 +9,8 @@ module.exports = function(grunt) {
 
 			'www/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
 			'bin/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
-			'www/js/resourceapp.bundle.js': ['src/target/js/resourceapp.js']
+			'www/js/resourceapp.bundle.js': ['src/target/js/resourceapp.js'],
+			'test/target.bundle.js': ['test/target.js']
 
 		},
 		php: {

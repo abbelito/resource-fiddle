@@ -67,7 +67,7 @@ class API {
 			$textureHeight = 1024;
 			$texture  = imagecreatetruecolor($textureWidth, $textureHeight);
 			imagealphablending($texture, false);
-			$col = imagecolorallocatealpha($texture, 255, 255, 255, 125);
+			$col = imagecolorallocatealpha($texture, 255, 255, 255, 127);
 			imagefilledrectangle($texture, 0, 0, $textureWidth, $textureHeight, $col);
 			imagealphablending($texture, true);
 

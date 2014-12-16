@@ -42,6 +42,7 @@ inherits(TargetApp, PixiApp);
 
 TargetApp.prototype.onResourcesLoaded = function() {
 	console.log("resources loaded...");
+	console.log("pos: "+JSON.stringify(this.resources.getPoint("pos_one")));
 	var s,g,t,style;
 
 	style = {

@@ -7,6 +7,8 @@
 	$r->addResource(ResourceFiddle::$GRAPHICS, "image_one");
 	$r->addResource(ResourceFiddle::$GRAPHICS, "image_two");
 
+	$r->addResource(ResourceFiddle::$POSITIONS, "pos_one", '[10, 10]');
+
 	$r->setSession("session");
 	$r->setTexturePath("textureFiles");
 

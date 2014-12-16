@@ -278,7 +278,10 @@ Resources.prototype.getPoint = function(key) {
 	var value = null;
 
 	if ((this.resources != null) && (this.resources.positions[key] != null)) {
-		value = new PIXI.Point(this.resources.positions[key][0], this.resources.positions[key][1]);
+		value = new PIXI.Point(
+			parseFloat(this.resources.positions[key][0]),
+			parseFloat(this.resources.positions[key][1])
+		);
 	}
 
 	if (value == null) {

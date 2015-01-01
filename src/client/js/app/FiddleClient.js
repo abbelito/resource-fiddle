@@ -5,11 +5,16 @@ var EditorControllerView = require("../views/EditorControllerView");
 var TargetControllerView = require("../views/TargetControllerView");
 var EditorController = require("../controllers/EditorController");
 var TargetController = require("../controllers/TargetController");
+var FiddleClientModel = require("../models/FiddleClientModel");
+var xnode=require("xnode");
 
 function FiddleClient(domContainer, session, basePath) {
-	RootView.call(this, domContainer);
+	xnode.Div.call(this);
 
-	this.session = session;
+	this.fiddleClientModel = new FiddleClientModel();
+	this.fiddleClientModel.setSession(session);
+
+	/*this.session = session;
 
 	this.editorView = new EditorControllerView();
 	this.addChild(this.editorView);
@@ -21,34 +26,39 @@ function FiddleClient(domContainer, session, basePath) {
 	this.targetView.x = 500;
 	this.target = new TargetController(this.targetView);
 
-	window.addEventListener("resize", this.onResize.bind(this));
+	window.addEventListener("resize", this.onResize.bind(this));*/
+
+	domContainer.appendChild(this);
 };
-ClassUtils.extends(FiddleClient, RootView);
+
+ClassUtils.extends(FiddleClient, xnode.Div);
 
 FiddleClient.prototype.init = function(resources) {
 	//this.editor.init(editorContainer);
 	this.resources = resources;
 
-	if(resources.isLoading()) {
+	if (resources.isLoading()) {
 		resources.on(Resources.Loaded, this.doInit, this);
-	}
-	else {
+	} else {
 		this.doInit();
 	}
 };
 
 FiddleClient.prototype.addTestcase = function(id, name, url) {
-	this.target.addTestcase(id, name, url);
+	//this.target.addTestcase(id, name, url);
+	this.fiddleClientModel.addTestcase(id, name, url)
 };
 
 FiddleClient.prototype.doInit = function() {
-	this.target.init();
+	/*this.target.init();
 	this.editor.init(this.resources);
 
-	this.updateLayout(document.body.clientWidth, document.body.clientHeight);
+	this.updateLayout(document.body.clientWidth, document.body.clientHeight);*/
+
+	this.fiddleClientModel.initWithResources(this.resources);
 };
 
-FiddleClient.prototype.onRefresh = function() {
+/*FiddleClient.prototype.onRefresh = function() {
 	this.target.reload();
 };
 
@@ -59,10 +69,10 @@ FiddleClient.prototype.onResize = function() {
 
 FiddleClient.prototype.updateLayout = function(width, height) {
 	this.editorView.x = 0;
-	this.targetView.x = width*0.5;
-	this.editorView.updateLayout(width*0.5, height);
-	this.targetView.updateLayout(width*0.5, height);
-};
+	this.targetView.x = width * 0.5;
+	this.editorView.updateLayout(width * 0.5, height);
+	this.targetView.updateLayout(width * 0.5, height);
+};*/
 
 
 module.exports = FiddleClient;

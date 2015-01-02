@@ -106,7 +106,7 @@
 			?>
 			<html>
 				<head>
-					<link rel="stylesheet" type="text/css" href="<?= $this->path; ?>css/client.min.css">
+					<link rel="stylesheet" href="<?= $this->path; ?>css/client.min.css">
 					<script type="text/javascript" src="<?= $this->path; ?>js/resource-fiddle.bundle.js"></script>
 
 					
@@ -291,7 +291,19 @@
 			if($routes->run($path) != false) {
 				return;
 			}
+
 			$contents = file_get_contents(__DIR__."/..".$path);
+
+			switch (pathinfo($path,PATHINFO_EXTENSION)) {
+				case "js":
+					header("Content-type: text/javascript");
+					break;
+
+				case "css":
+					header("Content-type: text/css");
+					break;
+			}
+
 			echo $contents;
 		}
 

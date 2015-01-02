@@ -6,13 +6,23 @@ var TargetControllerView = require("../views/TargetControllerView");
 var EditorController = require("../controllers/EditorController");
 var TargetController = require("../controllers/TargetController");
 var FiddleClientModel = require("../models/FiddleClientModel");
-var xnode=require("xnode");
+var FiddleClientView = require("../views/FiddleClientView");
+var FiddleClientController = require("../controllers/FiddleClientController");
+var xnode = require("xnode");
 
 function FiddleClient(domContainer, session, basePath) {
 	xnode.Div.call(this);
 
 	this.fiddleClientModel = new FiddleClientModel();
 	this.fiddleClientModel.setSession(session);
+
+	this.fiddleClientView = new FiddleClientView();
+	this.appendChild(this.fiddleClientView);
+
+	this.fiddleClientController = new FiddleClientController(
+		this.fiddleClientView,
+		this.fiddleClientModel
+	);
 
 	/*this.session = session;
 

@@ -33,7 +33,19 @@ FiddleClientModel.prototype.initWithResources = function(resources) {
  */
 FiddleClientModel.prototype.addTestcase = function(id, name, url) {
 	var testcase = new Testcase(id, name, url);
+	testcase.setFiddleClientModel(this);
 	this.testcaseCollection.addItem(testcase);
+
+	if (this.testcaseCollection.getLength() == 1)
+		testcase.setActive(true);
+}
+
+/**
+ * Get testcase collection
+ * @method getTestcaseCollection
+ */
+FiddleClientModel.prototype.getTestcaseCollection = function() {
+	return this.testcaseCollection;
 }
 
 module.exports = FiddleClientModel;

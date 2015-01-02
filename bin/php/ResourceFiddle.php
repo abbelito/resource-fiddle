@@ -106,15 +106,12 @@
 			?>
 			<html>
 				<head>
-					<link rel="stylesheet" href="<?= $this->path; ?>css/client.min.css">
-					<script type="text/javascript" src="<?= $this->path; ?>js/resource-fiddle.bundle.js"></script>
-
-					
+					<link rel="stylesheet" href="semantic-ui/semantic.min.css">
+					<script src="<?= $this->path; ?>js/jquery.min.js"></script>
+					<script src="<?= $this->path; ?>semantic-ui/semantic.min.js"></script>
+					<script src="<?= $this->path; ?>js/resource-fiddle.bundle.js"></script>
 					<script type="text/javascript">
-
-						
 						function run() {
-
 							var resources = new Resources();
 							resources.addSource({
 								graphics: {
@@ -210,7 +207,6 @@
 							var jsonUrl = document.location + "<?= $this->texturePath; ?>/<?= $this->session; ?>/texture.json";
 							resources.addSource(jsonUrl, true);
 
-
 							var domContainer = document.getElementById("container");
 
 							var client = new FiddleClient(domContainer, "<?= $this->session; ?>", "<?= $this->path; ?>");
@@ -226,7 +222,6 @@
 
 							client.init(resources);
 						}
-
 					</script>
 				</head>
 				<body onload="run();">

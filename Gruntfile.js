@@ -91,6 +91,14 @@ module.exports = function(grunt) {
 					src: ['*'],
 					dest: 'bin/img',
 					filter: 'isFile'
+				}, {
+					expand: true,
+					cwd: 'node_modules/semantic-ui/dist',
+					src: '**',
+					dest: 'bin/semantic-ui',
+				}, {
+					src: 'node_modules/jquery/dist/jquery.min.js',
+					dest: 'bin/js/jquery.min.js'
 				}]
 			}
 		},

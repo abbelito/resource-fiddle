@@ -201,158 +201,14 @@ c.addEventListener("loaded",function(b){a.json=b.content.json,a.onLoaded()}),c.l
 	target.Img = createExtendedXNodeElement("img");
 	target.I = createExtendedXNodeElement("i");
 	target.B = createExtendedXNodeElement("b");
+	target.H1 = createExtendedXNodeElement("h1");
+	target.H2 = createExtendedXNodeElement("h2");
+	target.H3 = createExtendedXNodeElement("h3");
+	target.H4 = createExtendedXNodeElement("h4");
+	target.H5 = createExtendedXNodeElement("h5");
+	target.H6 = createExtendedXNodeElement("h6");
 })();
 },{}],4:[function(require,module,exports){
-/**
- * AS3/jquery style event dispatcher. Slightly modified. The
- * jquery style on/off/trigger style of adding listeners is
- * currently the preferred one.
- *
- * The on method for adding listeners takes an extra parameter which is the
- * scope in which listeners should be called. So this:
- *
- *     object.on("event", listener, this);
- *
- * Has the same function when adding events as:
- *
- *     object.on("event", listener.bind(this));
- *
- * However, the difference is that if we use the second method it
- * will not be possible to remove the listeners later, unless
- * the closure created by bind is stored somewhere. If the
- * first method is used, we can remove the listener with:
- *
- *     object.off("event", listener, this);
- *
- * @class EventDispatcher
- */
-function EventDispatcher() {
-	this.listenerMap = {};
-}
-
-/**
- * Add event listener.
- * @method addEventListener
- */
-EventDispatcher.prototype.addEventListener = function(eventType, listener, scope) {
-	if (!this.listenerMap)
-		this.listenerMap = {};
-
-	if (!eventType)
-		throw new Error("Event type required for event dispatcher");
-
-	if (!listener)
-		throw new Error("Listener required for event dispatcher");
-
-	this.removeEventListener(eventType, listener, scope);
-
-	if (!this.listenerMap.hasOwnProperty(eventType))
-		this.listenerMap[eventType] = [];
-
-	this.listenerMap[eventType].push({
-		listener: listener,
-		scope: scope
-	});
-}
-
-/**
- * Remove event listener.
- * @method removeEventListener
- */
-EventDispatcher.prototype.removeEventListener = function(eventType, listener, scope) {
-	if (!this.listenerMap)
-		this.listenerMap = {};
-
-	if (!this.listenerMap.hasOwnProperty(eventType))
-		return;
-
-	var listeners = this.listenerMap[eventType];
-
-	for (var i = 0; i < listeners.length; i++) {
-		var listenerObj = listeners[i];
-
-		if (listener == listenerObj.listener && scope == listenerObj.scope) {
-			listeners.splice(i, 1);
-			i--;
-		}
-	}
-
-	if (!listeners.length)
-		delete this.listenerMap[eventType];
-}
-
-/**
- * Dispatch event.
- * @method dispatchEvent
- */
-EventDispatcher.prototype.dispatchEvent = function(event /* ... */ ) {
-	if (!this.listenerMap)
-		this.listenerMap = {};
-
-	var eventType;
-	var listenerParams;
-
-	if (typeof event == "string") {
-		eventType = event;
-
-		if (arguments.length > 1)
-			listenerParams = Array.prototype.slice.call(arguments, 1);
-
-		else listenerParams = [{
-			type: eventType,
-			target: this
-		}];
-	} else {
-		eventType = event.type;
-		event.target = this;
-		listenerParams = [event];
-	}
-
-	if (!this.listenerMap.hasOwnProperty(eventType))
-		return;
-
-	for (var i in this.listenerMap[eventType]) {
-		var listenerObj = this.listenerMap[eventType][i];
-		listenerObj.listener.apply(listenerObj.scope, listenerParams);
-	}
-}
-
-/**
- * Jquery style alias for addEventListener
- * @method on
- */
-EventDispatcher.prototype.on = EventDispatcher.prototype.addEventListener;
-
-/**
- * Jquery style alias for removeEventListener
- * @method off
- */
-EventDispatcher.prototype.off = EventDispatcher.prototype.removeEventListener;
-
-/**
- * Jquery style alias for dispatchEvent
- * @method trigger
- */
-EventDispatcher.prototype.trigger = EventDispatcher.prototype.dispatchEvent;
-
-/**
- * Make something an event dispatcher. Can be used for multiple inheritance.
- * @method init
- * @static
- */
-EventDispatcher.init = function(cls) {
-	cls.prototype.addEventListener = EventDispatcher.prototype.addEventListener;
-	cls.prototype.removeEventListener = EventDispatcher.prototype.removeEventListener;
-	cls.prototype.dispatchEvent = EventDispatcher.prototype.dispatchEvent;
-	cls.prototype.on = EventDispatcher.prototype.on;
-	cls.prototype.off = EventDispatcher.prototype.off;
-	cls.prototype.trigger = EventDispatcher.prototype.trigger;
-}
-
-if (typeof module !== 'undefined') {
-	module.exports = EventDispatcher;
-}
-},{}],5:[function(require,module,exports){
 var inherits = require("inherits");
 var EventDispatcher = require("yaed");
 
@@ -463,7 +319,7 @@ Collection.prototype.triggerChange = function(eventKind, item, index) {
 }
 
 module.exports = Collection;
-},{"inherits":1,"yaed":4}],6:[function(require,module,exports){
+},{"inherits":1,"yaed":8}],5:[function(require,module,exports){
 var EventDispatcher = require("yaed");
 var xnode = require("xnode");
 var inherits = require("inherits");
@@ -522,7 +378,7 @@ CollectionView.prototype.setDataSource = function(value) {
 }
 
 module.exports = CollectionView;
-},{"./CollectionViewManager":7,"inherits":1,"xnode":3,"yaed":4}],7:[function(require,module,exports){
+},{"./CollectionViewManager":6,"inherits":1,"xnode":3,"yaed":8}],6:[function(require,module,exports){
 var EventDispatcher = require("yaed");
 var xnode = require("xnode");
 var inherits = require("inherits");
@@ -711,13 +567,163 @@ CollectionViewManager.prototype.createItemController = function(renderer) {
 }
 
 module.exports = CollectionViewManager;
-},{"inherits":1,"xnode":3,"yaed":4}],8:[function(require,module,exports){
+},{"inherits":1,"xnode":3,"yaed":8}],7:[function(require,module,exports){
 module.exports = {
 	Collection: require("./Collection"),
 	CollectionView: require("./CollectionView"),
 	CollectionViewManager: require("./CollectionViewManager")
 };
-},{"./Collection":5,"./CollectionView":6,"./CollectionViewManager":7}],9:[function(require,module,exports){
+},{"./Collection":4,"./CollectionView":5,"./CollectionViewManager":6}],8:[function(require,module,exports){
+/**
+ * AS3/jquery style event dispatcher. Slightly modified. The
+ * jquery style on/off/trigger style of adding listeners is
+ * currently the preferred one.
+ *
+ * The on method for adding listeners takes an extra parameter which is the
+ * scope in which listeners should be called. So this:
+ *
+ *     object.on("event", listener, this);
+ *
+ * Has the same function when adding events as:
+ *
+ *     object.on("event", listener.bind(this));
+ *
+ * However, the difference is that if we use the second method it
+ * will not be possible to remove the listeners later, unless
+ * the closure created by bind is stored somewhere. If the
+ * first method is used, we can remove the listener with:
+ *
+ *     object.off("event", listener, this);
+ *
+ * @class EventDispatcher
+ */
+function EventDispatcher() {
+	this.listenerMap = {};
+}
+
+/**
+ * Add event listener.
+ * @method addEventListener
+ */
+EventDispatcher.prototype.addEventListener = function(eventType, listener, scope) {
+	if (!this.listenerMap)
+		this.listenerMap = {};
+
+	if (!eventType)
+		throw new Error("Event type required for event dispatcher");
+
+	if (!listener)
+		throw new Error("Listener required for event dispatcher");
+
+	this.removeEventListener(eventType, listener, scope);
+
+	if (!this.listenerMap.hasOwnProperty(eventType))
+		this.listenerMap[eventType] = [];
+
+	this.listenerMap[eventType].push({
+		listener: listener,
+		scope: scope
+	});
+}
+
+/**
+ * Remove event listener.
+ * @method removeEventListener
+ */
+EventDispatcher.prototype.removeEventListener = function(eventType, listener, scope) {
+	if (!this.listenerMap)
+		this.listenerMap = {};
+
+	if (!this.listenerMap.hasOwnProperty(eventType))
+		return;
+
+	var listeners = this.listenerMap[eventType];
+
+	for (var i = 0; i < listeners.length; i++) {
+		var listenerObj = listeners[i];
+
+		if (listener == listenerObj.listener && scope == listenerObj.scope) {
+			listeners.splice(i, 1);
+			i--;
+		}
+	}
+
+	if (!listeners.length)
+		delete this.listenerMap[eventType];
+}
+
+/**
+ * Dispatch event.
+ * @method dispatchEvent
+ */
+EventDispatcher.prototype.dispatchEvent = function(event /* ... */ ) {
+	if (!this.listenerMap)
+		this.listenerMap = {};
+
+	var eventType;
+	var listenerParams;
+
+	if (typeof event == "string") {
+		eventType = event;
+
+		if (arguments.length > 1)
+			listenerParams = Array.prototype.slice.call(arguments, 1);
+
+		else listenerParams = [{
+			type: eventType,
+			target: this
+		}];
+	} else {
+		eventType = event.type;
+		event.target = this;
+		listenerParams = [event];
+	}
+
+	if (!this.listenerMap.hasOwnProperty(eventType))
+		return;
+
+	for (var i in this.listenerMap[eventType]) {
+		var listenerObj = this.listenerMap[eventType][i];
+		listenerObj.listener.apply(listenerObj.scope, listenerParams);
+	}
+}
+
+/**
+ * Jquery style alias for addEventListener
+ * @method on
+ */
+EventDispatcher.prototype.on = EventDispatcher.prototype.addEventListener;
+
+/**
+ * Jquery style alias for removeEventListener
+ * @method off
+ */
+EventDispatcher.prototype.off = EventDispatcher.prototype.removeEventListener;
+
+/**
+ * Jquery style alias for dispatchEvent
+ * @method trigger
+ */
+EventDispatcher.prototype.trigger = EventDispatcher.prototype.dispatchEvent;
+
+/**
+ * Make something an event dispatcher. Can be used for multiple inheritance.
+ * @method init
+ * @static
+ */
+EventDispatcher.init = function(cls) {
+	cls.prototype.addEventListener = EventDispatcher.prototype.addEventListener;
+	cls.prototype.removeEventListener = EventDispatcher.prototype.removeEventListener;
+	cls.prototype.dispatchEvent = EventDispatcher.prototype.dispatchEvent;
+	cls.prototype.on = EventDispatcher.prototype.on;
+	cls.prototype.off = EventDispatcher.prototype.off;
+	cls.prototype.trigger = EventDispatcher.prototype.trigger;
+}
+
+if (typeof module !== 'undefined') {
+	module.exports = EventDispatcher;
+}
+},{}],9:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var RootView = require("../views/RootView");
 var View = require("../views/View");
@@ -726,13 +732,23 @@ var TargetControllerView = require("../views/TargetControllerView");
 var EditorController = require("../controllers/EditorController");
 var TargetController = require("../controllers/TargetController");
 var FiddleClientModel = require("../models/FiddleClientModel");
-var xnode=require("xnode");
+var FiddleClientView = require("../views/FiddleClientView");
+var FiddleClientController = require("../controllers/FiddleClientController");
+var xnode = require("xnode");
 
 function FiddleClient(domContainer, session, basePath) {
 	xnode.Div.call(this);
 
 	this.fiddleClientModel = new FiddleClientModel();
 	this.fiddleClientModel.setSession(session);
+
+	this.fiddleClientView = new FiddleClientView();
+	this.appendChild(this.fiddleClientView);
+
+	this.fiddleClientController = new FiddleClientController(
+		this.fiddleClientView,
+		this.fiddleClientModel
+	);
 
 	/*this.session = session;
 
@@ -796,7 +812,7 @@ FiddleClient.prototype.updateLayout = function(width, height) {
 
 
 module.exports = FiddleClient;
-},{"../controllers/EditorController":12,"../controllers/TargetController":17,"../models/FiddleClientModel":19,"../utils/ClassUtils":22,"../views/EditorControllerView":25,"../views/RootView":35,"../views/TargetControllerView":38,"../views/View":40,"xnode":3}],10:[function(require,module,exports){
+},{"../controllers/EditorController":12,"../controllers/FiddleClientController":13,"../controllers/TargetController":18,"../models/FiddleClientModel":21,"../utils/ClassUtils":24,"../views/EditorControllerView":27,"../views/FiddleClientView":29,"../views/RootView":39,"../views/TargetControllerView":42,"../views/View":46,"xnode":3}],10:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
@@ -827,7 +843,7 @@ ColorsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = ColorsEditor;
-},{"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"../views/ColorItem":24,"./Editor":11}],11:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"../views/ColorItem":26,"./Editor":11}],11:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
 
@@ -878,7 +894,7 @@ Editor.prototype.onSaved = function(data) {
 };
 
 module.exports = Editor;
-},{"../utils/APIConnection":21,"../utils/EventDispatcher":23}],12:[function(require,module,exports){
+},{"../utils/APIConnection":23,"../utils/EventDispatcher":25}],12:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var EditorView = require("../views/EditorView");
 var Editor = require("../controllers/Editor");
@@ -999,7 +1015,25 @@ EditorController.prototype.onSaved = function(textureJson) {
 };
 
 module.exports = EditorController;
-},{"../controllers/ColorsEditor":10,"../controllers/Editor":11,"../controllers/GraphicsEditor":13,"../controllers/Menu":14,"../controllers/PositionsEditor":15,"../controllers/StringsEditor":16,"../utils/EventDispatcher":23,"../views/EditorView":26,"../views/MenuItem":32,"../views/MenuView":33}],13:[function(require,module,exports){
+},{"../controllers/ColorsEditor":10,"../controllers/Editor":11,"../controllers/GraphicsEditor":14,"../controllers/Menu":15,"../controllers/PositionsEditor":16,"../controllers/StringsEditor":17,"../utils/EventDispatcher":25,"../views/EditorView":28,"../views/MenuItem":36,"../views/MenuView":37}],13:[function(require,module,exports){
+var inherits = require("inherits");
+var xnodec = require("xnodecollection");
+var TargetTabHeaderController = require("./TargetTabHeaderController");
+var TargetTabHeaderView = require("../views/TargetTabHeaderView");
+
+function FiddleClientController(fiddleClientView, fiddleClientModel) {
+	this.fiddleClientView = fiddleClientView;
+	this.fiddleClientModel = fiddleClientModel;
+
+	this.targetTabsHeaderManager = new xnodec.CollectionViewManager();
+	this.targetTabsHeaderManager.setItemRendererClass(TargetTabHeaderView);
+	this.targetTabsHeaderManager.setItemControllerClass(TargetTabHeaderController);
+	this.targetTabsHeaderManager.setTarget(this.fiddleClientView.getTargetPaneView().getTabHeaderHolder());
+	this.targetTabsHeaderManager.setDataSource(this.fiddleClientModel.getTestcaseCollection());
+}
+
+module.exports = FiddleClientController;
+},{"../views/TargetTabHeaderView":44,"./TargetTabHeaderController":19,"inherits":1,"xnodecollection":7}],14:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
@@ -1063,7 +1097,7 @@ GraphicsEditor.prototype.onUploaded = function(data) {
 };
 
 module.exports = GraphicsEditor;
-},{"../../../lib/Resources":41,"../utils/APIConnection":21,"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"../views/ImageItem":28,"../views/SelectButton":36,"./Editor":11}],14:[function(require,module,exports){
+},{"../../../lib/Resources":47,"../utils/APIConnection":23,"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"../views/ImageItem":32,"../views/SelectButton":40,"./Editor":11}],15:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var MenuItem = require("../views/MenuItem");
 
@@ -1107,7 +1141,7 @@ Menu.prototype.onMenuItemClick = function(menuItem) {
 
 module.exports = Menu;
 
-},{"../utils/EventDispatcher":23,"../views/MenuItem":32}],15:[function(require,module,exports){
+},{"../utils/EventDispatcher":25,"../views/MenuItem":36}],16:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
@@ -1142,7 +1176,7 @@ PositionsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = PositionsEditor;
-},{"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"../views/PositionItem":34,"./Editor":11}],16:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"../views/PositionItem":38,"./Editor":11}],17:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var Editor = require("./Editor");
 var StringItem = require("../views/StringItem");
@@ -1170,7 +1204,7 @@ StringsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = StringsEditor;
-},{"../utils/ClassUtils":22,"../views/StringItem":37,"./Editor":11}],17:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../views/StringItem":41,"./Editor":11}],18:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var Menu = require("../controllers/Menu");
 var MenuItem = require("../views/MenuItem");
@@ -1230,10 +1264,55 @@ TargetController.prototype.onChangeView = function(item) {
 };
 
 module.exports = TargetController;
-},{"../controllers/Menu":14,"../models/Testcase":20,"../utils/EventDispatcher":23,"../views/IFrameView":27,"../views/MenuItem":32,"../views/MenuView":33}],18:[function(require,module,exports){
+},{"../controllers/Menu":15,"../models/Testcase":22,"../utils/EventDispatcher":25,"../views/IFrameView":31,"../views/MenuItem":36,"../views/MenuView":37}],19:[function(require,module,exports){
+/**
+ * Control the header field of the tabls in the resource pane.
+ * @method ResourceTabController
+ */
+function TargetTabHeaderController(tabHeaderView) {
+	this.tabHeaderView = tabHeaderView;
+	this.tabHeaderView.addEventListener("click", this.onTabHeaderViewClick.bind(this));
+}
+
+/**
+ * Set data.
+ * @method setData
+ */
+TargetTabHeaderController.prototype.setData = function(testcase) {
+	if (this.testcase) {
+		this.testcase.off("change", this.onTestcaseChange, this);
+	}
+
+	this.testcase = testcase;
+
+	if (this.testcase) {
+		this.testcase.on("change", this.onTestcaseChange, this);
+		this.tabHeaderView.setLabel(testcase.getLabel());
+		this.tabHeaderView.setActive(testcase.isActive());
+	}
+}
+
+/**
+ * The tab was clicked, set this tab as the active one.
+ * @method onTabHeaderViewClick
+ */
+TargetTabHeaderController.prototype.onTabHeaderViewClick = function() {
+	this.testcase.setActive(true);
+}
+
+/**
+ * The model changed.
+ * @method onTestcaseChange
+ */
+TargetTabHeaderController.prototype.onTestcaseChange = function() {
+	this.tabHeaderView.setActive(this.testcase.isActive());
+}
+
+module.exports = TargetTabHeaderController;
+},{}],20:[function(require,module,exports){
 FiddleClient = require("./app/FiddleClient");
 Resources = require("../../lib/Resources");
-},{"../../lib/Resources":41,"./app/FiddleClient":9}],19:[function(require,module,exports){
+},{"../../lib/Resources":47,"./app/FiddleClient":9}],21:[function(require,module,exports){
 var xnode = require("xnode");
 var xnodec = require("xnodecollection");
 var Testcase = require("./Testcase");
@@ -1269,19 +1348,84 @@ FiddleClientModel.prototype.initWithResources = function(resources) {
  */
 FiddleClientModel.prototype.addTestcase = function(id, name, url) {
 	var testcase = new Testcase(id, name, url);
+	testcase.setFiddleClientModel(this);
 	this.testcaseCollection.addItem(testcase);
+
+	if (this.testcaseCollection.getLength() == 1)
+		testcase.setActive(true);
+}
+
+/**
+ * Get testcase collection
+ * @method getTestcaseCollection
+ */
+FiddleClientModel.prototype.getTestcaseCollection = function() {
+	return this.testcaseCollection;
 }
 
 module.exports = FiddleClientModel;
-},{"./Testcase":20,"xnode":3,"xnodecollection":8}],20:[function(require,module,exports){
+},{"./Testcase":22,"xnode":3,"xnodecollection":7}],22:[function(require,module,exports){
+var EventDispatcher = require("yaed");
+var inherits = require("inherits");
+
+/**
+ * Testcase
+ */
 function Testcase(id, name, url) {
 	this.id = id;
 	this.name = name;
 	this.url = url;
+
+	this.active = false;
+	this.fiddleClientModel = null;
 };
 
+inherits(Testcase, EventDispatcher);
+
+/**
+ * Set reference to app.
+ * @method setFiddleClientModel
+ */
+Testcase.prototype.setFiddleClientModel = function(value) {
+	this.fiddleClientModel = value;
+}
+
+/**
+ * Set active state.
+ * @method setActive
+ */
+Testcase.prototype.setActive = function(value) {
+	if (value == this.active)
+		return;
+
+	var siblings = this.fiddleClientModel.getTestcaseCollection();
+
+	for (var i = 0; i < siblings.getLength(); i++)
+		if (siblings.getItemAt(i) != this)
+			siblings.getItemAt(i).setActive(false);
+
+	this.active = value;
+	this.trigger("change");
+}
+
+/**
+ * Is this category the active one?
+ * @method isActive
+ */
+Testcase.prototype.isActive = function() {
+	return this.active;
+}
+
+/**
+ * Get label.
+ * @method getLabel
+ */
+Testcase.prototype.getLabel = function() {
+	return this.name;
+}
+
 module.exports = Testcase;
-},{}],21:[function(require,module,exports){
+},{"inherits":1,"yaed":8}],23:[function(require,module,exports){
 var EventDispatcher = require("./EventDispatcher");
 
 function APIConnection(basePath, session) {
@@ -1352,7 +1496,7 @@ APIConnection.prototype.onReadyStateChange = function(xmlhttp) {
 
 
 module.exports = APIConnection;
-},{"./EventDispatcher":23}],22:[function(require,module,exports){
+},{"./EventDispatcher":25}],24:[function(require,module,exports){
 function ClassUtils() {
 	
 };
@@ -1364,7 +1508,7 @@ ClassUtils.extends = function(object, inherits_from) {
 
 
 module.exports = ClassUtils;
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 
 /**
@@ -1507,7 +1651,7 @@ EventDispatcher.init = function(cls) {
 }
 
 module.exports = EventDispatcher;
-},{}],24:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -1567,7 +1711,7 @@ ColorItem.prototype.getValue = function() {
 };
 
 module.exports = ColorItem;
-},{"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"./InputView":30,"./ListItem":31,"./View":40}],25:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./InputView":34,"./ListItem":35,"./View":46}],27:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1606,7 +1750,7 @@ EditorControllerView.prototype.updateLayout = function(width, height) {
 
 module.exports = EditorControllerView;
 
-},{"../utils/ClassUtils":22,"./View":40}],26:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],28:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1637,7 +1781,78 @@ EditorView.prototype.updateLayout = function(width, height) {
 
 module.exports = EditorView;
 
-},{"../utils/ClassUtils":22,"./View":40}],27:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],29:[function(require,module,exports){
+var xnode = require("xnode");
+var inherits = require("inherits");
+var TargetPaneView = require("./TargetPaneView");
+var HeaderView = require("./HeaderView");
+
+/**
+ * Main client view.
+ * @class FiddleClientView
+ */
+function FiddleClientView() {
+	xnode.Div.call(this);
+
+	this.innerHTML = "hello";
+
+	this.targetPaneView = new TargetPaneView();
+	this.appendChild(this.targetPaneView);
+
+	this.headerView = new HeaderView();
+	this.appendChild(this.headerView);
+}
+
+inherits(FiddleClientView, xnode.Div);
+
+/**
+ * Get target pane view.
+ * @method getTargetPaneView
+ */
+FiddleClientView.prototype.getTargetPaneView = function() {
+	return this.targetPaneView;
+}
+
+/**
+ * Get header view.
+ * @method getHeaderView
+ */
+FiddleClientView.prototype.getHeaderView = function() {
+	return this.haderView;
+}
+
+module.exports = FiddleClientView;
+},{"./HeaderView":30,"./TargetPaneView":43,"inherits":1,"xnode":3}],30:[function(require,module,exports){
+var inherits = require("inherits");
+var xnode = require("xnode");
+
+/**
+ * Header view.
+ * @class HeaderView
+ */
+function HeaderView() {
+	xnode.Div.call(this);
+
+	this.style.position = "absolute";
+	this.style.top = "0";
+	this.style.left = "0";
+	this.style.right = "0";
+	this.style.height = "50px";
+	this.style.background = "#e8e8e8";
+	this.style.borderBottom = "1px solid #e0e0e0"
+	this.style.padding = "10px";
+
+	this.header = new xnode.H1();
+	this.header.className = "ui header";
+	this.appendChild(this.header);
+
+	this.header.innerHTML = "Resource Fiddle";
+}
+
+inherits(HeaderView, xnode.Div);
+
+module.exports = HeaderView;
+},{"inherits":1,"xnode":3}],31:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1670,7 +1885,7 @@ IFrameView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = IFrameView;
-},{"../utils/ClassUtils":22,"./View":40}],28:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],32:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -1726,7 +1941,7 @@ ImageItem.prototype.getValues = function() {
 
 
 module.exports = ImageItem;
-},{"../../../lib/Resources":41,"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"./ImageView":29,"./ListItem":31,"./SelectButton":36}],29:[function(require,module,exports){
+},{"../../../lib/Resources":47,"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./ImageView":33,"./ListItem":35,"./SelectButton":40}],33:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1800,7 +2015,7 @@ ImageView.prototype.updateLayout = function(width, height) {
 
 
 module.exports = ImageView;
-},{"../utils/ClassUtils":22,"./View":40}],30:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],34:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -1835,7 +2050,7 @@ InputView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = InputView;
-},{"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"./View":40}],31:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./View":46}],35:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 var Text = require("./Text");
@@ -1869,7 +2084,7 @@ ListItem.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = ListItem;
-},{"../utils/ClassUtils":22,"./Text":39,"./View":40}],32:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./Text":45,"./View":46}],36:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -1915,7 +2130,7 @@ MenuItem.prototype.updateLayout = function(width, height) {
 
 module.exports = MenuItem;
 
-},{"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"./Text":39,"./View":40}],33:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./Text":45,"./View":46}],37:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1959,7 +2174,7 @@ MenuView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = MenuView;
-},{"../utils/ClassUtils":22,"./View":40}],34:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],38:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -2021,7 +2236,7 @@ PositionItem.prototype.getValues = function() {
 };
 
 module.exports = PositionItem;
-},{"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"./InputView":30,"./ListItem":31,"./Text":39}],35:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./InputView":34,"./ListItem":35,"./Text":45}],39:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2037,7 +2252,7 @@ ClassUtils.extends(RootView, View);
 
 module.exports = RootView;
 
-},{"../utils/ClassUtils":22,"./View":40}],36:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],40:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -2063,7 +2278,7 @@ SelectButton.prototype.onChange = function() {
 
 module.exports = SelectButton;
 
-},{"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"./View":40}],37:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./View":46}],41:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -2123,7 +2338,7 @@ StringItem.prototype.onChanged = function(files) {
 
 
 module.exports = StringItem;
-},{"../../../lib/Resources":41,"../utils/ClassUtils":22,"../utils/EventDispatcher":23,"./ImageView":29,"./InputView":30,"./ListItem":31,"./SelectButton":36,"./Text":39}],38:[function(require,module,exports){
+},{"../../../lib/Resources":47,"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./ImageView":33,"./InputView":34,"./ListItem":35,"./SelectButton":40,"./Text":45}],42:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2156,7 +2371,86 @@ TargetControllerView.prototype.updateLayout = function(width, height) {
 
 module.exports = TargetControllerView;
 
-},{"../utils/ClassUtils":22,"./View":40}],39:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],43:[function(require,module,exports){
+var inherits = require("inherits");
+var xnode = require("xnode");
+var xnodec = require("xnodecollection");
+
+/**
+ * Target pane.
+ * @class TargetPaneView
+ */
+function TargetPaneView() {
+	xnode.Div.call(this);
+
+	this.style.position = "absolute";
+	this.style.top = "60px";
+	this.style.right = "10px";
+	this.style.width = "50%";
+	this.style.bottom = "10px";
+
+	this.tabHeaders = new xnode.Div();
+	this.tabHeaders.className = "ui top attached tabular menu";
+	this.appendChild(this.tabHeaders);
+
+	this.inner = new xnode.Div();
+	this.inner.className = "ui bottom attached active tab segment";
+	this.inner.style.position = "relative";
+	this.inner.style.height = "calc(100% - 35px)";
+	this.inner.style.padding = "1px";
+	this.inner.style.overflowY = "scroll";
+	this.appendChild(this.inner);
+
+}
+
+inherits(TargetPaneView, xnode.Div);
+
+/**
+ * Get holder for the tab headers.
+ * @method getTabHeaderHolder
+ */
+TargetPaneView.prototype.getTabHeaderHolder = function() {
+	return this.tabHeaders;
+}
+
+module.exports = TargetPaneView;
+},{"inherits":1,"xnode":3,"xnodecollection":7}],44:[function(require,module,exports){
+var xnode = require("xnode");
+var inherits = require("inherits");
+
+/**
+ * The tab header.
+ * @class TargetTabHeaderView
+ */
+function TargetTabHeaderView() {
+	xnode.A.call(this);
+	this.className = "item";
+}
+
+inherits(TargetTabHeaderView, xnode.A);
+
+/**
+ * Set label.
+ * @class setLabel
+ */
+TargetTabHeaderView.prototype.setLabel = function(label) {
+	this.innerHTML = label;
+}
+
+/**
+ * Set active state.
+ * @class setActive
+ */
+TargetTabHeaderView.prototype.setActive = function(active) {
+	if (active)
+		this.className = "active item";
+
+	else
+		this.className = "item";
+}
+
+module.exports = TargetTabHeaderView;
+},{"inherits":1,"xnode":3}],45:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2178,7 +2472,7 @@ Text.prototype.updateLayout = function(width, height) {
 
 module.exports = Text;
 
-},{"../utils/ClassUtils":22,"./View":40}],40:[function(require,module,exports){
+},{"../utils/ClassUtils":24,"./View":46}],46:[function(require,module,exports){
 function View(elementType, className) {
 	this._domElement = document.createElement(elementType ? elementType : View.Div);
 	this._frame = {
@@ -2389,7 +2683,7 @@ Object.defineProperty(View.prototype, "color", {
 
 
 module.exports = View;
-},{}],41:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 var PIXI = require("pixi.js");
 var EventDispatcher = require("../client/js/utils/EventDispatcher");
 
@@ -2922,4 +3216,4 @@ Resources.JsonLoader.prototype.onJSONLoaded = function() {
 
 
 module.exports = Resources;
-},{"../client/js/utils/EventDispatcher":23,"pixi.js":2}]},{},[18]);
+},{"../client/js/utils/EventDispatcher":25,"pixi.js":2}]},{},[20]);

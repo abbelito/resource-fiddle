@@ -13,5 +13,6 @@
 	$r->setTexturePath("textureFiles");
 
 	$r->addTestcase("test1", "First test", "target.html?testcase=test1");
+	$r->addTestcase("test2", "Second test", "target.html?testcase=test2");
 
 	$r->dispatch();

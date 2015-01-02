@@ -812,7 +812,7 @@ FiddleClient.prototype.updateLayout = function(width, height) {
 
 
 module.exports = FiddleClient;
-},{"../controllers/EditorController":12,"../controllers/FiddleClientController":13,"../controllers/TargetController":18,"../models/FiddleClientModel":21,"../utils/ClassUtils":24,"../views/EditorControllerView":27,"../views/FiddleClientView":29,"../views/RootView":39,"../views/TargetControllerView":42,"../views/View":46,"xnode":3}],10:[function(require,module,exports){
+},{"../controllers/EditorController":12,"../controllers/FiddleClientController":13,"../controllers/TargetController":19,"../models/FiddleClientModel":23,"../utils/ClassUtils":26,"../views/EditorControllerView":29,"../views/FiddleClientView":31,"../views/RootView":43,"../views/TargetControllerView":46,"../views/View":50,"xnode":3}],10:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
@@ -843,7 +843,7 @@ ColorsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = ColorsEditor;
-},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"../views/ColorItem":26,"./Editor":11}],11:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"../views/ColorItem":28,"./Editor":11}],11:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
 
@@ -894,7 +894,7 @@ Editor.prototype.onSaved = function(data) {
 };
 
 module.exports = Editor;
-},{"../utils/APIConnection":23,"../utils/EventDispatcher":25}],12:[function(require,module,exports){
+},{"../utils/APIConnection":25,"../utils/EventDispatcher":27}],12:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var EditorView = require("../views/EditorView");
 var Editor = require("../controllers/Editor");
@@ -1015,11 +1015,13 @@ EditorController.prototype.onSaved = function(textureJson) {
 };
 
 module.exports = EditorController;
-},{"../controllers/ColorsEditor":10,"../controllers/Editor":11,"../controllers/GraphicsEditor":14,"../controllers/Menu":15,"../controllers/PositionsEditor":16,"../controllers/StringsEditor":17,"../utils/EventDispatcher":25,"../views/EditorView":28,"../views/MenuItem":36,"../views/MenuView":37}],13:[function(require,module,exports){
+},{"../controllers/ColorsEditor":10,"../controllers/Editor":11,"../controllers/GraphicsEditor":14,"../controllers/Menu":15,"../controllers/PositionsEditor":16,"../controllers/StringsEditor":18,"../utils/EventDispatcher":27,"../views/EditorView":30,"../views/MenuItem":38,"../views/MenuView":39}],13:[function(require,module,exports){
 var inherits = require("inherits");
 var xnodec = require("xnodecollection");
 var TargetTabHeaderController = require("./TargetTabHeaderController");
 var TargetTabHeaderView = require("../views/TargetTabHeaderView");
+var ResourceTabHeaderController = require("./ResourceTabHeaderController");
+var ResourceTabHeaderView = require("../views/ResourceTabHeaderView");
 
 function FiddleClientController(fiddleClientView, fiddleClientModel) {
 	this.fiddleClientView = fiddleClientView;
@@ -1030,10 +1032,16 @@ function FiddleClientController(fiddleClientView, fiddleClientModel) {
 	this.targetTabsHeaderManager.setItemControllerClass(TargetTabHeaderController);
 	this.targetTabsHeaderManager.setTarget(this.fiddleClientView.getTargetPaneView().getTabHeaderHolder());
 	this.targetTabsHeaderManager.setDataSource(this.fiddleClientModel.getTestcaseCollection());
+
+	this.resourceTabsHeaderManager=new xnodec.CollectionViewManager();
+	this.resourceTabsHeaderManager.setItemRendererClass(ResourceTabHeaderView);
+	this.resourceTabsHeaderManager.setItemControllerClass(ResourceTabHeaderController);
+	this.resourceTabsHeaderManager.setTarget(this.fiddleClientView.getResourcePaneView().getTabHeaderHolder());
+	this.resourceTabsHeaderManager.setDataSource(this.fiddleClientModel.getCategoryCollection());
 }
 
 module.exports = FiddleClientController;
-},{"../views/TargetTabHeaderView":44,"./TargetTabHeaderController":19,"inherits":1,"xnodecollection":7}],14:[function(require,module,exports){
+},{"../views/ResourceTabHeaderView":42,"../views/TargetTabHeaderView":48,"./ResourceTabHeaderController":17,"./TargetTabHeaderController":20,"inherits":1,"xnodecollection":7}],14:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var APIConnection = require("../utils/APIConnection");
@@ -1097,7 +1105,7 @@ GraphicsEditor.prototype.onUploaded = function(data) {
 };
 
 module.exports = GraphicsEditor;
-},{"../../../lib/Resources":47,"../utils/APIConnection":23,"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"../views/ImageItem":32,"../views/SelectButton":40,"./Editor":11}],15:[function(require,module,exports){
+},{"../../../lib/Resources":51,"../utils/APIConnection":25,"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"../views/ImageItem":34,"../views/SelectButton":44,"./Editor":11}],15:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var MenuItem = require("../views/MenuItem");
 
@@ -1141,7 +1149,7 @@ Menu.prototype.onMenuItemClick = function(menuItem) {
 
 module.exports = Menu;
 
-},{"../utils/EventDispatcher":25,"../views/MenuItem":36}],16:[function(require,module,exports){
+},{"../utils/EventDispatcher":27,"../views/MenuItem":38}],16:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var Editor = require("./Editor");
@@ -1176,7 +1184,52 @@ PositionsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = PositionsEditor;
-},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"../views/PositionItem":38,"./Editor":11}],17:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"../views/PositionItem":40,"./Editor":11}],17:[function(require,module,exports){
+/**
+ * Control the header field of the tabls in the resource pane.
+ * @method ResourceTabController
+ */
+function ResourceTabHeaderController(tabHeaderView) {
+	this.tabHeaderView = tabHeaderView;
+	this.tabHeaderView.addEventListener("click", this.onTabHeaderViewClick.bind(this));
+}
+
+/**
+ * Set data.
+ * @method setData
+ */
+ResourceTabHeaderController.prototype.setData = function(categoryModel) {
+	if (this.categoryModel) {
+		this.categoryModel.off("change", this.onCategoryModelChange, this);
+	}
+
+	this.categoryModel = categoryModel;
+
+	if (this.categoryModel) {
+		this.categoryModel.on("change", this.onCategoryModelChange, this);
+		this.tabHeaderView.setLabel(categoryModel.getLabel());
+		this.tabHeaderView.setActive(categoryModel.isActive());
+	}
+}
+
+/**
+ * The tab was clicked, set this tab as the active one.
+ * @method onTabHeaderViewClick
+ */
+ResourceTabHeaderController.prototype.onTabHeaderViewClick = function() {
+	this.categoryModel.setActive(true);
+}
+
+/**
+ * The model changed.
+ * @method onCategoryModelChange
+ */
+ResourceTabHeaderController.prototype.onCategoryModelChange = function() {
+	this.tabHeaderView.setActive(this.categoryModel.isActive());
+}
+
+module.exports = ResourceTabHeaderController;
+},{}],18:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var Editor = require("./Editor");
 var StringItem = require("../views/StringItem");
@@ -1204,7 +1257,7 @@ StringsEditor.prototype.onChanged = function(item) {
 };
 
 module.exports = StringsEditor;
-},{"../utils/ClassUtils":24,"../views/StringItem":41,"./Editor":11}],18:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../views/StringItem":45,"./Editor":11}],19:[function(require,module,exports){
 var EventDispatcher = require("../utils/EventDispatcher");
 var Menu = require("../controllers/Menu");
 var MenuItem = require("../views/MenuItem");
@@ -1264,7 +1317,7 @@ TargetController.prototype.onChangeView = function(item) {
 };
 
 module.exports = TargetController;
-},{"../controllers/Menu":15,"../models/Testcase":22,"../utils/EventDispatcher":25,"../views/IFrameView":31,"../views/MenuItem":36,"../views/MenuView":37}],19:[function(require,module,exports){
+},{"../controllers/Menu":15,"../models/Testcase":24,"../utils/EventDispatcher":27,"../views/IFrameView":33,"../views/MenuItem":38,"../views/MenuView":39}],20:[function(require,module,exports){
 /**
  * Control the header field of the tabls in the resource pane.
  * @method ResourceTabController
@@ -1309,13 +1362,157 @@ TargetTabHeaderController.prototype.onTestcaseChange = function() {
 }
 
 module.exports = TargetTabHeaderController;
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 FiddleClient = require("./app/FiddleClient");
 Resources = require("../../lib/Resources");
-},{"../../lib/Resources":47,"./app/FiddleClient":9}],21:[function(require,module,exports){
+},{"../../lib/Resources":51,"./app/FiddleClient":9}],22:[function(require,module,exports){
+var FiddleClientModel = require("./FiddleClientModel");
+var EventDispatcher = require("yaed");
+var inherits = require("inherits");
+var xnodec = require("xnodecollection");
+
+/**
+ * Get category model.
+ * @class CategoryModel
+ */
+function CategoryModel(label) {
+	this.label = label;
+	this.parentModel = null;
+	this.active = false;
+	this.categoryCollection = new xnodec.Collection();
+	this.itemCollection = new xnodec.Collection();
+	this.description = "";
+}
+
+inherits(CategoryModel, EventDispatcher);
+
+/**
+ * Set reference to parent model.
+ * @method getParentModel
+ */
+CategoryModel.prototype.setParentModel = function(value) {
+	this.parentModel = value;
+}
+
+/**
+ * Get label.
+ * @method getLabel
+ */
+CategoryModel.prototype.getLabel = function() {
+	return this.label;
+}
+
+/**
+ * Get description.
+ * @method getLabel
+ */
+CategoryModel.prototype.getDescription = function() {
+	return this.description;
+}
+
+/**
+ * Set description.
+ * @method getLabel
+ */
+CategoryModel.prototype.setDescription = function(description) {
+	this.description = description;
+
+	this.trigger("change");
+}
+
+/**
+ * Get reference to app model.
+ * @method getAppModel
+ */
+CategoryModel.prototype.getAppModel = function() {
+	if (!this.parentModel)
+		throw new Error("there is no parent!");
+
+	var p = this.parentModel;
+
+	while (p && !(p instanceof FiddleClientModel))
+		p = p.parentModel;
+
+	return p;
+}
+
+/**
+ * Set active state.
+ * @method setActive
+ */
+CategoryModel.prototype.setActive = function(value) {
+	if (value == this.active)
+		return;
+
+	var siblings = this.parentModel.getCategoryCollection();
+
+	for (var i = 0; i < siblings.getLength(); i++)
+		if (siblings.getItemAt(i) != this)
+			siblings.getItemAt(i).setActive(false);
+
+	this.active = value;
+	this.trigger("change");
+}
+
+/**
+ * Is this category the active one?
+ * @method isActive
+ */
+CategoryModel.prototype.isActive = function() {
+	return this.active;
+}
+
+/**
+ * Get category collection for sub categories.
+ * @method getCategoryCollection
+ */
+CategoryModel.prototype.getCategoryCollection = function() {
+	return this.categoryCollection;
+}
+
+/**
+ * Get item collection.
+ * @method getItemCollection
+ */
+CategoryModel.prototype.getItemCollection = function() {
+	return this.itemCollection;
+}
+
+/**
+ * Add sub category model.
+ * @method addCategoryModel
+ */
+CategoryModel.prototype.addCategoryModel = function(categoryModel) {
+	categoryModel.setParentModel(this);
+	this.categoryCollection.addItem(categoryModel);
+
+	return categoryModel;
+}
+
+/**
+ * Create and add a category model.
+ * @method createCategory
+ */
+CategoryModel.prototype.createCategory = function(title) {
+	var categoryModel = new CategoryModel(title);
+
+	return this.addCategoryModel(categoryModel);
+}
+
+/**
+ * Add resource item model.
+ * @method addResourceItemModel
+ */
+CategoryModel.prototype.addResourceItemModel = function(resourceItemModel) {
+	this.itemCollection.addItem(resourceItemModel);
+}
+
+module.exports = CategoryModel;
+},{"./FiddleClientModel":23,"inherits":1,"xnodecollection":7,"yaed":8}],23:[function(require,module,exports){
 var xnode = require("xnode");
 var xnodec = require("xnodecollection");
 var Testcase = require("./Testcase");
+var CategoryModel = require("./CategoryModel");
 
 /**
  * Main model for the app.
@@ -1324,6 +1521,7 @@ var Testcase = require("./Testcase");
 function FiddleClientModel() {
 	this.session = null;
 	this.testcaseCollection = new xnodec.Collection();
+	this.categoryCollection = new xnodec.Collection();
 }
 
 /**
@@ -1339,7 +1537,9 @@ FiddleClientModel.prototype.setSession = function(session) {
  * @method initWithResources
  */
 FiddleClientModel.prototype.initWithResources = function(resources) {
-
+	this.createCategory("Graphics");
+	this.createCategory("Positions");
+	this.createCategory("Colors");
 }
 
 /**
@@ -1363,8 +1563,40 @@ FiddleClientModel.prototype.getTestcaseCollection = function() {
 	return this.testcaseCollection;
 }
 
+/**
+ * Get category collection.
+ * @method getCategoryCollection
+ */
+FiddleClientModel.prototype.getCategoryCollection = function() {
+	return this.categoryCollection;
+}
+
+/**
+ * Add category model.
+ * @method addCategoryModel
+ */
+FiddleClientModel.prototype.addCategoryModel = function(categoryModel) {
+	categoryModel.setParentModel(this);
+	this.categoryCollection.addItem(categoryModel);
+
+	if (this.categoryCollection.getLength() == 1)
+		categoryModel.setActive(true);
+
+	return categoryModel;
+}
+
+/**
+ * Create and add a category model.
+ * @method createCategory
+ */
+FiddleClientModel.prototype.createCategory = function(title) {
+	var categoryModel = new CategoryModel(title);
+
+	return this.addCategoryModel(categoryModel);
+}
+
 module.exports = FiddleClientModel;
-},{"./Testcase":22,"xnode":3,"xnodecollection":7}],22:[function(require,module,exports){
+},{"./CategoryModel":22,"./Testcase":24,"xnode":3,"xnodecollection":7}],24:[function(require,module,exports){
 var EventDispatcher = require("yaed");
 var inherits = require("inherits");
 
@@ -1425,7 +1657,7 @@ Testcase.prototype.getLabel = function() {
 }
 
 module.exports = Testcase;
-},{"inherits":1,"yaed":8}],23:[function(require,module,exports){
+},{"inherits":1,"yaed":8}],25:[function(require,module,exports){
 var EventDispatcher = require("./EventDispatcher");
 
 function APIConnection(basePath, session) {
@@ -1496,7 +1728,7 @@ APIConnection.prototype.onReadyStateChange = function(xmlhttp) {
 
 
 module.exports = APIConnection;
-},{"./EventDispatcher":25}],24:[function(require,module,exports){
+},{"./EventDispatcher":27}],26:[function(require,module,exports){
 function ClassUtils() {
 	
 };
@@ -1508,7 +1740,7 @@ ClassUtils.extends = function(object, inherits_from) {
 
 
 module.exports = ClassUtils;
-},{}],25:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 "use strict";
 
 /**
@@ -1651,7 +1883,7 @@ EventDispatcher.init = function(cls) {
 }
 
 module.exports = EventDispatcher;
-},{}],26:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -1711,7 +1943,7 @@ ColorItem.prototype.getValue = function() {
 };
 
 module.exports = ColorItem;
-},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./InputView":34,"./ListItem":35,"./View":46}],27:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"./InputView":36,"./ListItem":37,"./View":50}],29:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1750,7 +1982,7 @@ EditorControllerView.prototype.updateLayout = function(width, height) {
 
 module.exports = EditorControllerView;
 
-},{"../utils/ClassUtils":24,"./View":46}],28:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],30:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1781,11 +2013,12 @@ EditorView.prototype.updateLayout = function(width, height) {
 
 module.exports = EditorView;
 
-},{"../utils/ClassUtils":24,"./View":46}],29:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],31:[function(require,module,exports){
 var xnode = require("xnode");
 var inherits = require("inherits");
 var TargetPaneView = require("./TargetPaneView");
 var HeaderView = require("./HeaderView");
+var ResourcePaneView = require("./ResourcePaneView");
 
 /**
  * Main client view.
@@ -1794,13 +2027,14 @@ var HeaderView = require("./HeaderView");
 function FiddleClientView() {
 	xnode.Div.call(this);
 
-	this.innerHTML = "hello";
-
 	this.targetPaneView = new TargetPaneView();
 	this.appendChild(this.targetPaneView);
 
 	this.headerView = new HeaderView();
 	this.appendChild(this.headerView);
+
+	this.resourcePaneView = new ResourcePaneView();
+	this.appendChild(this.resourcePaneView);
 }
 
 inherits(FiddleClientView, xnode.Div);
@@ -1821,8 +2055,16 @@ FiddleClientView.prototype.getHeaderView = function() {
 	return this.haderView;
 }
 
+/**
+ * Get resource pane view.
+ * @method getResourcePaneView
+ */
+FiddleClientView.prototype.getResourcePaneView = function() {
+	return this.resourcePaneView;
+}
+
 module.exports = FiddleClientView;
-},{"./HeaderView":30,"./TargetPaneView":43,"inherits":1,"xnode":3}],30:[function(require,module,exports){
+},{"./HeaderView":32,"./ResourcePaneView":41,"./TargetPaneView":47,"inherits":1,"xnode":3}],32:[function(require,module,exports){
 var inherits = require("inherits");
 var xnode = require("xnode");
 
@@ -1852,7 +2094,7 @@ function HeaderView() {
 inherits(HeaderView, xnode.Div);
 
 module.exports = HeaderView;
-},{"inherits":1,"xnode":3}],31:[function(require,module,exports){
+},{"inherits":1,"xnode":3}],33:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -1885,7 +2127,7 @@ IFrameView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = IFrameView;
-},{"../utils/ClassUtils":24,"./View":46}],32:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],34:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -1941,7 +2183,7 @@ ImageItem.prototype.getValues = function() {
 
 
 module.exports = ImageItem;
-},{"../../../lib/Resources":47,"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./ImageView":33,"./ListItem":35,"./SelectButton":40}],33:[function(require,module,exports){
+},{"../../../lib/Resources":51,"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"./ImageView":35,"./ListItem":37,"./SelectButton":44}],35:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2015,7 +2257,7 @@ ImageView.prototype.updateLayout = function(width, height) {
 
 
 module.exports = ImageView;
-},{"../utils/ClassUtils":24,"./View":46}],34:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],36:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -2050,7 +2292,7 @@ InputView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = InputView;
-},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./View":46}],35:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"./View":50}],37:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 var Text = require("./Text");
@@ -2084,7 +2326,7 @@ ListItem.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = ListItem;
-},{"../utils/ClassUtils":24,"./Text":45,"./View":46}],36:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./Text":49,"./View":50}],38:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -2130,7 +2372,7 @@ MenuItem.prototype.updateLayout = function(width, height) {
 
 module.exports = MenuItem;
 
-},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./Text":45,"./View":46}],37:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"./Text":49,"./View":50}],39:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2174,7 +2416,7 @@ MenuView.prototype.updateLayout = function(width, height) {
 };
 
 module.exports = MenuView;
-},{"../utils/ClassUtils":24,"./View":46}],38:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],40:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -2236,7 +2478,85 @@ PositionItem.prototype.getValues = function() {
 };
 
 module.exports = PositionItem;
-},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./InputView":34,"./ListItem":35,"./Text":45}],39:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"./InputView":36,"./ListItem":37,"./Text":49}],41:[function(require,module,exports){
+var inherits = require("inherits");
+var xnode = require("xnode");
+var xnodec = require("xnodecollection");
+
+/**
+ * The left part of the app, showing the resources.
+ * @class ResourcePaneView
+ */
+function ResourcePaneView() {
+	xnode.Div.call(this);
+
+	this.style.position = "absolute";
+	this.style.top = "60px";
+	this.style.left = "10px";
+	this.style.width = "calc(50% - 15px)";
+	this.style.bottom = "10px";
+
+	this.tabHeaders = new xnode.Div();
+	this.tabHeaders.className = "ui top attached tabular menu";
+	this.appendChild(this.tabHeaders);
+}
+
+inherits(ResourcePaneView, xnode.Div);
+
+/**
+ * Get holder for the tab headers.
+ * @method getTabHeaderHolder
+ */
+ResourcePaneView.prototype.getTabHeaderHolder = function() {
+	return this.tabHeaders;
+}
+
+/**
+ * Get tab holder.
+ * @method getTabHolder
+ */
+ResourcePaneView.prototype.getTabHolder = function() {
+	return this;
+}
+
+module.exports = ResourcePaneView;
+},{"inherits":1,"xnode":3,"xnodecollection":7}],42:[function(require,module,exports){
+var xnode = require("xnode");
+var inherits = require("inherits");
+
+/**
+ * The tab header.
+ * @class ResourceTabHeaderView
+ */
+function ResourceTabHeaderView() {
+	xnode.A.call(this);
+	this.className = "item";
+}
+
+inherits(ResourceTabHeaderView, xnode.A);
+
+/**
+ * Set label.
+ * @class setLabel
+ */
+ResourceTabHeaderView.prototype.setLabel = function(label) {
+	this.innerHTML = label;
+}
+
+/**
+ * Set active state.
+ * @class setActive
+ */
+ResourceTabHeaderView.prototype.setActive = function(active) {
+	if (active)
+		this.className = "active item";
+
+	else
+		this.className = "item";
+}
+
+module.exports = ResourceTabHeaderView;
+},{"inherits":1,"xnode":3}],43:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2252,7 +2572,7 @@ ClassUtils.extends(RootView, View);
 
 module.exports = RootView;
 
-},{"../utils/ClassUtils":24,"./View":46}],40:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],44:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var View = require("./View");
@@ -2278,7 +2598,7 @@ SelectButton.prototype.onChange = function() {
 
 module.exports = SelectButton;
 
-},{"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./View":46}],41:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"./View":50}],45:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var EventDispatcher = require("../utils/EventDispatcher");
 var ListItem = require("./ListItem");
@@ -2338,7 +2658,7 @@ StringItem.prototype.onChanged = function(files) {
 
 
 module.exports = StringItem;
-},{"../../../lib/Resources":47,"../utils/ClassUtils":24,"../utils/EventDispatcher":25,"./ImageView":33,"./InputView":34,"./ListItem":35,"./SelectButton":40,"./Text":45}],42:[function(require,module,exports){
+},{"../../../lib/Resources":51,"../utils/ClassUtils":26,"../utils/EventDispatcher":27,"./ImageView":35,"./InputView":36,"./ListItem":37,"./SelectButton":44,"./Text":49}],46:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2371,7 +2691,7 @@ TargetControllerView.prototype.updateLayout = function(width, height) {
 
 module.exports = TargetControllerView;
 
-},{"../utils/ClassUtils":24,"./View":46}],43:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],47:[function(require,module,exports){
 var inherits = require("inherits");
 var xnode = require("xnode");
 var xnodec = require("xnodecollection");
@@ -2386,7 +2706,7 @@ function TargetPaneView() {
 	this.style.position = "absolute";
 	this.style.top = "60px";
 	this.style.right = "10px";
-	this.style.width = "50%";
+	this.style.width = "calc(50% - 15px)";
 	this.style.bottom = "10px";
 
 	this.tabHeaders = new xnode.Div();
@@ -2414,7 +2734,7 @@ TargetPaneView.prototype.getTabHeaderHolder = function() {
 }
 
 module.exports = TargetPaneView;
-},{"inherits":1,"xnode":3,"xnodecollection":7}],44:[function(require,module,exports){
+},{"inherits":1,"xnode":3,"xnodecollection":7}],48:[function(require,module,exports){
 var xnode = require("xnode");
 var inherits = require("inherits");
 
@@ -2450,7 +2770,7 @@ TargetTabHeaderView.prototype.setActive = function(active) {
 }
 
 module.exports = TargetTabHeaderView;
-},{"inherits":1,"xnode":3}],45:[function(require,module,exports){
+},{"inherits":1,"xnode":3}],49:[function(require,module,exports){
 var ClassUtils = require("../utils/ClassUtils");
 var View = require("./View");
 
@@ -2472,7 +2792,7 @@ Text.prototype.updateLayout = function(width, height) {
 
 module.exports = Text;
 
-},{"../utils/ClassUtils":24,"./View":46}],46:[function(require,module,exports){
+},{"../utils/ClassUtils":26,"./View":50}],50:[function(require,module,exports){
 function View(elementType, className) {
 	this._domElement = document.createElement(elementType ? elementType : View.Div);
 	this._frame = {
@@ -2683,7 +3003,7 @@ Object.defineProperty(View.prototype, "color", {
 
 
 module.exports = View;
-},{}],47:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 var PIXI = require("pixi.js");
 var EventDispatcher = require("../client/js/utils/EventDispatcher");
 
@@ -3216,4 +3536,4 @@ Resources.JsonLoader.prototype.onJSONLoaded = function() {
 
 
 module.exports = Resources;
-},{"../client/js/utils/EventDispatcher":25,"pixi.js":2}]},{},[20]);
+},{"../client/js/utils/EventDispatcher":27,"pixi.js":2}]},{},[21]);

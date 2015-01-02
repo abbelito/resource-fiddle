@@ -12,7 +12,7 @@ function TargetPaneView() {
 	this.style.position = "absolute";
 	this.style.top = "60px";
 	this.style.right = "10px";
-	this.style.width = "50%";
+	this.style.width = "calc(50% - 15px)";
 	this.style.bottom = "10px";
 
 	this.tabHeaders = new xnode.Div();

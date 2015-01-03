@@ -2,7 +2,8 @@ var EventDispatcher = require("yaed");
 var inherits = require("inherits");
 
 /**
- * Testcase
+ * Testcase.
+ * @class Testcase
  */
 function Testcase(id, name, url) {
 	this.id = id;

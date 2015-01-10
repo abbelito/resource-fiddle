@@ -297,6 +297,10 @@
 				case "css":
 					header("Content-type: text/css");
 					break;
+
+				case "woff":
+					header("Content-type: font/woff");
+					break;
 			}
 
 			echo $contents;

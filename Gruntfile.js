@@ -6,6 +6,11 @@ module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 		browserify: {
+			options: {
+				browserifyOptions: {
+					debug: true
+				}
+			},
 
 			'www/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
 			'bin/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],

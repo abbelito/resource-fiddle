@@ -9,6 +9,10 @@
 
 	$r->addResource(ResourceFiddle::$POSITIONS, "pos_one", '[10, 10]');
 
+	$r->addResource(ResourceFiddle::$COLORS, "color_one", 0xff0000);
+	$r->addResource(ResourceFiddle::$COLORS, "color_two", 0x00ff00);
+
+
 	$r->setSession("session");
 	$r->setTexturePath("textureFiles");
 

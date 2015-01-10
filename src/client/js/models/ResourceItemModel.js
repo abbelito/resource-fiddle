@@ -2,8 +2,15 @@
  * ResourceItemModel
  * @class ResourceItemModel
  */
-function ResourceItemModel(key, defaultValue, value, type) {
+function ResourceItemModel(type, key, defaultValue, value) {
 	this.key = key;
+
+	if (!defaultValue)
+		defaultValue="";
+
+	if (!value)
+		value="";
+
 	this.defaultValue = defaultValue;
 	this.value = value;
 
@@ -27,6 +34,14 @@ ResourceItemModel.prototype.getKey = function() {
  */
 ResourceItemModel.prototype.getDefaultValue = function() {
 	return this.defaultValue;
+}
+
+/**
+ * Set default value.
+ * @method getDefaultValue
+ */
+ResourceItemModel.prototype.setDefaultValue = function(defaultValue) {
+	this.defaultValue = defaultValue;
 }
 
 /**

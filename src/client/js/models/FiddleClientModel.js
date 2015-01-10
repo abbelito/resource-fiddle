@@ -2,6 +2,9 @@ var xnode = require("xnode");
 var xnodec = require("xnodecollection");
 var Testcase = require("./Testcase");
 var CategoryModel = require("./CategoryModel");
+var ImageItemModel = require("./ImageItemModel");
+var ResourceItemModel = require("./ResourceItemModel");
+var ColorItemModel = require("./ColorItemModel");
 
 /**
  * Main model for the app.
@@ -26,9 +29,38 @@ FiddleClientModel.prototype.setSession = function(session) {
  * @method initWithResources
  */
 FiddleClientModel.prototype.initWithResources = function(resources) {
-	this.createCategory("Graphics");
-	this.createCategory("Positions");
-	this.createCategory("Colors");
+	this.graphicsCategory = this.createCategory("Graphics");
+	this.positionsCategory = this.createCategory("Positions");
+	this.colorsCategory = this.createCategory("Colors");
+
+	var resourceObject = resources.getResourceObject();
+
+	for (var key in resourceObject.graphics) {
+		if (key != "textures") {
+			var imageItem = new ImageItemModel(key);
+			this.graphicsCategory.addResourceItemModel(imageItem);
+		}
+	}
+
+	for (var key in resourceObject.positions) {
+		var item = resourceObject.positions[key];
+		var positionItem = new ResourceItemModel("position", key);
+
+		if (item)
+			positionItem.setDefaultValue(item[0] + ", " + item[1]);
+
+		this.positionsCategory.addResourceItemModel(positionItem);
+	}
+
+	for (var key in resourceObject.colors) {
+		var item = resourceObject.colors[key];
+		var colorItem = new ColorItemModel(key);
+
+		if (item)
+			colorItem.setDefaultValue(item);
+
+		this.colorsCategory.addResourceItemModel(colorItem);
+	}
 }
 
 /**

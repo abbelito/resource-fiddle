@@ -1,5 +1,6 @@
 var inherits = require("inherits");
 var xnode = require("xnode");
+var EventDispatcher = require("yaed");
 
 /**
  * The value view for a position.
@@ -27,9 +28,12 @@ function ResourcePositionValueView() {
 	this.valueInput = new xnode.Input();
 	this.valueInput.type = "text";
 	this.valueDiv.appendChild(this.valueInput);
+
+	this.valueInput.addEventListener("change", this.onValueInputChange.bind(this));
 }
 
 inherits(ResourcePositionValueView, xnode.Div);
+EventDispatcher.init(ResourcePositionValueView);
 
 /**
  * Set position value for default.
@@ -45,6 +49,22 @@ ResourcePositionValueView.prototype.setDefaultValue = function(defaultValue) {
  */
 ResourcePositionValueView.prototype.setValue = function(value) {
 	this.valueInput.value = value;
+}
+
+/**
+ * Set position value for current.
+ * @method setValue
+ */
+ResourcePositionValueView.prototype.onValueInputChange = function() {
+	this.trigger("change");
+}
+
+/**
+ * Get value.
+ * @method getValue
+ */
+ResourcePositionValueView.prototype.getValue = function() {
+	return this.valueInput.value;
 }
 
 module.exports = ResourcePositionValueView;

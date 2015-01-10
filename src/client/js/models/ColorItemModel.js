@@ -1,3 +1,5 @@
+var ResourceItemModel = require("./ResourceItemModel");
+var inherits = require("inherits");
 var ColorUtil = require("../utils/ColorUtil");
 
 /**
@@ -5,19 +7,13 @@ var ColorUtil = require("../utils/ColorUtil");
  * @class ColorItemModel
  */
 function ColorItemModel(key, defaultValue, value) {
-	this.key = key;
+	ResourceItemModel.call(this, key);
 
-	this.setDefaultValue(defaultValue);
-	this.setValue(value);
+	this.setDefaultValue(null);
+	this.setValue(null);
 }
 
-/**
- * Get key.
- * @method getKey
- */
-ColorItemModel.prototype.getKey = function() {
-	return this.key;
-}
+inherits(ColorItemModel, ResourceItemModel);
 
 /**
  * Get default value.
@@ -49,6 +45,7 @@ ColorItemModel.prototype.getValue = function() {
  */
 ColorItemModel.prototype.setValue = function(value) {
 	this.value = ColorItemModel.processValue(value);
+	this.notifyChange();
 }
 
 /**
@@ -71,6 +68,13 @@ ColorItemModel.processValue = function(v) {
 		return ColorUtil.hexToHTML(v);
 
 	return v;
+}
+
+/**
+ * Prepare data to be saved.
+ * @method prepareSaveData
+ */
+ColorItemModel.prototype.prepareSaveData = function(jsonData) {
 }
 
 module.exports = ColorItemModel;

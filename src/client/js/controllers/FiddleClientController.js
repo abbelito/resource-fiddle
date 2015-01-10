@@ -8,6 +8,10 @@ var ResourceTabView = require("../views/ResourceTabView");
 var ResourceTabController = require("../controllers/ResourceTabController");
 var FiddleClientModel = require("../models/FiddleClientModel");
 
+/**
+ * FiddleClientController
+ * @class FiddleClientController
+ */
 function FiddleClientController(fiddleClientView, fiddleClientModel) {
 	this.fiddleClientView = fiddleClientView;
 	this.fiddleClientModel = fiddleClientModel;
@@ -33,8 +37,13 @@ function FiddleClientController(fiddleClientView, fiddleClientModel) {
 	this.updateCurrentTestcase();
 
 	this.fiddleClientModel.on(FiddleClientModel.ACTIVE_TESTCASE_CHANGE, this.updateCurrentTestcase, this);
+	this.fiddleClientModel.on(FiddleClientModel.ITEM_CHANGE, this.onModelItemChange, this);
 }
 
+/**
+ * Update current test case.
+ * @method updateCurrentTestcase
+ */
 FiddleClientController.prototype.updateCurrentTestcase = function() {
 	var activeTestcase = this.fiddleClientModel.getActiveTestcase();
 
@@ -42,6 +51,14 @@ FiddleClientController.prototype.updateCurrentTestcase = function() {
 		return null;
 
 	this.fiddleClientView.getTargetPaneView().setUrl(activeTestcase.getCachePreventionUrl());
+}
+
+/**
+ * Model item change.
+ * @method onModelItemChange
+ */
+FiddleClientController.prototype.onModelItemChange = function() {
+	this.fiddleClientModel.save();
 }
 
 module.exports = FiddleClientController;

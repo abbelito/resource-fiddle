@@ -3,6 +3,7 @@ var xnode = require("xnode");
 var ResourcePositionValueView = require("./ResourcePositionValueView");
 var ResourceImageValueView = require("./ResourceImageValueView");
 var ResourceColorValueView = require("./ResourceColorValueView");
+var EventDispatcher = require("yaed");
 
 /**
  * Show a table row for each resource item.
@@ -29,6 +30,7 @@ function ResourceItemView() {
 }
 
 inherits(ResourceItemView, xnode.Tr);
+EventDispatcher.init(ResourceItemView);
 
 /**
  * Set key. Will appear in the left column.
@@ -60,6 +62,14 @@ ResourceItemView.prototype.setValue = function(value) {
 }
 
 /**
+ * Get current value.
+ * @method setValue
+ */
+ResourceItemView.prototype.getValue = function(value) {
+	return this.value;
+}
+
+/**
  * Set the type of the item. This will create a value
  * view and populate the right side of the table.
  * @method setItemType
@@ -68,8 +78,10 @@ ResourceItemView.prototype.setItemType = function(itemType) {
 	if (itemType == this.itemType)
 		return;
 
-	if (this.valueView)
+	if (this.valueView) {
 		this.valueTd.removeChild(this.valueView);
+		this.valueView.off("change", this.onValueViewChange, this);
+	}
 
 	this.valueView = null;
 	this.itemType = itemType;
@@ -92,7 +104,17 @@ ResourceItemView.prototype.setItemType = function(itemType) {
 		this.valueTd.appendChild(this.valueView);
 		this.valueView.setDefaultValue(this.defaultValue);
 		this.valueView.setValue(this.value);
+		this.valueView.on("change", this.onValueViewChange, this);
 	}
+}
+
+/**
+ * Item change
+ * @method onValueViewChange
+ */
+ResourceItemView.prototype.onValueViewChange = function() {
+	this.value = this.valueView.getValue();
+	this.trigger("change");
 }
 
 module.exports = ResourceItemView;

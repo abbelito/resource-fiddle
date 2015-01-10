@@ -1,24 +1,16 @@
+var EventDispatcher = require("yaed");
+var inherits = require("inherits");
+
 /**
  * ResourceItemModel
  * @class ResourceItemModel
  */
-function ResourceItemModel(type, key, defaultValue, value) {
+function ResourceItemModel(key) {
 	this.key = key;
-
-	if (!defaultValue)
-		defaultValue="";
-
-	if (!value)
-		value="";
-
-	this.defaultValue = defaultValue;
-	this.value = value;
-
-	this.itemType = type;
-
-	if (!this.itemType)
-		this.itemType = "position";
 }
+
+inherits(ResourceItemModel, EventDispatcher);
+ResourceItemModel.ITEM_CHANGE = "itemChange";
 
 /**
  * Get key.
@@ -33,15 +25,7 @@ ResourceItemModel.prototype.getKey = function() {
  * @method getDefaultValue
  */
 ResourceItemModel.prototype.getDefaultValue = function() {
-	return this.defaultValue;
-}
-
-/**
- * Set default value.
- * @method getDefaultValue
- */
-ResourceItemModel.prototype.setDefaultValue = function(defaultValue) {
-	this.defaultValue = defaultValue;
+	throw new Error("Abstract");
 }
 
 /**
@@ -49,7 +33,7 @@ ResourceItemModel.prototype.setDefaultValue = function(defaultValue) {
  * @method getValue
  */
 ResourceItemModel.prototype.getValue = function() {
-	return this.value;
+	throw new Error("Abstract");
 }
 
 /**
@@ -57,7 +41,24 @@ ResourceItemModel.prototype.getValue = function() {
  * @method setValue
  */
 ResourceItemModel.prototype.setValue = function(value) {
-	this.value = value;
+	throw new Error("Abstract");
+}
+
+/**
+ * Prepare data to be saved.
+ * @method prepareSaveData
+ */
+ResourceItemModel.prototype.prepareSaveData = function(jsonData) {
+	throw new Error("Abstract");
+}
+
+/**
+ * Notify change.
+ * @method notifyChange
+ * @protected
+ */
+ResourceItemModel.prototype.notifyChange = function() {
+	this.trigger(ResourceItemModel.ITEM_CHANGE);
 }
 
 /**
@@ -65,7 +66,7 @@ ResourceItemModel.prototype.setValue = function(value) {
  * @method getItemType
  */
 ResourceItemModel.prototype.getItemType = function() {
-	return this.itemType;
+	throw new Error("Abstract");
 }
 
 module.exports = ResourceItemModel;

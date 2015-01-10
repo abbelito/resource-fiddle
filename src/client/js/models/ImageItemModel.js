@@ -1,21 +1,18 @@
+var ResourceItemModel = require("./ResourceItemModel");
+var inherits = require("inherits");
+
 /**
  * ImageItemModel
  * @class ImageItemModel
  */
 function ImageItemModel(key) {
-	this.key = key;
+	ResourceItemModel.call(this, key);
 
 	this.defaultValue = null;
 	this.value = null;
 }
 
-/**
- * Get key.
- * @method getKey
- */
-ImageItemModel.prototype.getKey = function() {
-	return this.key;
-}
+inherits(ImageItemModel, ResourceItemModel);
 
 /**
  * Get default value.
@@ -39,6 +36,7 @@ ImageItemModel.prototype.getValue = function() {
  */
 ImageItemModel.prototype.setValue = function(value) {
 	this.value = value;
+	this.notifyChange();
 }
 
 /**
@@ -47,6 +45,13 @@ ImageItemModel.prototype.setValue = function(value) {
  */
 ImageItemModel.prototype.getItemType = function() {
 	return "image";
+}
+
+/**
+ * Prepare data to be saved.
+ * @method prepareSaveData
+ */
+ImageItemModel.prototype.prepareSaveData = function(jsonData) {
 }
 
 module.exports = ImageItemModel;

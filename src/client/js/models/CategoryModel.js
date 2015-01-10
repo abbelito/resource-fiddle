@@ -2,6 +2,7 @@ var FiddleClientModel = require("./FiddleClientModel");
 var EventDispatcher = require("yaed");
 var inherits = require("inherits");
 var xnodec = require("xnodecollection");
+var ResourceItemModel = require("./ResourceItemModel");
 
 /**
  * Get category model.
@@ -17,6 +18,7 @@ function CategoryModel(label) {
 }
 
 inherits(CategoryModel, EventDispatcher);
+CategoryModel.ITEM_CHANGE = "itemChange";
 
 /**
  * Set reference to parent model.
@@ -118,6 +120,8 @@ CategoryModel.prototype.addCategoryModel = function(categoryModel) {
 	categoryModel.setParentModel(this);
 	this.categoryCollection.addItem(categoryModel);
 
+	categoryModel.on(ResourceItemModel.ITEM_CHANGE, this.onSubItemChange, this);
+
 	return categoryModel;
 }
 
@@ -137,6 +141,31 @@ CategoryModel.prototype.createCategory = function(title) {
  */
 CategoryModel.prototype.addResourceItemModel = function(resourceItemModel) {
 	this.itemCollection.addItem(resourceItemModel);
+	resourceItemModel.on(ResourceItemModel.ITEM_CHANGE, this.onSubItemChange, this);
+}
+
+/**
+ * On sub item change.
+ * @method onSubItemChange
+ */
+CategoryModel.prototype.onSubItemChange = function() {
+	this.trigger(CategoryModel.ITEM_CHANGE);
+}
+
+/**
+ * Get all items in all categories.
+ * @method getAllItems
+ */
+CategoryModel.prototype.getAllItems = function() {
+	var a = [];
+
+	for (var i = 0; i < this.categoryCollection.getLength(); i++)
+		a = a.concat(this.categoryCollection.getItemAt(i).getAllItems());
+
+	for (var i = 0; i < this.itemCollection.getLength(); i++)
+		a.push(this.itemCollection.getItemAt(i));
+
+	return a;
 }
 
 module.exports = CategoryModel;

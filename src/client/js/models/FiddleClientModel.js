@@ -4,6 +4,7 @@ var Testcase = require("./Testcase");
 var CategoryModel = require("./CategoryModel");
 var ImageItemModel = require("./ImageItemModel");
 var ResourceItemModel = require("./ResourceItemModel");
+var PositionItemModel = require("./PositionItemModel");
 var ColorItemModel = require("./ColorItemModel");
 var EventDispatcher = require("yaed");
 var inherits = require("inherits");
@@ -21,6 +22,7 @@ function FiddleClientModel() {
 inherits(FiddleClientModel, EventDispatcher);
 
 FiddleClientModel.ACTIVE_TESTCASE_CHANGE = "activeTestcaseChange";
+FiddleClientModel.ITEM_CHANGE = "itemChange";
 
 /**
  * Set session.
@@ -50,7 +52,7 @@ FiddleClientModel.prototype.initWithResources = function(resources) {
 
 	for (var key in resourceObject.positions) {
 		var item = resourceObject.positions[key];
-		var positionItem = new ResourceItemModel("position", key);
+		var positionItem = new PositionItemModel(key);
 
 		if (item)
 			positionItem.setDefaultValue(item[0] + ", " + item[1]);
@@ -120,6 +122,8 @@ FiddleClientModel.prototype.addCategoryModel = function(categoryModel) {
 	categoryModel.setParentModel(this);
 	this.categoryCollection.addItem(categoryModel);
 
+	categoryModel.on(CategoryModel.ITEM_CHANGE, this.onItemChange, this);
+
 	if (this.categoryCollection.getLength() == 1)
 		categoryModel.setActive(true);
 
@@ -134,6 +138,43 @@ FiddleClientModel.prototype.createCategory = function(title) {
 	var categoryModel = new CategoryModel(title);
 
 	return this.addCategoryModel(categoryModel);
+}
+
+/**
+ * Get all items in all categories.
+ * @method getAllItems
+ */
+FiddleClientModel.prototype.getAllItems = function() {
+	var a = [];
+
+	for (var i = 0; i < this.categoryCollection.getLength(); i++)
+		a = a.concat(this.categoryCollection.getItemAt(i).getAllItems());
+
+	return a;
+}
+
+/**
+ * Save to server.
+ * @method save
+ */
+FiddleClientModel.prototype.save = function() {
+	var allItems = this.getAllItems();
+
+	jsonData = {};
+	jsonData.graphics = {};
+	jsonData.positions = {};
+	jsonData.colors = {};
+
+	for (var i = 0; i < allItems.length; i++)
+		allItems[i].prepareSaveData(jsonData);
+}
+
+/**
+ * Item change.
+ * @method onItemChange
+ */
+FiddleClientModel.prototype.onItemChange = function() {
+	this.trigger(FiddleClientModel.ITEM_CHANGE);
 }
 
 module.exports = FiddleClientModel;

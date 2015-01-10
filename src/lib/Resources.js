@@ -40,7 +40,7 @@ EventDispatcher.init(Resources);
 
 
 Resources.Loaded = "loaded";
-
+Resources.Error = "error";
 
 Resources.prototype.isLoading = function() {
 	return this.loadCount > 0 || this.texturesLoaded < this.textureCount;
@@ -72,6 +72,7 @@ Resources.prototype.addSource = function(object, noCache) {
 		try {
 			var loader = new Resources.JsonLoader(object, true, noCache);
 			loader.onLoaded = this.onLoaded.bind(this, loader, this.loadIndex, noCache);
+			loader.onError = this.onError.bind(this);
 			var loadIndex = parseInt(this.loadIndex + 0);
 			loader.onError = this.onError.bind(this, loader, loadIndex, noCache);
 			loader.load();
@@ -165,7 +166,17 @@ Resources.prototype.onLoaded = function(loader, loadIndex, noCache) {
 };
 
 Resources.prototype.onError = function(loader, loadIndex, noCache) {
-	console.warn("Resources.prototype.onError");
+	var message;
+
+	if (loader.hasOwnProperty("errorMessage"))
+		message = loader.errorMessage;
+
+	else
+		message = "Unknown error";
+
+	this.trigger(Resources.Error, message);
+	return;
+
 	this.loadCount--;
 
 	if (this.loadCount <= 0) {
@@ -475,8 +486,12 @@ Resources.JsonLoader.prototype.onJSONLoaded = function() {
 	try {
 		this.json = JSON.parse(this.ajaxRequest.responseText);
 	} catch (e) {
+		console.log(this.ajaxRequest.responseText);
+
 		this.json = {};
-		this.onLoaded();
+		this.errorMessage = "Unable to parse JSON";
+		this.onError();
+		//this.onLoaded();
 		return;
 	}
 

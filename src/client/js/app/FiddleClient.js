@@ -47,12 +47,19 @@ FiddleClient.prototype.init = function(resources) {
 	//this.editor.init(editorContainer);
 	this.resources = resources;
 
+	console.log("loading:" + resources.isLoading());
+
 	if (resources.isLoading()) {
 		resources.on(Resources.Loaded, this.doInit, this);
+		resources.on(Resources.Error, this.onResourcesError, this);
 	} else {
 		this.doInit();
 	}
 };
+
+FiddleClient.prototype.onResourcesError = function(message) {
+	console.log("resource load error: " + message);
+}
 
 FiddleClient.prototype.addTestcase = function(id, name, url) {
 	//this.target.addTestcase(id, name, url);

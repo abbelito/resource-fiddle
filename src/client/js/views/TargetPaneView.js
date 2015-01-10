@@ -27,6 +27,14 @@ function TargetPaneView() {
 	this.inner.style.overflowY = "scroll";
 	this.appendChild(this.inner);
 
+	this.iframe = new xnode.Iframe();
+	this.iframe.style.position = "absolute";
+	this.iframe.style.top = "5px";
+	this.iframe.style.left = "5px";
+	this.iframe.style.width = "calc(100% - 10px)";
+	this.iframe.style.height = "calc(100% - 10px)";
+	this.iframe.style.border = "1px solid #808080"
+	this.inner.appendChild(this.iframe);
 }
 
 inherits(TargetPaneView, xnode.Div);
@@ -37,6 +45,13 @@ inherits(TargetPaneView, xnode.Div);
  */
 TargetPaneView.prototype.getTabHeaderHolder = function() {
 	return this.tabHeaders;
+}
+
+/**
+ *
+ */
+TargetPaneView.prototype.setUrl = function(url) {
+	this.iframe.src = url;
 }
 
 module.exports = TargetPaneView;

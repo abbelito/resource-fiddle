@@ -5,6 +5,7 @@ include_once(__DIR__ . "/../Models/Image.php");
 class API {
 	private $texturePath;
 	private $session;
+	private $resourceFiddle;
 
 	function __construct() {
 	}
@@ -17,6 +18,9 @@ class API {
 		$this->session = $session;
 	}
 
+	public function setResourceFiddle($value) {
+		$this->resourceFiddle=$value;
+	}
 
 
 	public function mergeIntoTexture($textureFolder, $imageFolder, $url) {
@@ -246,7 +250,8 @@ class API {
 		$filetype = "texture.json";
 
 		if (!file_exists($folder.$filetype)) {
-			echo "{\"graphics\":{}, \"positions\":{}}";
+			echo json_encode($this->resourceFiddle->getDefaultJson());
+//			echo "{\"graphics\":{}, \"positions\":{}}";
 			return;
 		}
 		$file = fopen($folder.$filetype, 'r');

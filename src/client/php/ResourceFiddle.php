@@ -86,8 +86,13 @@
 		/**
 		 *
 		 */
-		public function addTestcase($id, $name, $url)
+		public function addTestcase($id, $name, $url=NULL)
 		{
+			if (!$url) {
+				$url=$name;
+				$name=$id;
+			}
+
 			array_push($this->testcases, new Testcase($id, $name, $url));
 		}
 
@@ -113,7 +118,7 @@
 					<script type="text/javascript">
 						function run() {
 							var resources = new Resources();
-							resources.addSource({
+							/*resources.addSource({
 								graphics: {
 									<?php 
 									$count = count($this->graphics);
@@ -202,9 +207,10 @@
 									?>
 
 								}
-							});
+							});*/
 
-							var jsonUrl = document.location + "<?= $this->texturePath; ?>/<?= $this->session; ?>/texture.json";
+							//var jsonUrl = document.location + "<?= $this->texturePath; ?>/<?= $this->session; ?>/texture.json";
+							var jsonUrl = document.location+"getTexture";
 							resources.addSource(jsonUrl, true);
 
 							var domContainer = document.getElementById("container");
@@ -256,6 +262,47 @@
 				if (!$res)
 					throw new Exception("Unable to create ".$sessionPath);
 			}
+
+			$textureFile=$sessionPath."/texture.json";
+
+		}
+
+		public function getDefaultJson() {
+			$o=array();
+			$o["graphics"]=array();
+			$o["positions"]=array();
+			$o["colors"]=array();
+			$o["strings"]=array();
+
+			$o["graphics"]["textures"]=array();
+
+			for($i = 0; $i < sizeof($this->graphics); $i++) {
+				$noImageUrl="img/no_image.jpeg";
+				$item=$this->graphics[$i];
+
+				$o["graphics"][$item->name]=array(
+					"texture"=>$noImageUrl,
+				);
+
+				$o["graphics"]["textures"][]=array(
+					"id"=>$noImageUrl,
+					"file"=>$noImageUrl
+				);
+			}
+
+			for($i = 0; $i < sizeof($this->positions); $i++) {
+				$item=$this->positions[$i];
+
+				$o["positions"][$item->name]=$item->value;
+			}
+
+			for($i = 0; $i < sizeof($this->colors); $i++) {
+				$item=$this->colors[$i];
+
+				$o["colors"][$item->name]=$item->value;
+			}
+
+			return $o;
 		}
 
 		/**
@@ -276,6 +323,7 @@
 			$api = new API();
 			$api->setTexturePath($this->texturePath);
 			$api->setSession($this->session);
+			$api->setResourceFiddle($this);
 
 			$routes = new Routes();
 			$routes->addRoute("/save", $api, "saveJson");
@@ -300,6 +348,11 @@
 
 				case "woff":
 					header("Content-type: font/woff");
+					break;
+
+				case "jpg":
+				case "jpeg":
+					header("Content-type: image/jpeg");
 					break;
 			}
 

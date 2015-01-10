@@ -5,6 +5,8 @@ var CategoryModel = require("./CategoryModel");
 var ImageItemModel = require("./ImageItemModel");
 var ResourceItemModel = require("./ResourceItemModel");
 var ColorItemModel = require("./ColorItemModel");
+var EventDispatcher = require("yaed");
+var inherits = require("inherits");
 
 /**
  * Main model for the app.
@@ -15,6 +17,10 @@ function FiddleClientModel() {
 	this.testcaseCollection = new xnodec.Collection();
 	this.categoryCollection = new xnodec.Collection();
 }
+
+inherits(FiddleClientModel, EventDispatcher);
+
+FiddleClientModel.ACTIVE_TESTCASE_CHANGE = "activeTestcaseChange";
 
 /**
  * Set session.
@@ -82,6 +88,20 @@ FiddleClientModel.prototype.addTestcase = function(id, name, url) {
  */
 FiddleClientModel.prototype.getTestcaseCollection = function() {
 	return this.testcaseCollection;
+}
+
+/**
+ * Get active test case.
+ * @method getActiveTestCase
+ */
+FiddleClientModel.prototype.getActiveTestcase = function() {
+	//console.log("testcase collection length: " + this.testcaseCollection.getLength());
+
+	for (var i = 0; i < this.testcaseCollection.getLength(); i++)
+		if (this.testcaseCollection.getItemAt(i).isActive())
+			return this.testcaseCollection.getItemAt(i);
+
+	return null;
 }
 
 /**

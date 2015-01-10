@@ -6,6 +6,7 @@ var ResourceTabHeaderController = require("./ResourceTabHeaderController");
 var ResourceTabHeaderView = require("../views/ResourceTabHeaderView");
 var ResourceTabView = require("../views/ResourceTabView");
 var ResourceTabController = require("../controllers/ResourceTabController");
+var FiddleClientModel = require("../models/FiddleClientModel");
 
 function FiddleClientController(fiddleClientView, fiddleClientModel) {
 	this.fiddleClientView = fiddleClientView;
@@ -28,6 +29,19 @@ function FiddleClientController(fiddleClientView, fiddleClientModel) {
 	this.resourceTabsManager.setItemControllerClass(ResourceTabController);
 	this.resourceTabsManager.setTarget(this.fiddleClientView.getResourcePaneView().getTabHolder());
 	this.resourceTabsManager.setDataSource(this.fiddleClientModel.getCategoryCollection());
+
+	this.updateCurrentTestcase();
+
+	this.fiddleClientModel.on(FiddleClientModel.ACTIVE_TESTCASE_CHANGE, this.updateCurrentTestcase, this);
+}
+
+FiddleClientController.prototype.updateCurrentTestcase = function() {
+	var activeTestcase = this.fiddleClientModel.getActiveTestcase();
+
+	if (!activeTestcase)
+		return null;
+
+	this.fiddleClientView.getTargetPaneView().setUrl(activeTestcase.getCachePreventionUrl());
 }
 
 module.exports = FiddleClientController;

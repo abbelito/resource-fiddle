@@ -9,6 +9,7 @@ function TargetApp() {
 	PixiApp.call(this, 640, 480);
 
 	var t, style;
+	var params = querystring.parse(url.parse(window.location.href).query);
 
 	style = {
 		fill: "#ffffff",
@@ -20,7 +21,10 @@ function TargetApp() {
 	t.position.x = 5;
 	this.addChild(t);
 
-	var params = querystring.parse(url.parse(window.location.href).query);
+	t = new PIXI.Text("case: " + params.testcase, style);
+	t.position.x = 5;
+	t.position.y = 450;
+	this.addChild(t);
 
 	style = {
 		fill: "#ffffff",
@@ -29,21 +33,36 @@ function TargetApp() {
 		font: "12px Arial"
 	}
 
-	t = new PIXI.Text("loading resources from: " + params.resources, style);
+	t = new PIXI.Text("loading res from: " + params.resources, style);
 	t.position.y = 30;
 	t.position.x = 5;
 	this.addChild(t);
 
 	this.resources = new Resources(params.resources);
 	this.resources.on("loaded", this.onResourcesLoaded, this);
+	this.resources.on("error", this.onResourcesError, this);
 }
 
 inherits(TargetApp, PixiApp);
 
+TargetApp.prototype.onResourcesError = function(message) {
+	style = {
+		fill: "#ff8080",
+		font: "bold 16px Arial"
+	}
+
+	t = new PIXI.Text("Error: " + message, style);
+	t.position.y = 70;
+	t.position.x = 5;
+	this.addChild(t);
+
+	console.log("resource load error: " + message);
+}
+
 TargetApp.prototype.onResourcesLoaded = function() {
-	console.log("resources loaded...");
-	console.log("pos: "+JSON.stringify(this.resources.getPoint("pos_one")));
-	var s,g,t,style;
+	/*console.log("resources loaded: " + JSON.stringify(this.resources.getResourceObject()));
+	console.log("pos: " + JSON.stringify(this.resources.getPoint("pos_one")));*/
+	var s, g, t, style;
 
 	style = {
 		fill: "#ffffff",
@@ -87,6 +106,16 @@ TargetApp.prototype.onResourcesLoaded = function() {
 	s.width = 200;
 	s.height = 200;
 	this.addChild(s);
+
+	var s =
+		"pos_one: " + JSON.stringify(this.resources.getPoint("pos_one")) + "\n" +
+		"color_one: " + JSON.stringify(this.resources.getColor("color_one")) + "\n" +
+		"color_two: " + JSON.stringify(this.resources.getColor("color_two"));
+
+	t = new PIXI.Text(s, style);
+	t.position.x = 40;
+	t.position.y = 350;
+	this.addChild(t);
 }
 
 new TargetApp();

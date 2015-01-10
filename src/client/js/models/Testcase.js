@@ -40,6 +40,8 @@ Testcase.prototype.setActive = function(value) {
 
 	this.active = value;
 	this.trigger("change");
+
+	this.fiddleClientModel.trigger("activeTestcaseChange");
 }
 
 /**
@@ -56,6 +58,28 @@ Testcase.prototype.isActive = function() {
  */
 Testcase.prototype.getLabel = function() {
 	return this.name;
+}
+
+/**
+ * Get url.
+ * @method getUrl
+ */
+Testcase.prototype.getUrl = function() {
+	return this.url;
+}
+
+/**
+ * Get url with cache prevention
+ * @method getCachePreventionUrl
+ */
+Testcase.prototype.getCachePreventionUrl = function() {
+	var timestamp = new Date().getTime();
+
+	if (this.url.indexOf("?") >= 0)
+		return this.url + "&__prevent_cache=" + timestamp;
+
+	else
+		return this.url + "?__prevent_cache=" + timestamp;
 }
 
 module.exports = Testcase;

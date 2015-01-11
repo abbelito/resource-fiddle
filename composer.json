@@ -1,0 +1,10 @@
+{
+    "name": "notpublished/resourcefiddle",
+    "description": "Fiddle resources",
+    "require-dev": {
+        "phpunit/phpunit": "4.2.*"
+    },
+    "scripts": {
+        "test": "phpunit test/phpunit"
+    }
+}

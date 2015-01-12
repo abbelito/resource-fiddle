@@ -63,8 +63,16 @@ ImageItemModel.prototype.parseDefaultData = function(data) {
  * @method prepareSaveData
  */
 ImageItemModel.prototype.prepareSaveData = function(jsonData) {
+	var filename = null;
+
+	if (this.value)
+		filename = this.value;
+
+	else if (this.defaultValue)
+		filename = this.defaultValue;
+
 	jsonData.graphics[this.key] = {
-		filename: this.value
+		filename: filename
 	};
 }
 

@@ -1,6 +1,5 @@
 <?php
 include_once(__DIR__ . "/Routes.php");
-
 require_once __DIR__."/../Utils/TexturePacker.php";
 
 class API {
@@ -23,149 +22,6 @@ class API {
 		$this->resourceFiddle=$value;
 	}
 
-
-	/*public function mergeIntoTexture($textureFolder, $imageFolder, $url) {
-		$json = "{\"textures\":["; 
-
-		$folder = "$imageFolder/";
-		$filetype = '*';
-		$files = glob($folder . $filetype);
-		$count = count($files);
-
-		$images = array();
-
-		for($i = 0; $i < $count; $i++) {
-
-			$ext = pathinfo($files[$i], PATHINFO_EXTENSION);
-			if($ext == "png") {
-				$imageResource = @imagecreatefrompng($files[$i]);
-			}
-			else if(($ext == "jpg") || ($ext == "jpeg")) {
-				$imageResource = @imagecreatefromjpeg($files[$i]);
-			}
-			$image = new Image($files[$i], $imageResource);
-			array_push($images, $image);
-		}
-
-		usort($images, array($this,"sortOnSize"));
-
-		$originalImages = array();
-		$first = true;
-		$index = 0;
-
-		$framesjson = "";
-
-		while(count($images) > 0)
-		{
-
-			if($first == true) {
-				$first = false;
-			}
-			else {
-				$json .= ",";
-			}
-			$textureName = "texture$index";
-
-
-			$json .= "{\"id\": \"$textureName\",\"file\": \"$url$textureFolder/$textureName.png\"}";
-			$textureWidth = 1024;
-			$textureHeight = 1024;
-			$texture  = imagecreatetruecolor($textureWidth, $textureHeight);
-			imagealphablending($texture, false);
-			$col = imagecolorallocatealpha($texture, 255, 255, 255, 127);
-			imagefilledrectangle($texture, 0, 0, $textureWidth, $textureHeight, $col);
-			imagealphablending($texture, true);
-
-			$x = 0;
-			$y = 0;
-			$nextY = 0;
-			$margin = 2;
-			
-
-			$fits = true;
-			$prevCount = count($images);
-			while((count($images) > 0) && ($fits)) {
-				for($i = 0; $i < count($images); $i++) {
-					$image = $images[$i];
-					
-					if((($x + $image->width) <= $textureWidth) && (($y + $image->height) <= $textureHeight)) {
-						$image->x = $x;
-						$image->y = $y;
-
-						$ext = pathinfo($files[$i], PATHINFO_EXTENSION);
-						if($ext == "png") {
-							$background = imagecolorallocate($image->image, 255, 255, 255);
-							// removing the black from the placeholder
-							imagecolortransparent($image->image, $background);
-
-							imagealphablending($image->image, true);
-						}
-						imagecopyresampled($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, $image->width, $image->height);
-						//imagecopymerge($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, 100);
-
-						if(($image->y + $image->height) > $nextY) {
-							$nextY = $image->y + $image->height;
-						}
-						$x += $image->width + $margin;
-
-						
-						array_push($originalImages, $image);
-						array_splice($images, $i, 1);
-						$i--;
-					
-					}
-					
-					
-				}
-
-				if(($x + $image->width) > $textureWidth) {
-					$x = 0;
-					$y = $nextY + $margin;
-				}
-
-				if($prevCount == count($images)) {
-					$fits = false;
-				}
-				$prevCount = count($images);
-			}
-			
-			
-
-			imagealphablending($texture, false);
-			imagesavealpha($texture, true);
-			imagepng($texture, "$textureFolder/$textureName.png");
-			imagedestroy($texture);
-
-
-			while(count($originalImages) > 0) {
-				$image = $originalImages[0];
-				array_shift($originalImages);
-				$framesjson .= ",\"" . preg_replace('/.[^.]*$/', '', implode('', explode("$imageFolder/", $image->filename)))  . "\":";
-				$framesjson .= "{";
-				$framesjson .= "\"texture\": \"$textureName\",";
-				$framesjson .= "\"coords\": [";
-				$framesjson .= $image->x . "," . $image->y . "," . $image->width . "," . $image->height;
-
-				$framesjson .= "]";
-				$framesjson .= "}";
-			}
-
-			$index++;
-		}
-
-		$json .= "]";
-
-		$json .= $framesjson;
-		
-
-
-
-
-		$json .= "}";
-
-		return $json;
-	}*/
-
 	/**
 	 * Build texture and update texture.json with image coordinates.
 	 */
@@ -179,8 +35,11 @@ class API {
 
 		foreach ($json["graphics"] as $k=>$v) {
 			if ($k!="textures") {
-				if ($v["filename"])
+				if ($v["filename"] && file_exists($path."/".$v["filename"]))
 					$texturePacker->addImage($path."/".$v["filename"]);
+
+				else if ($v["filename"] && file_exists($v["filename"]))
+					$texturePacker->addImage($v["filename"]);
 
 				else
 					$texturePacker->addImage(__DIR__."/../../img/no_image.jpeg");
@@ -207,8 +66,10 @@ class API {
 	}
 
 
+	/**
+	 * Save the texture.json file. This will also rebuild the sprite sheet texture.
+	 */
 	public function saveJson() {
-
 		$session = $this->session;
 		$jsonString = isset($_POST['json']) ? $_POST['json'] : $_GET['json'];
 
@@ -228,6 +89,11 @@ class API {
 		echo $this->jsonResponse(true);
 	}
 
+	/**
+	 * Handle an image upload. This will just save the image on the server,
+	 * it is up to the client to actually save a reference to the file in
+	 * the texture.json resource definition.
+	 */
 	public function uploadImage() {
 		$session = $this->session;
 		$filename = $_FILES["SelectedFile"]["name"];
@@ -277,29 +143,28 @@ class API {
 		echo $this->jsonResponse(TRUE);
 	}
 
-
+	/**
+	 * Get current texture specification file.
+	 * If it does not exist it will be created based on default values specified in
+	 * the ResourceFiddle property definition, and saved to disk. In the case where
+	 * it does not exist, the texture sprite sheed will also be built.
+	 */
 	public function getTexture() {
+		$path = $this->texturePath . "/" . $this->session;
+		$textureJsonFileName="$path/texture.json";
 
-		$session = $this->session;
-		$path = $this->texturePath . "/$session";
-		$folder = "$path/";
-		$filetype = "texture.json";
-
-		if (!file_exists($folder.$filetype)) {
-			echo json_encode($this->resourceFiddle->getDefaultJson());
-//			echo "{\"graphics\":{}, \"positions\":{}}";
-			return;
-		}
-		$file = fopen($folder.$filetype, 'r');
-		$json = "";
-		while(!feof($file))
-		{
-			$json .= fread($file,1024*8);
+		if (!file_exists($textureJsonFileName)) {
+			$json=$this->resourceFiddle->getDefaultJson();
+			file_put_contents($textureJsonFileName, json_encode($json));
+			$this->buildTexture();
 		}
 
-		echo $json;
+		echo file_get_contents($textureJsonFileName);
 	}
 
+	/**
+	 * Prepare a json response to send to the browser.
+	 */
 	private function jsonResponse($param)
 	{
 		if (is_array($param)) {

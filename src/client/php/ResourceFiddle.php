@@ -22,10 +22,10 @@
 
 		private $path;
 
-		public static $GRAPHICS = 0;
-		public static $POSITIONS = 1;
-		public static $COLORS = 2;
-		public static $STRINGS = 3;
+		const GRAPHICS = 0;
+		const POSITIONS = 1;
+		const COLORS = 2;
+		const STRINGS = 3;
 
 		/**
 		 *
@@ -48,19 +48,19 @@
 		public function addResource($type, $name, $value = NULL)
 		{
 			switch($type) {
-				case ResourceFiddle::$GRAPHICS: {
+				case ResourceFiddle::GRAPHICS: {
 					array_push($this->graphics, new Resource($name, $value));
 					break;
 				}
-				case ResourceFiddle::$POSITIONS: {
+				case ResourceFiddle::POSITIONS: {
 					array_push($this->positions, new Resource($name, $value));
 					break;
 				}
-				case ResourceFiddle::$COLORS: {
+				case ResourceFiddle::COLORS: {
 					array_push($this->colors, new Resource($name, $value));
 					break;
 				}
-				case ResourceFiddle::$STRINGS: {
+				case ResourceFiddle::STRINGS: {
 					array_push($this->strings, new Resource($name, $value));
 					break;
 				}
@@ -209,7 +209,6 @@
 								}
 							});*/
 
-							//var jsonUrl = document.location + "<?= $this->texturePath; ?>/<?= $this->session; ?>/texture.json";
 							var jsonUrl = document.location+"getTexture";
 							resources.addSource(jsonUrl, true);
 
@@ -287,15 +286,10 @@
 			$o["graphics"]["textures"]=array();
 
 			for($i = 0; $i < sizeof($this->graphics); $i++) {
-				$noImageUrl="img/no_image.jpeg";
 				$item=$this->graphics[$i];
 
-				$o["graphics"][$item->name]=$item->value;
-				$o["graphics"][$item->name]["texture"]=$noImageUrl;
-
-				$o["graphics"]["textures"][]=array(
-					"id"=>$noImageUrl,
-					"file"=>$noImageUrl
+				$o["graphics"][$item->name]=array(
+					"filename"=>$item->value
 				);
 			}
 
@@ -337,9 +331,7 @@
 			$routes = new Routes();
 			$routes->addRoute("/save", $api, "saveJson");
 			$routes->addRoute("/upload", $api, "uploadImage");
-			//$routes->addRoute("/getImages", $api, "getImages");
 			$routes->addRoute("/getTexture", $api, "getTexture");
-			//$routes->addRoute("/merge", $api, "merge");
 			if($routes->run($path) != false) {
 				return;
 			}

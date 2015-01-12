@@ -12,9 +12,7 @@ module.exports = function(grunt) {
 				}
 			},
 
-			'www/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
 			'bin/js/resource-fiddle.bundle.js': ['src/client/js/fiddleclient.js'],
-			'www/js/resourceapp.bundle.js': ['src/target/js/resourceapp.js'],
 			'test/target.bundle.js': ['test/target.js']
 
 		},
@@ -158,7 +156,5 @@ module.exports = function(grunt) {
 		console.log("Available tasks:");
 		console.log();
 		console.log("  build     - Build files for release and/or local testing.");
-		console.log("  server    - Start a debug server on port 8080 pointing");
-		console.log("              to the www folder. For debugging.");
 	});
 };

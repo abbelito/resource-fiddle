@@ -1,1 +1,0 @@
-ResourceApp = require("./app/ResourceApp");

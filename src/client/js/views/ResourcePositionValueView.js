@@ -56,7 +56,7 @@ ResourcePositionValueView.prototype.setValue = function(value) {
  * @method setValue
  */
 ResourcePositionValueView.prototype.onValueInputChange = function() {
-	this.trigger("change");
+	this.trigger("valueChange");
 }
 
 /**

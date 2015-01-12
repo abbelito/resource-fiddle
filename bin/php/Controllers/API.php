@@ -23,7 +23,7 @@ class API {
 	}
 
 
-	public function mergeIntoTexture($textureFolder, $imageFolder, $url) {
+	/*public function mergeIntoTexture($textureFolder, $imageFolder, $url) {
 		$json = "{\"textures\":["; 
 
 		$folder = "$imageFolder/";
@@ -163,7 +163,7 @@ class API {
 		$json .= "}";
 
 		return $json;
-	}
+	}*/
 
 
 	public function saveJson() {
@@ -231,7 +231,7 @@ class API {
 	}
 
 
-	public function getImages() {
+	/*public function getImages() {
 
 		$session = $this->session;
 		$path = $this->texturePath . "/$session";
@@ -240,7 +240,7 @@ class API {
 		$images = glob($folder . $filetype);
 
 		echo $this->jsonResponse($images);
-	}
+	}*/
 
 	public function getTexture() {
 
@@ -264,7 +264,7 @@ class API {
 		echo $json;
 	}
 
-	public function merge() {
+	/*public function merge() {
 		$session = $this->session;
 		$filename = isset($_POST['filename']) ? $_POST['filename'] : $_GET['filename'];
 		$url = isset($_POST['url']) ? $_POST['url'] : $_GET['url'];
@@ -274,7 +274,7 @@ class API {
 		
 
 		echo $this->mergeIntoTexture("textureFiles/$session", $fullpath, $url);
-	}
+	}*/
 
 	private function jsonResponse($param)
 	{
@@ -303,7 +303,7 @@ class API {
 		return $out;
 	}
 
-	private function sortOnSize($a, $b) {
+	/*private function sortOnSize($a, $b) {
 		$aSize = $a->width * $a->height;
 		$bSize = $b->width * $b->height;
 		if($aSize > $bSize) {
@@ -319,7 +319,7 @@ class API {
 			return 1;
 		}
 		return 0;
-	}
+	}*/
 
 };
 

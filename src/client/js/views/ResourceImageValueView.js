@@ -1,5 +1,6 @@
 var inherits = require("inherits");
 var xnode = require("xnode");
+var EventDispatcher = require("yaed");
 
 /**
  * View and edit the value of an image.
@@ -30,12 +31,13 @@ function ResourceImageValueView() {
 	this.uploadInput.style.opacity = 0;
 	this.uploadInput.style.width = "100%";
 	this.uploadInput.style.height = "100%";
+	this.uploadInput.on("change", this.onUploadInputChange.bind(this));
 
 	this.uploadButton = new xnode.Div();
 	this.uploadButton.className = "ui icon button mini";
 
-	this.uploadIcon=new xnode.I();
-	this.uploadIcon.className="upload icon";
+	this.uploadIcon = new xnode.I();
+	this.uploadIcon.className = "upload icon";
 	this.uploadButton.appendChild(this.uploadIcon);
 
 	this.uploadDiv = new xnode.Div();
@@ -44,18 +46,21 @@ function ResourceImageValueView() {
 	this.uploadDiv.style.position = "absolute";
 	this.uploadDiv.style.top = "13px";
 	this.uploadDiv.style.right = "10px";
-	this.uploadDiv.style.overflow="hidden";
+	this.uploadDiv.style.overflow = "hidden";
 
 	this.appendChild(this.uploadDiv);
 }
 
 inherits(ResourceImageValueView, xnode.Div);
+EventDispatcher.init(ResourceImageValueView);
 
 /**
  * Set url of the image to be shown as default
  * @method setDefaultValue
  */
 ResourceImageValueView.prototype.setDefaultValue = function(defaultValue) {
+	console.log("setting default value: " + defaultValue);
+
 	this.defaultImage.src = defaultValue;
 }
 
@@ -65,6 +70,22 @@ ResourceImageValueView.prototype.setDefaultValue = function(defaultValue) {
  */
 ResourceImageValueView.prototype.setValue = function(value) {
 	this.valueImage.src = value;
+}
+
+/**
+ * File upload selected.
+ * @meothd onUploadInputChange
+ */
+ResourceImageValueView.prototype.onUploadInputChange = function(e) {
+	this.trigger("fileSelect");
+}
+
+/**
+ * Get selected file for upload.
+ * @method getSelectedFile
+ */
+ResourceImageValueView.prototype.getSelectedFile = function() {
+	return this.uploadInput.files[0];
 }
 
 module.exports = ResourceImageValueView;

@@ -80,7 +80,8 @@ ResourceItemView.prototype.setItemType = function(itemType) {
 
 	if (this.valueView) {
 		this.valueTd.removeChild(this.valueView);
-		this.valueView.off("change", this.onValueViewChange, this);
+		this.valueView.off("valueChange", this.onValueViewChange, this);
+		this.valueView.off("fileSelect", this.onValueViewChange, this);
 	}
 
 	this.valueView = null;
@@ -104,7 +105,8 @@ ResourceItemView.prototype.setItemType = function(itemType) {
 		this.valueTd.appendChild(this.valueView);
 		this.valueView.setDefaultValue(this.defaultValue);
 		this.valueView.setValue(this.value);
-		this.valueView.on("change", this.onValueViewChange, this);
+		this.valueView.on("valueChange", this.onValueViewChange, this);
+		this.valueView.on("fileSelect", this.onValueViewFileSelect, this);
 	}
 }
 
@@ -115,6 +117,26 @@ ResourceItemView.prototype.setItemType = function(itemType) {
 ResourceItemView.prototype.onValueViewChange = function() {
 	this.value = this.valueView.getValue();
 	this.trigger("change");
+}
+
+/**
+ * Get selected file.
+ * Only available for images.
+ * @method getSelectedFile
+ */
+ResourceItemView.prototype.getSelectedFile = function() {
+	if (this.itemType != "image" || !this.valueView)
+		throw new Error("not available...");
+
+	return this.valueView.getSelectedFile();
+}
+
+/**
+ * File select.
+ * @method onValueViewFileSelect
+ */
+ResourceItemView.prototype.onValueViewFileSelect = function() {
+	this.trigger("fileSelect");
 }
 
 module.exports = ResourceItemView;

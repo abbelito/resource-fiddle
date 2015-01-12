@@ -48,10 +48,22 @@ ImageItemModel.prototype.getItemType = function() {
 }
 
 /**
+ * @method parseDefaultData
+ */
+ImageItemModel.prototype.parseDefaultData = function(data) {
+	console.log("parsing: " + JSON.stringify(data));
+
+	this.defaultValue = data.filename;
+}
+
+/**
  * Prepare data to be saved.
  * @method prepareSaveData
  */
 ImageItemModel.prototype.prepareSaveData = function(jsonData) {
+	/*	jsonData.graphics[this.key] = {
+			filename: 
+		};*/
 }
 
 module.exports = ImageItemModel;

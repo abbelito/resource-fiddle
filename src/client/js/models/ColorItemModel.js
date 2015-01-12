@@ -75,6 +75,7 @@ ColorItemModel.processValue = function(v) {
  * @method prepareSaveData
  */
 ColorItemModel.prototype.prepareSaveData = function(jsonData) {
+//	jsonData.graphics[this.key]=
 }
 
 module.exports = ColorItemModel;

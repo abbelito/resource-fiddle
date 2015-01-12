@@ -6,6 +6,7 @@ function ResourceItemController(itemView) {
 	this.itemView = itemView;
 
 	this.itemView.on("change", this.onItemViewChange, this);
+	this.itemView.on("fileSelect", this.onItemViewFileSelect, this);
 }
 
 /**
@@ -32,6 +33,14 @@ ResourceItemController.prototype.onItemViewChange = function() {
 		return;
 
 	this.itemModel.setValue(this.itemView.getValue());
+}
+
+/**
+ * File selected.
+ * @method onItemViewFileSelect
+ */
+ResourceItemController.prototype.onItemViewFileSelect = function() {
+	console.log("file selected..");
 }
 
 module.exports = ResourceItemController;

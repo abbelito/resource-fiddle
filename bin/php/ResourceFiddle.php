@@ -280,9 +280,8 @@
 				$noImageUrl="img/no_image.jpeg";
 				$item=$this->graphics[$i];
 
-				$o["graphics"][$item->name]=array(
-					"texture"=>$noImageUrl,
-				);
+				$o["graphics"][$item->name]=$item->value;
+				$o["graphics"][$item->name]["texture"]=$noImageUrl;
 
 				$o["graphics"]["textures"][]=array(
 					"id"=>$noImageUrl,
@@ -328,9 +327,9 @@
 			$routes = new Routes();
 			$routes->addRoute("/save", $api, "saveJson");
 			$routes->addRoute("/upload", $api, "uploadImage");
-			$routes->addRoute("/getImages", $api, "getImages");
+			//$routes->addRoute("/getImages", $api, "getImages");
 			$routes->addRoute("/getTexture", $api, "getTexture");
-			$routes->addRoute("/merge", $api, "merge");
+			//$routes->addRoute("/merge", $api, "merge");
 			if($routes->run($path) != false) {
 				return;
 			}

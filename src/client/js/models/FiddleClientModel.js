@@ -8,6 +8,7 @@ var PositionItemModel = require("./PositionItemModel");
 var ColorItemModel = require("./ColorItemModel");
 var EventDispatcher = require("yaed");
 var inherits = require("inherits");
+var request = require("request");
 
 /**
  * Main model for the app.
@@ -17,6 +18,8 @@ function FiddleClientModel() {
 	this.session = null;
 	this.testcaseCollection = new xnodec.Collection();
 	this.categoryCollection = new xnodec.Collection();
+
+	this.saveRequest = null;
 }
 
 inherits(FiddleClientModel, EventDispatcher);
@@ -46,17 +49,14 @@ FiddleClientModel.prototype.initWithResources = function(resources) {
 	for (var key in resourceObject.graphics) {
 		if (key != "textures") {
 			var imageItem = new ImageItemModel(key);
+			imageItem.parseDefaultData(resourceObject.graphics[key]);
 			this.graphicsCategory.addResourceItemModel(imageItem);
 		}
 	}
 
 	for (var key in resourceObject.positions) {
-		var item = resourceObject.positions[key];
 		var positionItem = new PositionItemModel(key);
-
-		if (item)
-			positionItem.setDefaultValue(item[0] + ", " + item[1]);
-
+		positionItem.parseDefaultData(resourceObject.positions[key]);
 		this.positionsCategory.addResourceItemModel(positionItem);
 	}
 
@@ -167,6 +167,13 @@ FiddleClientModel.prototype.save = function() {
 
 	for (var i = 0; i < allItems.length; i++)
 		allItems[i].prepareSaveData(jsonData);
+
+	var formData = {
+		json: JSON.stringify(jsonData)
+	};
+
+	var url = window.location + "save";
+	this.saveRequest = request.post(url).form(formData);
 }
 
 /**

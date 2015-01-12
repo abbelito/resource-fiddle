@@ -32,6 +32,16 @@ ColorUtil.parseHTMLColor = function(htmlColor) {
 }
 
 /**
+ * Convert html to hex.
+ * @method htmlToHex
+ */
+ColorUtil.htmlToHex = function(html) {
+	var color = ColorUtil.parseHTMLColor(html);
+
+	return (color.red << 16) + (color.green << 8) + (color.blue);
+}
+
+/**
  * Converts a hex color number to a html color.
  * @method hexToHTML
  */

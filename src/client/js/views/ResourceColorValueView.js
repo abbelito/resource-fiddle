@@ -1,6 +1,7 @@
 var inherits = require("inherits");
 var xnode = require("xnode");
 var ColorUtil = require("../utils/ColorUtil");
+var EventDispatcher = require("yaed");
 
 /**
  * The value view for a color. This should have a color picker!
@@ -43,6 +44,7 @@ function ResourceColorValueView() {
 }
 
 inherits(ResourceColorValueView, xnode.Div);
+EventDispatcher.init(ResourceColorValueView);
 
 /**
  * Set color value for default.
@@ -71,6 +73,15 @@ ResourceColorValueView.prototype.setValue = function(value) {
 ResourceColorValueView.prototype.onValueInputChange = function(value) {
 	this.value = this.valueInput.value;
 	this.updateBackgroundColors();
+	this.trigger("valueChange");
+}
+
+/**
+ * Get value.
+ * @method getValue
+ */
+ResourceColorValueView.prototype.getValue = function() {
+	return this.value;
 }
 
 /**

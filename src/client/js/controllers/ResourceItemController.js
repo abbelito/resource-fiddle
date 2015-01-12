@@ -1,3 +1,5 @@
+var ResourceItemModel = require("../models/ResourceItemModel");
+
 /**
  * Control a resource item.
  * @class ResourceItemController
@@ -14,6 +16,10 @@ function ResourceItemController(itemView) {
  * @method setData
  */
 ResourceItemController.prototype.setData = function(itemModel) {
+	if (this.itemModel) {
+		this.itemModel.off(ResourceItemModel.ITEM_CHANGE, this.onItemModelChange, this);
+	}
+
 	this.itemModel = itemModel;
 
 	if (this.itemModel) {
@@ -21,7 +27,17 @@ ResourceItemController.prototype.setData = function(itemModel) {
 		this.itemView.setDefaultValue(this.itemModel.getDefaultValue());
 		this.itemView.setValue(this.itemModel.getValue());
 		this.itemView.setItemType(this.itemModel.getItemType());
+
+		this.itemModel.on(ResourceItemModel.ITEM_CHANGE, this.onItemModelChange, this);
 	}
+}
+
+/**
+ * The model changed, update view.
+ * @method onItemModelChange
+ */
+ResourceItemController.prototype.onItemModelChange = function() {
+	this.itemView.setValue(this.itemModel.getValue());
 }
 
 /**
@@ -40,7 +56,7 @@ ResourceItemController.prototype.onItemViewChange = function() {
  * @method onItemViewFileSelect
  */
 ResourceItemController.prototype.onItemViewFileSelect = function() {
-	console.log("file selected..");
+	this.itemModel.uploadFile(this.itemView.getSelectedFile());
 }
 
 module.exports = ResourceItemController;

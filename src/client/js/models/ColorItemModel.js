@@ -75,7 +75,15 @@ ColorItemModel.processValue = function(v) {
  * @method prepareSaveData
  */
 ColorItemModel.prototype.prepareSaveData = function(jsonData) {
-//	jsonData.graphics[this.key]=
+	var saveData=0;
+
+	if (this.value && this.value[0]=="#")
+		saveData=ColorUtil.htmlToHex(this.value)
+
+	else if (this.defaultValue && this.defaultValue[0]=="#")
+		saveData=ColorUtil.htmlToHex(this.defaultValue)
+
+	jsonData.colors[this.key]=saveData;
 }
 
 module.exports = ColorItemModel;

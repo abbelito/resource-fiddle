@@ -69,6 +69,7 @@ ResourceImageValueView.prototype.setDefaultValue = function(defaultValue) {
  * @method setValue
  */
 ResourceImageValueView.prototype.setValue = function(value) {
+	console.log("setting value: " + value);
 	this.valueImage.src = value;
 }
 

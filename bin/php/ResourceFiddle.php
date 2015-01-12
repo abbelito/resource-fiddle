@@ -267,6 +267,16 @@
 
 		}
 
+		public function getFullSessionPath() {
+			$pathinfo=pathinfo($_SERVER["SCRIPT_FILENAME"]);
+			$dirname=$pathinfo["dirname"];			
+
+			$localTexturePath=$dirname."/".$this->texturePath;
+			$sessionPath=$localTexturePath."/".$this->session;
+
+			return $sessionPath;
+		}
+
 		public function getDefaultJson() {
 			$o=array();
 			$o["graphics"]=array();
@@ -334,7 +344,11 @@
 				return;
 			}
 
-			$contents = file_get_contents(__DIR__."/..".$path);
+			if (file_exists(__DIR__."/..".$path))
+				$contents = file_get_contents(__DIR__."/..".$path);
+
+			else if (file_exists($this->getFullSessionPath()."/".$path))
+				$contents = file_get_contents($this->getFullSessionPath()."/".$path);
 
 			switch (pathinfo($path,PATHINFO_EXTENSION)) {
 				case "js":
@@ -352,6 +366,10 @@
 				case "jpg":
 				case "jpeg":
 					header("Content-type: image/jpeg");
+					break;
+
+				case "png":
+					header("Content-type: image/png");
 					break;
 			}
 

@@ -44,6 +44,7 @@ class TexturePacker {
 
 	private $imageFileNames;
 	private $textureFolder;
+	private $json;
 
 	/**
 	 * Constructor.
@@ -189,7 +190,33 @@ class TexturePacker {
 			$index++;
 		}
 
-		return json_encode($json);
+		$this->json=$json;
+	}
+
+	/**
+	 * Get full json.
+	 */
+	public function getJson() {
+		return $this->json;
+	}
+
+	/**
+	 * Get texture definition part.
+	 */
+	public function getTexturesDefinition() {
+		return $this->json["textures"];
+	}
+
+	/**
+	 * Get frame definition by filename.
+	 */
+	public function getFrameByFilename($filename) {
+		foreach ($this->json as $k=>$v) {
+			if ($k==$filename)
+				return $v;
+		}
+
+		return NULL;
 	}
 
 	/**

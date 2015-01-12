@@ -1,6 +1,7 @@
 <?php
 include_once(__DIR__ . "/Routes.php");
-include_once(__DIR__ . "/../Models/Image.php");
+
+require_once __DIR__."/../Utils/TexturePacker.php";
 
 class API {
 	private $texturePath;
@@ -165,6 +166,46 @@ class API {
 		return $json;
 	}*/
 
+	/**
+	 * Build texture and update texture.json with image coordinates.
+	 */
+	private function buildTexture() {
+		$path = $this->texturePath . "/" . $this->session;
+		$textureJsonFileName="$path/texture.json";
+
+		$json=json_decode(file_get_contents($textureJsonFileName),TRUE);
+		$texturePacker=new TexturePacker();
+		$texturePacker->setTextureFolder($path);
+
+		foreach ($json["graphics"] as $k=>$v) {
+			if ($k!="textures") {
+				if ($v["filename"])
+					$texturePacker->addImage($path."/".$v["filename"]);
+
+				else
+					$texturePacker->addImage(__DIR__."/../../img/no_image.jpeg");
+			}
+		}
+
+		$texturePacker->pack();
+		$json["graphics"]["textures"]=$texturePacker->getTexturesDefinition();
+
+		foreach ($json["graphics"] as $k=>$v) {
+			if ($k!="textures") {
+				if ($v["filename"])
+					$frame=$texturePacker->getFrameByFilename($v["filename"]);
+
+				else
+					$frame=$texturePacker->getFrameByFilename("no_image.jpeg");
+
+				$json["graphics"][$k]["texture"]=$frame["texture"];
+				$json["graphics"][$k]["coords"]=$frame["coords"];
+			}
+		}
+
+		file_put_contents($textureJsonFileName, json_encode($json,JSON_PRETTY_PRINT));
+	}
+
 
 	public function saveJson() {
 
@@ -176,21 +217,26 @@ class API {
 		if (!file_exists($path)) {
 			mkdir($path, 0777, true);
 		}
-		$fileid = fopen("$path/texture.json", "w") or die("{'success':false, 'errors': 'Unable to open file!'}");
-		
-		fwrite($fileid, stripcslashes($jsonString));
-		fclose($fileid);
-		
+
+		$res=file_put_contents("$path/texture.json", stripcslashes($jsonString));
+
+		if (!$res)
+			throw new Exception("Unable to open file...");
+
+		$this->buildTexture();
+
 		echo $this->jsonResponse(true);
 	}
 
 	public function uploadImage() {
 		$session = $this->session;
-		$filename = isset($_POST['Filename']) ? $_POST['Filename'] : $_GET['Filename'];
-		$url = isset($_POST['url']) ? $_POST['url'] : $_GET['url'];
+		$filename = $_FILES["SelectedFile"]["name"];
+		//$url = isset($_POST['url']) ? $_POST['url'] : $_GET['url'];
 
 		$path = $this->texturePath . "/$session";
-		$fullpath = "$path/tmp";
+//		$fullpath = "$path/tmp";
+		$fullpath = $path;
+
 		if (!file_exists($fullpath)) {
 			mkdir($fullpath, 0777, true);
 		}
@@ -220,27 +266,17 @@ class API {
 
 		$ext = pathinfo($_FILES["SelectedFile"]["name"], PATHINFO_EXTENSION);
 
-		$filepath = "$fullpath/" . $filename . "." . $ext;//$_FILES["SelectedFile"]["name"];
+		//$filepath = "$fullpath/" . $filename . "." . $ext;//$_FILES["SelectedFile"]["name"];
+		$filepath = "$fullpath/" . $filename;
 		// Upload file
 		if(!move_uploaded_file($_FILES['SelectedFile']['tmp_name'], $filepath)) {
 		    $this->jsonResponse('Error uploading file - check destination is writeable.');
 		}
 
-
-		echo $this->mergeIntoTexture("$path", $fullpath, $url);
+		//echo $this->mergeIntoTexture("$path", $fullpath, $url);
+		echo $this->jsonResponse(TRUE);
 	}
 
-
-	/*public function getImages() {
-
-		$session = $this->session;
-		$path = $this->texturePath . "/$session";
-		$folder = "$path/tmp/";
-		$filetype = "*";
-		$images = glob($folder . $filetype);
-
-		echo $this->jsonResponse($images);
-	}*/
 
 	public function getTexture() {
 
@@ -263,18 +299,6 @@ class API {
 
 		echo $json;
 	}
-
-	/*public function merge() {
-		$session = $this->session;
-		$filename = isset($_POST['filename']) ? $_POST['filename'] : $_GET['filename'];
-		$url = isset($_POST['url']) ? $_POST['url'] : $_GET['url'];
-
-		$path = $this->texturePath . "/$session";
-		$fullpath = "$path/tmp";
-		
-
-		echo $this->mergeIntoTexture("textureFiles/$session", $fullpath, $url);
-	}*/
 
 	private function jsonResponse($param)
 	{
@@ -302,25 +326,6 @@ class API {
 
 		return $out;
 	}
-
-	/*private function sortOnSize($a, $b) {
-		$aSize = $a->width * $a->height;
-		$bSize = $b->width * $b->height;
-		if($aSize > $bSize) {
-			return -1;
-		}
-		if($aSize < $bSize) {
-			return 1;
-		}
-		if($a->width > $b->width) {
-			return -1;
-		}
-		if($a->width > $b->width) {
-			return 1;
-		}
-		return 0;
-	}*/
-
 };
 
 ?>

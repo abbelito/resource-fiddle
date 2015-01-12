@@ -47,7 +47,7 @@ FiddleClient.prototype.init = function(resources) {
 	//this.editor.init(editorContainer);
 	this.resources = resources;
 
-	console.log("loading:" + resources.isLoading());
+	//console.log("loading:" + resources.isLoading());
 
 	if (resources.isLoading()) {
 		resources.on(Resources.Loaded, this.doInit, this);

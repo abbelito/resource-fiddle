@@ -8,6 +8,8 @@ var Resources = require("../src/lib/Resources");
 function TargetApp() {
 	PixiApp.call(this, 640, 480);
 
+	this.backgroundColor = 0x000000;
+
 	var t, style;
 	var params = querystring.parse(url.parse(window.location.href).query);
 

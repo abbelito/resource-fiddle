@@ -51,7 +51,7 @@ ImageItemModel.prototype.getItemType = function() {
  * @method parseDefaultData
  */
 ImageItemModel.prototype.parseDefaultData = function(data) {
-	console.log("parsing: " + JSON.stringify(data));
+	//console.log("parsing: " + JSON.stringify(data));
 
 	this.defaultValue = data.filename;
 }

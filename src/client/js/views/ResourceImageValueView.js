@@ -59,7 +59,7 @@ EventDispatcher.init(ResourceImageValueView);
  * @method setDefaultValue
  */
 ResourceImageValueView.prototype.setDefaultValue = function(defaultValue) {
-	console.log("setting default value: " + defaultValue);
+	//console.log("setting default value: " + defaultValue);
 
 	this.defaultImage.src = defaultValue;
 }

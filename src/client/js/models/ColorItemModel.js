@@ -71,19 +71,36 @@ ColorItemModel.processValue = function(v) {
 }
 
 /**
+ * Parse default data.
+ */
+ColorItemModel.prototype.parseDefaultData = function(data) {
+	this.defaultValue = ColorUtil.hexToHTML(data);
+}
+
+/**
+ * Parse default data.
+ */
+ColorItemModel.prototype.parseData = function(data) {
+	this.value = ColorUtil.hexToHTML(data);
+
+	if (this.value == this.defaultValue)
+		this.value = null;
+}
+
+/**
  * Prepare data to be saved.
  * @method prepareSaveData
  */
 ColorItemModel.prototype.prepareSaveData = function(jsonData) {
-	var saveData=0;
+	var saveData = 0;
 
-	if (this.value && this.value[0]=="#")
-		saveData=ColorUtil.htmlToHex(this.value)
+	if (this.value && this.value[0] == "#")
+		saveData = ColorUtil.htmlToHex(this.value)
 
-	else if (this.defaultValue && this.defaultValue[0]=="#")
-		saveData=ColorUtil.htmlToHex(this.defaultValue)
+	else if (this.defaultValue && this.defaultValue[0] == "#")
+		saveData = ColorUtil.htmlToHex(this.defaultValue)
 
-	jsonData.colors[this.key]=saveData;
+	jsonData.colors[this.key] = saveData;
 }
 
 module.exports = ColorItemModel;

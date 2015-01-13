@@ -66,7 +66,10 @@ PositionItemModel.prototype.parseDefaultData = function(data) {
  * Parse incoming data.
  */
 PositionItemModel.prototype.parseData = function(data) {
-	this.value = data[0] + data[1];
+	this.value = data[0] + ", " + data[1];
+
+	if (this.value == this.defaultValue)
+		this.value = null;
 }
 
 /**

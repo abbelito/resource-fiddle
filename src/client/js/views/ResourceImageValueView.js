@@ -61,7 +61,12 @@ EventDispatcher.init(ResourceImageValueView);
 ResourceImageValueView.prototype.setDefaultValue = function(defaultValue) {
 	//console.log("setting default value: " + defaultValue);
 
-	this.defaultImage.src = defaultValue;
+	if (defaultValue) {
+		this.defaultImage.src = defaultValue;
+		this.defaultImage.style.display = "inline";
+	} else {
+		this.defaultImage.style.display = "none";
+	}
 }
 
 /**
@@ -69,8 +74,12 @@ ResourceImageValueView.prototype.setDefaultValue = function(defaultValue) {
  * @method setValue
  */
 ResourceImageValueView.prototype.setValue = function(value) {
-	console.log("setting value: " + value);
-	this.valueImage.src = value;
+	if (value) {
+		this.valueImage.src = value;
+		this.valueImage.style.display = "inline";
+	} else {
+		this.valueImage.style.display = "none";
+	}
 }
 
 /**

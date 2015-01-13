@@ -4,13 +4,13 @@
 
 	$r=new ResourceFiddle();
 
-	$r->addResource(ResourceFiddle::GRAPHICS, "image_one", "bunny.png");
-	$r->addResource(ResourceFiddle::GRAPHICS, "image_two", "cat.png");
+	$r->addResource(Resource::GRAPHICS, "image_one", "bunny.png");
+	$r->addResource(Resource::GRAPHICS, "image_two", "cat.png");
 
-	$r->addResource(ResourceFiddle::POSITIONS, "pos_one", array(10,10));
+	$r->addResource(Resource::POSITIONS, "pos_one", array(10,10));
 
-	$r->addResource(ResourceFiddle::COLORS, "color_one", 0xff0000);
-	$r->addResource(ResourceFiddle::COLORS, "color_two", 0x00ff00);
+	$r->addResource(Resource::COLORS, "color_one", 0xff0000);
+	$r->addResource(Resource::COLORS, "color_two", 0x00ff00);
 
 	$r->setSession("session");
 	$r->setTexturePath("textureFiles");

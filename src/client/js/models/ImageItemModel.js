@@ -53,9 +53,14 @@ ImageItemModel.prototype.getItemType = function() {
  * @method parseDefaultData
  */
 ImageItemModel.prototype.parseDefaultData = function(data) {
-	//console.log("parsing: " + JSON.stringify(data));
+	this.defaultValue = data;
+}
 
-	this.defaultValue = data.filename;
+ImageItemModel.prototype.parseData = function(data) {
+	this.value = data.filename;
+
+	if (this.value == this.defaultValue)
+		this.value = null;
 }
 
 /**

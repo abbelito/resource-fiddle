@@ -24,7 +24,8 @@ function FiddleClient(domContainer, session, basePath) {
 
 ClassUtils.extends(FiddleClient, xnode.Div);
 
-FiddleClient.prototype.init = function(resources) {
+FiddleClient.prototype.init = function(initData, resources) {
+	this.fiddleClientModel.initDefinition(initData);
 	this.resources = resources;
 
 	if (resources.isLoading()) {
@@ -44,7 +45,7 @@ FiddleClient.prototype.addTestcase = function(id, name, url) {
 };
 
 FiddleClient.prototype.doInit = function() {
-	this.fiddleClientModel.initWithResources(this.resources);
+	this.fiddleClientModel.initResources(this.resources);
 
 	this.fiddleClientController = new FiddleClientController(
 		this.fiddleClientView,

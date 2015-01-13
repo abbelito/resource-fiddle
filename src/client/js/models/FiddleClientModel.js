@@ -36,38 +36,79 @@ FiddleClientModel.prototype.setSession = function(session) {
 }
 
 /**
+ * Setup resources.
+ */
+FiddleClientModel.prototype.initDefinition = function(initData) {
+	for (var i = 0; i < initData.items.length; i++) {
+		var itemDef = initData.items[i];
+
+		switch (itemDef.type) {
+			case "graphics":
+				if (!this.graphicsCategory)
+					this.graphicsCategory = this.createCategory("Graphics");
+
+				var imageItem = new ImageItemModel(itemDef.name);
+				imageItem.parseDefaultData(itemDef.value);
+				this.graphicsCategory.addResourceItemModel(imageItem);
+				break;
+
+			case "position":
+				if (!this.positionsCategory)
+					this.positionsCategory = this.createCategory("Positions");
+
+				var positionItem = new PositionItemModel(itemDef.name);
+				positionItem.parseDefaultData(itemDef.value);
+				this.positionsCategory.addResourceItemModel(positionItem);
+				break;
+
+			case "color":
+				if (!this.colorsCategory)
+					this.colorsCategory = this.createCategory("Colors");
+
+				var colorItem = new ColorItemModel(itemDef.name);
+				colorItem.parseDefaultData(itemDef.value);
+				this.colorsCategory.addResourceItemModel(colorItem);
+				break;
+
+			case "string":
+				break;
+
+			default:
+				throw new Error("unknown resource type: " + itemDef.type);
+				break;
+		}
+	}
+}
+
+/**
  * Init from a resources object.
  * @method initWithResources
  */
-FiddleClientModel.prototype.initWithResources = function(resources) {
-	this.graphicsCategory = this.createCategory("Graphics");
-	this.positionsCategory = this.createCategory("Positions");
-	this.colorsCategory = this.createCategory("Colors");
-
+FiddleClientModel.prototype.initResources = function(resources) {
 	var resourceObject = resources.getResourceObject();
-
-	for (var key in resourceObject.graphics) {
-		if (key != "textures") {
-			var imageItem = new ImageItemModel(key);
-			imageItem.parseDefaultData(resourceObject.graphics[key]);
-			this.graphicsCategory.addResourceItemModel(imageItem);
-		}
-	}
+	var allByKey = this.getAllItemsByKey();
 
 	for (var key in resourceObject.positions) {
-		var positionItem = new PositionItemModel(key);
-		positionItem.parseDefaultData(resourceObject.positions[key]);
-		this.positionsCategory.addResourceItemModel(positionItem);
+		var item = allByKey[key];
+
+		if (item)
+			item.parseData(resourceObject.positions[key]);
 	}
 
 	for (var key in resourceObject.colors) {
-		var item = resourceObject.colors[key];
-		var colorItem = new ColorItemModel(key);
+		var item = allByKey[key];
 
 		if (item)
-			colorItem.setDefaultValue(item);
+			item.parseData(resourceObject.colors[key]);
+	}
 
-		this.colorsCategory.addResourceItemModel(colorItem);
+	for (var key in resourceObject.graphics) {
+		if (key != "textures") {
+			var item = allByKey[key];
+
+			if (item)
+				item.parseData(resourceObject.graphics[key]);
+		}
 	}
 }
 
@@ -151,6 +192,22 @@ FiddleClientModel.prototype.getAllItems = function() {
 		a = a.concat(this.categoryCollection.getItemAt(i).getAllItems());
 
 	return a;
+}
+
+/**
+ * Get all items in all categories.
+ * @method getAllItems
+ */
+FiddleClientModel.prototype.getAllItemsByKey = function() {
+	var a = this.getAllItems();
+	var byKey = {};
+
+	for (var i = 0; i < a.length; i++) {
+		var item = a[i];
+		byKey[item.getKey()] = item;
+	}
+
+	return byKey;
 }
 
 /**

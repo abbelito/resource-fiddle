@@ -10,11 +10,7 @@
 	*/
 	class ResourceFiddle
 	{
-		private $graphics;
-		private $colors;
-		private $positions;
-		private $strings;
-
+		private $resources;
 		private $testcases;
 		private $texturePath;
 
@@ -32,10 +28,7 @@
 		 */
 		function __construct()
 		{
-			$this->graphics = array();
-			$this->colors = array();
-			$this->positions = array();
-			$this->strings = array();
+			$this->resources = array();
 
 			$this->testcases = array();
 			$this->path  = "";
@@ -49,19 +42,19 @@
 		{
 			switch($type) {
 				case ResourceFiddle::GRAPHICS: {
-					array_push($this->graphics, new Resource($name, $value));
+					array_push($this->resources, new Resource($type, $name, $value));
 					break;
 				}
 				case ResourceFiddle::POSITIONS: {
-					array_push($this->positions, new Resource($name, $value));
+					array_push($this->resources, new Resource($type, $name, $value));
 					break;
 				}
 				case ResourceFiddle::COLORS: {
-					array_push($this->colors, new Resource($name, $value));
+					array_push($this->resources, new Resource($type, $name, $value));
 					break;
 				}
 				case ResourceFiddle::STRINGS: {
-					array_push($this->strings, new Resource($name, $value));
+					array_push($this->resources, new Resource($type, $name, $value));
 					break;
 				}
 			}
@@ -117,104 +110,16 @@
 					<script src="<?= $this->path; ?>js/resource-fiddle.bundle.js"></script>
 					<script type="text/javascript">
 						function run() {
-							var resources = new Resources();
-							/*resources.addSource({
-								graphics: {
-									<?php 
-									$count = count($this->graphics);
-									for($i = 0; $i < $count; $i++) {
-										echo $this->graphics[$i]->name . ": ";
-
-										if($this->graphics[$i]->value != NULL) {
-											echo $this->graphics[$i]->value;
-										}
-										else {
-											echo "\"\"";
-										}
-										if($i < ($count - 1)) {
-											echo ",";
-										}
-										?>
-										
-										<?php
-									}
-									?>
-
-								},
-								positions: {
-									<?php 
-									$count = count($this->positions);
-									for($i = 0; $i < $count; $i++) {
-										echo $this->positions[$i]->name . ": ";
-
-										if($this->positions[$i]->value != NULL) {
-											echo $this->positions[$i]->value;
-										}
-										else {
-											echo "\"\"";
-										}
-										if($i < ($count - 1)) {
-											echo ",";
-										}
-										?>
-										
-										<?php
-									}
-									?>
-
-								},
-								colors: {
-									<?php 
-									$count = count($this->colors);
-									for($i = 0; $i < $count; $i++) {
-										echo $this->colors[$i]->name . ": ";
-
-										if($this->colors[$i]->value != NULL) {
-											echo $this->colors[$i]->value;
-										}
-										else {
-											echo "\"\"";
-										}
-										if($i < ($count - 1)) {
-											echo ",";
-										}
-										?>
-										
-										<?php
-									}
-									?>
-
-								},
-								strings: {
-									<?php 
-									$count = count($this->strings);
-									for($i = 0; $i < $count; $i++) {
-										echo $this->strings[$i]->name . ": ";
-
-										if($this->strings[$i]->value != NULL) {
-											echo $this->strings[$i]->value;
-										}
-										else {
-											echo "\"\"";
-										}
-										if($i < ($count - 1)) {
-											echo ",";
-										}
-										?>
-										
-										<?php
-									}
-									?>
-
-								}
-							});*/
-
+							var initData=<?php echo json_encode($this->getInitData()); ?>;
 							var jsonUrl = document.location+"getTexture";
+
+							var resources = new Resources();
 							resources.addSource(jsonUrl, true);
 
 							var domContainer = document.getElementById("container");
 
 							var client = new FiddleClient(domContainer, "<?= $this->session; ?>", "<?= $this->path; ?>");
+
 							<?php 
 							$count = count($this->testcases);
 							for($i = 0; $i < $count; $i++) {
@@ -225,7 +130,7 @@
 							}
 							?>
 
-							client.init(resources);
+							client.init(initData, resources);
 						}
 					</script>
 				</head>
@@ -234,6 +139,25 @@
 				</body>
 			</html>
 			<?php
+		}
+
+		/**
+		 * Get init data.
+		 */
+		private function getInitData() {
+			$initData=array();
+
+			$initData["items"]=array();
+
+			foreach ($this->resources as $item) {
+				$initData["items"][]=array(
+					"type"=>$item->getTypeAsString(),
+					"name"=>$item->name,
+					"value"=>$item->value
+				);
+			}
+
+			return $initData;
 		}
 
 		/**
@@ -285,24 +209,26 @@
 
 			$o["graphics"]["textures"]=array();
 
-			for($i = 0; $i < sizeof($this->graphics); $i++) {
-				$item=$this->graphics[$i];
+			foreach ($this->resources as $item) {
+				switch ($item->type) {
+					case Resource::GRAPHICS:
+						$o["graphics"][$item->name]=array(
+							"filename"=>$item->value
+						);
+						break;
 
-				$o["graphics"][$item->name]=array(
-					"filename"=>$item->value
-				);
-			}
+					case Resource::POSITIONS:
+						$o["positions"][$item->name]=$item->value;
+						break;
 
-			for($i = 0; $i < sizeof($this->positions); $i++) {
-				$item=$this->positions[$i];
+					case Resource::COLORS:
+						$o["colors"][$item->name]=$item->value;
+						break;
 
-				$o["positions"][$item->name]=$item->value;
-			}
-
-			for($i = 0; $i < sizeof($this->colors); $i++) {
-				$item=$this->colors[$i];
-
-				$o["colors"][$item->name]=$item->value;
+					case Resource::STRINGS:
+						$o["strings"][$item->name]=$item->value;
+						break;
+				}
 			}
 
 			return $o;

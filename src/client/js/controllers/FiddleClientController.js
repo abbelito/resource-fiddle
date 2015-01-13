@@ -38,6 +38,7 @@ function FiddleClientController(fiddleClientView, fiddleClientModel) {
 
 	this.fiddleClientModel.on(FiddleClientModel.ACTIVE_TESTCASE_CHANGE, this.updateCurrentTestcase, this);
 	this.fiddleClientModel.on(FiddleClientModel.ITEM_CHANGE, this.onModelItemChange, this);
+	this.fiddleClientModel.on(FiddleClientModel.SAVE_COMPLETE, this.onModelSaveComplete, this);
 }
 
 /**
@@ -51,6 +52,14 @@ FiddleClientController.prototype.updateCurrentTestcase = function() {
 		return null;
 
 	this.fiddleClientView.getTargetPaneView().setUrl(activeTestcase.getCachePreventionUrl());
+}
+
+/**
+ * The model was saved, refresh target.
+ * @method onModelSaveComplete
+ */
+FiddleClientController.prototype.onModelSaveComplete = function() {
+	this.updateCurrentTestcase();
 }
 
 /**

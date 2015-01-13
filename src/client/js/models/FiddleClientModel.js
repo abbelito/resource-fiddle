@@ -8,7 +8,8 @@ var PositionItemModel = require("./PositionItemModel");
 var ColorItemModel = require("./ColorItemModel");
 var EventDispatcher = require("yaed");
 var inherits = require("inherits");
-var request = require("request");
+//var request = require("request");
+var HttpRequest = require("../utils/HttpRequest");
 
 /**
  * Main model for the app.
@@ -26,6 +27,7 @@ inherits(FiddleClientModel, EventDispatcher);
 
 FiddleClientModel.ACTIVE_TESTCASE_CHANGE = "activeTestcaseChange";
 FiddleClientModel.ITEM_CHANGE = "itemChange";
+FiddleClientModel.SAVE_COMPLETE = "saveComplete";
 
 /**
  * Set session.
@@ -225,12 +227,26 @@ FiddleClientModel.prototype.save = function() {
 	for (var i = 0; i < allItems.length; i++)
 		allItems[i].prepareSaveData(jsonData);
 
-	var formData = {
-		json: JSON.stringify(jsonData)
-	};
+	var request = new HttpRequest(window.location + "save");
+	request.setParameter("json", JSON.stringify(jsonData));
+	request.perform().then(
+		this.onSaveComplete.bind(this),
+		this.onSaveError.bind(this)
+	);
+}
 
-	var url = window.location + "save";
-	this.saveRequest = request.post(url).form(formData);
+/**
+ * Save complete.
+ */
+FiddleClientModel.prototype.onSaveComplete = function() {
+	this.trigger(FiddleClientModel.SAVE_COMPLETE);
+}
+
+/**
+ * Save complete.
+ */
+FiddleClientModel.prototype.onSaveError = function(e) {
+	console.log("save error...");
 }
 
 /**

@@ -1,6 +1,7 @@
 var inherits = require("inherits");
 var xnode = require("xnode");
 var EventDispatcher = require("yaed");
+var ContextDiv = require("../utils/ContextDiv");
 
 /**
  * View and edit the value of an image.
@@ -22,6 +23,7 @@ function ResourceImageValueView() {
 	this.valueImage.style.height = "30px";
 	this.valueImage.style.width = "auto";
 	this.valueImage.style.left = "calc(50% - 10px)";
+	this.valueImage.addEventListener("contextmenu", this.onValueImageContextMenu.bind(this));
 	this.appendChild(this.valueImage);
 
 	this.uploadInput = new xnode.Input();
@@ -49,6 +51,7 @@ function ResourceImageValueView() {
 	this.uploadDiv.style.overflow = "hidden";
 
 	this.appendChild(this.uploadDiv);
+	this.value = null;
 }
 
 inherits(ResourceImageValueView, xnode.Div);
@@ -74,6 +77,8 @@ ResourceImageValueView.prototype.setDefaultValue = function(defaultValue) {
  * @method setValue
  */
 ResourceImageValueView.prototype.setValue = function(value) {
+	this.value = value;
+
 	if (value) {
 		this.valueImage.src = value;
 		this.valueImage.style.display = "inline";
@@ -87,7 +92,9 @@ ResourceImageValueView.prototype.setValue = function(value) {
  * @meothd onUploadInputChange
  */
 ResourceImageValueView.prototype.onUploadInputChange = function(e) {
+	console.log("upload change: " + this.uploadInput.value);
 	this.trigger("fileSelect");
+	this.uploadInput.value = ""
 }
 
 /**
@@ -96,6 +103,51 @@ ResourceImageValueView.prototype.onUploadInputChange = function(e) {
  */
 ResourceImageValueView.prototype.getSelectedFile = function() {
 	return this.uploadInput.files[0];
+}
+
+/**
+ * Right click on the value image.
+ * @method onValueImageContextMenu
+ */
+ResourceImageValueView.prototype.onValueImageContextMenu = function(ev) {
+	ev.preventDefault();
+
+	var menu = new ContextDiv();
+	menu.className = "ui vertical menu";
+	menu.style.position = "fixed";
+	menu.style.left = ev.pageX + "px";
+	menu.style.top = ev.pageY + "px";
+	menu.style.marginTop = 0;
+
+	var a = new xnode.A();
+	a.className = "item";
+	a.innerHTML = "Restore to default";
+
+	var i=new xnode.I();
+	i.className="trash icon";
+	a.appendChild(i);
+
+	menu.appendChild(a);
+
+	a.addEventListener("click", this.onRestoreToDefaultClick.bind(this));
+	menu.show();
+}
+
+/**
+ * Restore to default.
+ * @method onRestoreToDefaultClick
+ */
+ResourceImageValueView.prototype.onRestoreToDefaultClick = function() {
+	this.setValue(null);
+	this.trigger("valueChange");
+}
+
+/**
+ * Get value.
+ * @method getValue
+ */
+ResourceImageValueView.prototype.getValue = function() {
+	return this.value;
 }
 
 module.exports = ResourceImageValueView;

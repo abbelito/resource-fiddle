@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+
+	require_once __DIR__."/../src/client/php/Utils/ResourceManifest.php";
+
+	if (count($_SERVER["argv"])!=3)
+		exit("Usage: resdecompile <source.json> <dest.json>\n");
+
+	$resourceManifest=new ResourceManifest();
+	$resourceManifest->load($_SERVER["argv"][1]);
+	$resourceManifest->decompile($_SERVER["argv"][2]);

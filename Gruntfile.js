@@ -149,7 +149,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 
 	/*grunt.registerTask('debug', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client', 'fixDebugPermissions']);*/
-	grunt.registerTask('build', ['copy:release', 'browserify', 'concat_css:release', 'cssmin:release']);
+	grunt.registerTask('build', ['copy:release', 'browserify'/*, 'concat_css:release', 'cssmin:release'*/]);
 	grunt.registerTask('server', ['php']);
 
 	grunt.registerTask("default", function() {

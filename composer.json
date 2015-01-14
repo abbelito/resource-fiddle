@@ -6,5 +6,8 @@
     },
     "scripts": {
         "test": "phpunit test/phpunit"
-    }
+    },
+    "bin": [
+    	"tools/resdecompile"
+    ]
 }

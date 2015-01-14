@@ -54,6 +54,9 @@ ResourceTabView.prototype.setActive = function(active) {
  * @method setDescription
  */
 ResourceTabView.prototype.setDescription = function(description) {
+	if (!description)
+		description = null;
+
 	this.descriptionP.innerHTML = description;
 }
 

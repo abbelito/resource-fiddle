@@ -67,7 +67,12 @@ ResourceCategoryView.prototype.setActive = function(active) {
  * @method setDescription
  */
 ResourceCategoryView.prototype.setDescription = function(description) {
-	this.descriptionP.innerHTML = description;
+	if (description) {
+		this.descriptionP.innerHTML = description;
+		this.descriptionP.style.display = "block";
+	} else {
+		this.descriptionP.style.display = "none";
+	}
 }
 
 /**

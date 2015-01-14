@@ -7,11 +7,13 @@
 	$images=$r->category("Some Images");
 
 	$sc=$images->category("subcategory");
+	$sc->description("Some images...");
 	$sc->image("image_one")->value("bunny.png");
 	$sc->image("image_two")->value("cat.png");
 
-/*	$r->image("image_one")->value("bunny.png");
-	$r->image("image_two")->value("cat.png");*/
+	$sc=$images->category("subcategory");
+	//$sc->description("Another sub...");
+	$sc->position("test")->value(10,10);
 
 	$r->position("pos_one")->value(10,10);
 	$r->color("color_one")->value(0xff0000);

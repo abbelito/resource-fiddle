@@ -86,6 +86,7 @@
 			$definitionData=array();
 
 			$definitionData["title"]=$this->title;
+			$definitionData["description"]=$this->description;
 
 			$definitionData["items"]=array();
 			foreach ($this->resources as $item) {
@@ -102,5 +103,18 @@
 			}
 
 			return $definitionData;
+		}
+
+		/**
+		 * 
+		 */
+		public function getAllResources() {
+			$res=array();
+			$res=$this->resources;
+
+			foreach ($this->categories as $category)
+				$res=array_merge($res,$category->getAllResources());
+
+			return $res;
 		}
 	}

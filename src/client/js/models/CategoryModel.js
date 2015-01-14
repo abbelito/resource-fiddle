@@ -209,6 +209,8 @@ CategoryModel.prototype.initDefinition = function(definitionData) {
 			category.initDefinition(categoryDefinition);
 		}
 	}
+
+	this.description=definitionData.description;
 }
 
 module.exports = CategoryModel;

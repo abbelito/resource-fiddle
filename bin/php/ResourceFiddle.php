@@ -164,7 +164,7 @@
 
 			$o["graphics"]["textures"]=array();
 
-			foreach ($this->resources as $item) {
+			foreach ($this->getAllResources() as $item) {
 				switch ($item->type) {
 					case Resource::GRAPHICS:
 						$o["graphics"][$item->name]=array(

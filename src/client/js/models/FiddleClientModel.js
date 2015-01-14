@@ -2,10 +2,6 @@ var xnode = require("xnode");
 var xnodec = require("xnodecollection");
 var Testcase = require("./Testcase");
 var CategoryModel = require("./CategoryModel");
-var ImageItemModel = require("./ImageItemModel");
-var ResourceItemModel = require("./ResourceItemModel");
-var PositionItemModel = require("./PositionItemModel");
-var ColorItemModel = require("./ColorItemModel");
 var EventDispatcher = require("yaed");
 var inherits = require("inherits");
 //var request = require("request");
@@ -40,46 +36,26 @@ FiddleClientModel.prototype.setSession = function(session) {
 /**
  * Setup resources.
  */
-FiddleClientModel.prototype.initDefinition = function(initData) {
-	for (var i = 0; i < initData.items.length; i++) {
-		var itemDef = initData.items[i];
+FiddleClientModel.prototype.initDefinition = function(definitionData) {
+	console.log("init with def...");
 
-		switch (itemDef.type) {
-			case "graphics":
-				if (!this.graphicsCategory)
-					this.graphicsCategory = this.createCategory("Graphics");
+	if (definitionData.items.length) {
+		var category = this.createCategory("(Uncategorized)");
 
-				var imageItem = new ImageItemModel(itemDef.name);
-				imageItem.parseDefaultData(itemDef.value);
-				this.graphicsCategory.addResourceItemModel(imageItem);
-				break;
+		var itemsDefinition = {
+			items: definitionData.items
+		};
 
-			case "position":
-				if (!this.positionsCategory)
-					this.positionsCategory = this.createCategory("Positions");
-
-				var positionItem = new PositionItemModel(itemDef.name);
-				positionItem.parseDefaultData(itemDef.value);
-				this.positionsCategory.addResourceItemModel(positionItem);
-				break;
-
-			case "color":
-				if (!this.colorsCategory)
-					this.colorsCategory = this.createCategory("Colors");
-
-				var colorItem = new ColorItemModel(itemDef.name);
-				colorItem.parseDefaultData(itemDef.value);
-				this.colorsCategory.addResourceItemModel(colorItem);
-				break;
-
-			case "string":
-				break;
-
-			default:
-				throw new Error("unknown resource type: " + itemDef.type);
-				break;
-		}
+		category.initDefinition(itemsDefinition);
 	}
+
+	for (var i = 0; i < definitionData.categories.length; i++) {
+		var categoryDefinition = definitionData.categories[i];
+		var category=this.createCategory(categoryDefinition.title);
+		category.initDefinition(categoryDefinition);
+	}
+
+	console.log("init done, catlen=" + this.categoryCollection.getLength());
 }
 
 /**

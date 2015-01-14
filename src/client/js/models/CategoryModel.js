@@ -3,6 +3,9 @@ var EventDispatcher = require("yaed");
 var inherits = require("inherits");
 var xnodec = require("xnodecollection");
 var ResourceItemModel = require("./ResourceItemModel");
+var ImageItemModel = require("./ImageItemModel");
+var PositionItemModel = require("./PositionItemModel");
+var ColorItemModel = require("./ColorItemModel");
 
 /**
  * Get category model.
@@ -166,6 +169,46 @@ CategoryModel.prototype.getAllItems = function() {
 		a.push(this.itemCollection.getItemAt(i));
 
 	return a;
+}
+
+/**
+ * Init definitions.
+ * @method initDefinition
+ */
+CategoryModel.prototype.initDefinition = function(definitionData) {
+	for (var i = 0; i < definitionData.items.length; i++) {
+		var itemDef = definitionData.items[i];
+		var item;
+
+		switch (itemDef.type) {
+			case "graphics":
+				item = new ImageItemModel(itemDef.name);
+				break;
+
+			case "position":
+				item = new PositionItemModel(itemDef.name);
+				break;
+
+			case "color":
+				item = new ColorItemModel(itemDef.name);
+				break;
+
+			default:
+				throw new Error("unknown resource type: " + itemDef.type);
+				break;
+		}
+
+		item.parseDefaultData(itemDef.value);
+		this.addResourceItemModel(item);
+	}
+
+	if (definitionData.categories) {
+		for (var i = 0; i < definitionData.categories.length; i++) {
+			var categoryDefinition = definitionData.categories[i];
+			var category = this.createCategory(categoryDefinition.title);
+			category.initDefinition(categoryDefinition);
+		}
+	}
 }
 
 module.exports = CategoryModel;

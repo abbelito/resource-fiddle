@@ -50,6 +50,7 @@ class TexturePacker {
 	 * Constructor.
 	 */
 	public function TexturePacker() {
+		$this->imageFileNames=array();
 		$this->images=array();
 	}
 

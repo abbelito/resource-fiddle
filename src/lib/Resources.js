@@ -144,7 +144,8 @@ Resources.prototype.onLoaded = function(loader, loadIndex, noCache) {
 				}
 			}
 		}
-		if (this.resources.graphics.textures) {
+
+		if (this.resources.graphics.textures && this.resources.graphics.textures.length) {
 			for (var i = this.textureCount; i < this.resources.graphics.textures.length; i++) {
 				this.textureCount = this.resources.graphics.textures.length;
 				var textureObject = this.resources.graphics.textures[i];

@@ -4,60 +4,34 @@
 	include_once("Controllers/Routes.php");
 	include_once("Models/Resource.php");
 	include_once("Models/Testcase.php");
+	include_once("Models/Category.php");
 
 	/**
 	* 
 	*/
-	class ResourceFiddle
+	class ResourceFiddle extends Category
 	{
-		private $resources;
+		//private $resources;
 		private $testcases;
 		private $texturePath;
 
-		private $groups;
-
 		private $path;
 
-		const GRAPHICS = 0;
-		const POSITIONS = 1;
-		const COLORS = 2;
-		const STRINGS = 3;
+		const GRAPHICS = Resource::GRAPHICS;
+		const POSITIONS = Resource::POSITIONS;
+		const COLORS = Resource::COLORS;
+		const STRINGS = Resource::STRINGS;
 
 		/**
 		 *
 		 */
 		function __construct()
 		{
-			$this->resources = array();
-
+			parent::__construct();
 			$this->testcases = array();
 			$this->path  = "";
 			$this->texturePath = "textureFiles";
-		}
-
-		/**
-		 *
-		 */
-		public function addResource($type, $name, $value = NULL)
-		{
-			switch($type) {
-				case ResourceFiddle::GRAPHICS: {
-					array_push($this->resources, new Resource($type, $name, $value));
-					break;
-				}
-				case ResourceFiddle::POSITIONS: {
-					array_push($this->resources, new Resource($type, $name, $value));
-					break;
-				}
-				case ResourceFiddle::COLORS: {
-					array_push($this->resources, new Resource($type, $name, $value));
-					break;
-				}
-				case ResourceFiddle::STRINGS: {
-					array_push($this->resources, new Resource($type, $name, $value));
-					break;
-				}
-			}
+			$this->session="custom";
 		}
 
 		/**
@@ -110,7 +84,7 @@
 					<script src="<?= $this->path; ?>js/resource-fiddle.bundle.js"></script>
 					<script type="text/javascript">
 						function run() {
-							var initData=<?php echo json_encode($this->getInitData()); ?>;
+							var initData=<?php echo json_encode($this->getDefinitionData()); ?>;
 							var jsonUrl = document.location+"getTexture";
 
 							var resources = new Resources();
@@ -139,25 +113,6 @@
 				</body>
 			</html>
 			<?php
-		}
-
-		/**
-		 * Get init data.
-		 */
-		private function getInitData() {
-			$initData=array();
-
-			$initData["items"]=array();
-
-			foreach ($this->resources as $item) {
-				$initData["items"][]=array(
-					"type"=>$item->getTypeAsString(),
-					"name"=>$item->name,
-					"value"=>$item->value
-				);
-			}
-
-			return $initData;
 		}
 
 		/**

@@ -42,6 +42,18 @@ class Resource
 
 		throw new Exception("unknown type");
 	}
+
+	/**
+	 * Set value.
+	 */
+	public function value($value, $arg2=NULL) {
+		if ($this->type==Resource::POSITIONS && $arg2!==NULL)
+			$value=array($value,$arg2);
+
+		$this->value=$value;
+
+		return $this;
+	}
 }
 
 ?>

@@ -4,16 +4,18 @@
 
 	$r=new ResourceFiddle();
 
-	$r->addResource(Resource::GRAPHICS, "image_one", "bunny.png");
-	$r->addResource(Resource::GRAPHICS, "image_two", "cat.png");
+	$images=$r->category("Some Images");
 
-	$r->addResource(Resource::POSITIONS, "pos_one", array(10,10));
+	$sc=$images->category("subcategory");
+	$sc->image("image_one")->value("bunny.png");
+	$sc->image("image_two")->value("cat.png");
 
-	$r->addResource(Resource::COLORS, "color_one", 0xff0000);
-	$r->addResource(Resource::COLORS, "color_two", 0x00ff00);
+/*	$r->image("image_one")->value("bunny.png");
+	$r->image("image_two")->value("cat.png");*/
 
-	$r->setSession("session");
-	$r->setTexturePath("textureFiles");
+	$r->position("pos_one")->value(10,10);
+	$r->color("color_one")->value(0xff0000);
+	$r->color("color_two")->value(0x00ff00);
 
 	$r->addTestcase("First test", "target.html?testcase=test1");
 	$r->addTestcase("Second test", "target.html?testcase=test2");

@@ -45,6 +45,7 @@ FiddleClient.prototype.addTestcase = function(id, name, url) {
 };
 
 FiddleClient.prototype.doInit = function() {
+	console.log("doing init...");
 	this.fiddleClientModel.initResources(this.resources);
 
 	this.fiddleClientController = new FiddleClientController(

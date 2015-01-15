@@ -11,10 +11,10 @@
 			$texturePacker=new TexturePacker();
 			$texturePacker->addImagesInDirectory(__DIR__."/../res");
 			$texturePacker->setTextureFolder(__DIR__."/../out");
-			$json=$texturePacker->pack();
+			$texturePacker->pack();
 
-			print_r(json_decode($json,TRUE));
+			$data=$texturePacker->getJson();
 
-			$this->assertEquals(TRUE,TRUE);
+			$this->assertEquals(1,count($data["textures"]));
 		}
 	}

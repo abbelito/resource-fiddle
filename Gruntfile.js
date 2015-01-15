@@ -104,36 +104,6 @@ module.exports = function(grunt) {
 					dest: 'bin/js/jquery.min.js'
 				}]
 			}
-		},
-		concat_css: {
-			build: {
-				options: {
-					// Task-specific options go here.
-				},
-				files: {
-					"www/css/client.bundle.css": ["src/client/css/**/*.css"]
-				}
-			},
-			release: {
-				options: {
-					// Task-specific options go here.
-				},
-				files: {
-					"www/css/client.bundle.css": ["src/client/css/**/*.css"]
-				}
-			}
-		},
-		cssmin: {
-			client: {
-				files: {
-					'www/css/client.min.css': ['www/css/client.bundle.css']
-				}
-			},
-			release: {
-				files: {
-					'bin/css/client.min.css': ['www/css/client.bundle.css']
-				}
-			}
 		}
 	});
 
@@ -149,7 +119,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 
 	/*grunt.registerTask('debug', ['copy:target', 'copy:client', 'browserify', 'concat_css:build', 'cssmin:client', 'fixDebugPermissions']);*/
-	grunt.registerTask('build', ['copy:release', 'browserify'/*, 'concat_css:release', 'cssmin:release'*/]);
+	grunt.registerTask('build', ['copy:release', 'browserify']);
 	grunt.registerTask('server', ['php']);
 
 	grunt.registerTask("default", function() {

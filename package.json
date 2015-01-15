@@ -13,11 +13,12 @@
     "jquery": "^2.1.3",
     "pixi.js": "^1.6.1",
     "pixiapp": "0.0.10",
-    "request": "^2.51.0",
     "semantic-ui": "^1.5.0",
     "tinp": "0.0.1",
     "xnode": "0.0.16",
-    "xnodecollection": "0.0.6",
+    "xnodecollection": "0.0.6"
+  },
+  "dependencies": {
     "yaed": "^1.0.1"
   },
   "main": "src/lib/Resources.js",

@@ -1,14 +1,8 @@
-var ClassUtils = require("../utils/ClassUtils");
-var RootView = require("../views/RootView");
-var View = require("../views/View");
-var EditorControllerView = require("../views/EditorControllerView");
-var TargetControllerView = require("../views/TargetControllerView");
-var EditorController = require("../controllers/EditorController");
-var TargetController = require("../controllers/TargetController");
 var FiddleClientModel = require("../models/FiddleClientModel");
 var FiddleClientView = require("../views/FiddleClientView");
 var FiddleClientController = require("../controllers/FiddleClientController");
 var xnode = require("xnode");
+var inherits = require("inherits");
 
 function FiddleClient(domContainer, session, basePath) {
 	xnode.Div.call(this);
@@ -22,7 +16,7 @@ function FiddleClient(domContainer, session, basePath) {
 	domContainer.appendChild(this);
 };
 
-ClassUtils.extends(FiddleClient, xnode.Div);
+inherits(FiddleClient, xnode.Div);
 
 FiddleClient.prototype.init = function(initData, resources) {
 	this.fiddleClientModel.initDefinition(initData);
@@ -45,7 +39,6 @@ FiddleClient.prototype.addTestcase = function(id, name, url) {
 };
 
 FiddleClient.prototype.doInit = function() {
-	console.log("doing init...");
 	this.fiddleClientModel.initResources(this.resources);
 
 	this.fiddleClientController = new FiddleClientController(

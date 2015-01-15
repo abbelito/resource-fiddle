@@ -48,7 +48,7 @@ HttpRequest.prototype.perform = function() {
  * @onReadyStateChange
  */
 HttpRequest.prototype.onReadyStateChange = function() {
-	console.log("ready state change: " + this.xmlXMLHttpRequest.readyState);
+	//console.log("ready state change: " + this.xmlXMLHttpRequest.readyState);
 
 	if (this.xmlXMLHttpRequest.readyState != 4)
 		return;

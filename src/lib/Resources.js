@@ -1,5 +1,5 @@
 var PIXI = require("pixi.js");
-var EventDispatcher = require("../client/js/utils/EventDispatcher");
+var EventDispatcher = require("yaed");
 
 
 
@@ -37,7 +37,6 @@ function Resources(source) {
 		this.addSource(source);
 }
 EventDispatcher.init(Resources);
-
 
 Resources.Loaded = "loaded";
 Resources.Error = "error";
@@ -542,7 +541,5 @@ Resources.JsonLoader.prototype.onJSONLoaded = function() {
 		this.onLoaded();
 	}
 };
-
-
 
 module.exports = Resources;

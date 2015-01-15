@@ -15,11 +15,15 @@ function ResourceTabController(tabView) {
 	this.categoryManager.setTarget(this.tabView.getCategoryHolder());
 	this.categoryManager.setItemRendererClass(ResourceCategoryView);
 	this.categoryManager.setItemControllerClass(ResourceCategoryController);
+	this.categoryManager.on("postUpdate", this.updateVisibilities, this);
 
 	this.itemManager = new xnodec.CollectionViewManager();
 	this.itemManager.setTarget(this.tabView.getItemHolder());
 	this.itemManager.setItemRendererClass(ResourceItemView);
 	this.itemManager.setItemControllerClass(ResourceItemController);
+	this.itemManager.on("postUpdate", this.updateVisibilities, this);
+
+	this.updateVisibilities();
 }
 
 /**
@@ -42,6 +46,7 @@ ResourceTabController.prototype.setData = function(categoryModel) {
 
 		this.categoryManager.setDataSource(categoryModel.getCategoryCollection());
 		this.itemManager.setDataSource(categoryModel.getItemCollection());
+		this.updateVisibilities();
 	}
 }
 
@@ -52,6 +57,18 @@ ResourceTabController.prototype.setData = function(categoryModel) {
 ResourceTabController.prototype.onCategoryModelChange = function() {
 	this.tabView.setActive(this.categoryModel.isActive());
 	this.tabView.setDescription(this.categoryModel.getDescription());
+}
+
+/**
+ * Update visibilities of the category and item holders.
+ * The should not be visible if they are empty.
+ */
+ResourceTabController.prototype.updateVisibilities = function() {
+	if (!this.categoryModel)
+		return;
+
+	this.tabView.setCategoryHolderVisible(this.categoryModel.getCategoryCollection().getLength() > 0);
+	this.tabView.getItemHolderVisible(this.categoryModel.getItemCollection().getLength() > 0);
 }
 
 module.exports = ResourceTabController;

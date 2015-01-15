@@ -12,8 +12,10 @@
 	$sc->image("image_two")->value("cat.png");
 
 	$sc=$images->category("subcategory");
-	//$sc->description("Another sub...");
 	$sc->position("test")->value(10,10);
+
+	$subsub=$sc->category("subsub");
+	$subsub->position("test2")->value(10,10);
 
 	$r->position("pos_one")->value(10,10);
 	$r->color("color_one")->value(0xff0000);

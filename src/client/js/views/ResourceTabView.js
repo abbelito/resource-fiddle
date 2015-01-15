@@ -76,4 +76,28 @@ ResourceTabView.prototype.getItemHolder = function() {
 	return this.itemTableBody;
 }
 
+/**
+ * Get div holding the categories.
+ * @method getCategoryHolder
+ */
+ResourceTabView.prototype.setCategoryHolderVisible = function(value) {
+	if (value)
+		this.accordion.style.display = "block";
+
+	else
+		this.accordion.style.display = "none";
+}
+
+/**
+ * Get holder for the items.
+ * @method getItemHolder
+ */
+ResourceTabView.prototype.getItemHolderVisible = function(value) {
+	if (value)
+		this.itemTable.style.display = "block";
+
+	else
+		this.itemTable.style.display = "none";
+}
+
 module.exports = ResourceTabView;

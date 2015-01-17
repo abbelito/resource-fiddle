@@ -111,7 +111,7 @@ $.fn.transition = function() {
             $parentElement = $module.parent(),
             $nextElement = $module.next()
           ;
-          if($nextElement.length === 0) {
+          if($nextElement.size() === 0) {
             $module.detach().appendTo($parentElement);
           }
           else {
@@ -183,14 +183,14 @@ $.fn.transition = function() {
               module.verbose('Animation is outward, hiding element');
               module.restore.conditions();
               module.hide();
-              settings.onHide.call(this);
+              $.proxy(settings.onHide, this)();
             }
             else if( module.is.inward() ) {
               module.verbose('Animation is outward, showing element');
               module.restore.conditions();
               module.show();
               module.set.display();
-              settings.onShow.call(this);
+              $.proxy(settings.onShow, this)();
             }
             else {
               module.restore.conditions();
@@ -198,7 +198,7 @@ $.fn.transition = function() {
             module.remove.animation();
             module.remove.animating();
           }
-          settings.onComplete.call(this);
+          $.proxy(settings.onComplete, this)();
         },
 
         has: {
@@ -241,7 +241,7 @@ $.fn.transition = function() {
               module.add.failSafe();
             }
             module.set.duration(settings.duration);
-            settings.onStart.call(this);
+            $.proxy(settings.onStart, this)();
             module.debug('Starting tween', animation, $module.attr('class'));
           },
           duration: function(animationName, duration) {
@@ -635,7 +635,7 @@ $.fn.transition = function() {
           occuring: function(animation) {
             animation = animation || settings.animation;
             animation = animation.replace(' ', '.');
-            return ( $module.filter(animation).length > 0 );
+            return ( $module.filter(animation).size() > 0 );
           },
           visible: function() {
             return $module.is(':visible');
@@ -766,8 +766,8 @@ $.fn.transition = function() {
             if(moduleSelector) {
               title += ' \'' + moduleSelector + '\'';
             }
-            if($allModules.length > 1) {
-              title += ' ' + '(' + $allModules.length + ')';
+            if($allModules.size() > 1) {
+              title += ' ' + '(' + $allModules.size() + ')';
             }
             if( (console.group !== undefined || console.table !== undefined) && performance.length > 0) {
               console.groupCollapsed(title);
@@ -879,7 +879,7 @@ $.fn.transition.settings = {
   onHide       : function() {},
 
   // whether timeout should be used to ensure callback fires in cases animationend does not
-  useFailSafe  : true,
+  useFailSafe  : false,
 
   // whether EXACT animation can occur twice in a row
   allowRepeats : false,

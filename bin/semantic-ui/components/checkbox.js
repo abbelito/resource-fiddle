@@ -62,13 +62,13 @@ $.fn.checkbox = function(parameters) {
           if( module.is.checked() ) {
             module.set.checked();
             if(settings.fireOnInit) {
-              settings.onChecked.call($input.get());
+              $.proxy(settings.onChecked, $input.get())();
             }
           }
           else {
             module.remove.checked();
             if(settings.fireOnInit) {
-              settings.onUnchecked.call($input.get());
+              $.proxy(settings.onUnchecked, $input.get())();
             }
           }
           module.observeChanges();
@@ -120,7 +120,7 @@ $.fn.checkbox = function(parameters) {
             ? module[event]
             : module.toggle
           ;
-          if($element.length > 0) {
+          if($element.size() > 0) {
             module.debug('Attaching checkbox events to element', selector, event);
             $element
               .on('click' + eventNamespace, event)
@@ -137,7 +137,6 @@ $.fn.checkbox = function(parameters) {
               key     = event.which,
               keyCode = {
                 enter  : 13,
-                space  : 32,
                 escape : 27
               }
             ;
@@ -147,9 +146,9 @@ $.fn.checkbox = function(parameters) {
                 .blur()
               ;
             }
-            if(!event.ctrlKey && (key == keyCode.enter || key == keyCode.space)) {
+            if(!event.ctrlKey && key == keyCode.enter) {
               module.verbose('Enter key pressed, toggling checkbox');
-              module.toggle.call(this);
+              $.proxy(module.toggle, this)();
               event.preventDefault();
             }
           }
@@ -194,7 +193,7 @@ $.fn.checkbox = function(parameters) {
 
         create: {
           label: function() {
-            if($input.prevAll(selector.label).length > 0) {
+            if($input.prevAll(selector.label).size() > 0) {
               $input.prev(selector.label).detach().insertAfter($input);
               module.debug('Moving existing label', $label);
             }
@@ -207,7 +206,7 @@ $.fn.checkbox = function(parameters) {
 
         has: {
           label: function() {
-            return ($label.length > 0);
+            return ($label.size() > 0);
           }
         },
 
@@ -244,14 +243,14 @@ $.fn.checkbox = function(parameters) {
           module.debug('Enabling checkbox functionality');
           $module.removeClass(className.disabled);
           $input.prop('disabled', false);
-          settings.onEnabled.call($input.get());
+          $.proxy(settings.onEnabled, $input.get())();
         },
 
         disable: function() {
           module.debug('Disabling checkbox functionality');
           $module.addClass(className.disabled);
           $input.prop('disabled', 'disabled');
-          settings.onDisabled.call($input.get());
+          $.proxy(settings.onDisabled, $input.get())();
         },
 
         check: function() {
@@ -261,8 +260,8 @@ $.fn.checkbox = function(parameters) {
             .trigger('change')
           ;
           module.set.checked();
-          settings.onChange.call($input.get());
-          settings.onChecked.call($input.get());
+          $.proxy(settings.onChange, $input.get())();
+          $.proxy(settings.onChecked, $input.get())();
         },
 
         uncheck: function() {
@@ -272,8 +271,8 @@ $.fn.checkbox = function(parameters) {
             .trigger('change')
           ;
           module.remove.checked();
-          settings.onChange.call($input.get());
-          settings.onUnchecked.call($input.get());
+          $.proxy(settings.onChange, $input.get())();
+          $.proxy(settings.onUnchecked, $input.get())();
         },
 
         toggle: function(event) {

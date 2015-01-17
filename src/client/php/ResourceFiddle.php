@@ -190,6 +190,14 @@
 		}
 
 		/**
+		 * Load xml definition.
+		 */
+		public function load($filename) {
+			$xml=new SimpleXMLElement(file_get_contents($filename));
+			$this->parseXml($xml);
+		}
+
+		/**
 		 *
 		 */
 		public function dispatch()

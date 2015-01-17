@@ -47,8 +47,13 @@ class Resource
 	 * Set value.
 	 */
 	public function value($value, $arg2=NULL) {
-		if ($this->type==Resource::POSITIONS && $arg2!==NULL)
-			$value=array($value,$arg2);
+		if ($this->type==Resource::POSITIONS) {
+			if ($arg2!==NULL)
+				$value=array($value,$arg2);
+
+			if (!is_array($value))
+				$value=explode(",",$value);
+		}
 
 		$this->value=$value;
 

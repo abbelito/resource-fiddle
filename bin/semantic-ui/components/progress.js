@@ -185,16 +185,12 @@ $.fn.progress = function(parameters) {
               total   = module.total                || 0,
               percent = (module.is.visible() && animating)
                 ? module.get.displayPercent()
-                : module.percent || 0,
-              left = (module.total > 0)
-                ? (total - value)
-                : (100 - percent)
+                : module.percent || 0
             ;
             templateText = templateText || '';
             templateText = templateText
               .replace('{value}', value)
               .replace('{total}', total)
-              .replace('{left}', left)
               .replace('{percent}', percent)
             ;
             module.debug('Adding variables to progress bar text', templateText);
@@ -367,7 +363,7 @@ $.fn.progress = function(parameters) {
             if(module.total) {
               module.value = Math.round( (percent / 100) * module.total);
             }
-            else if(settings.limitValues) {
+            if(settings.limitValues) {
               module.value = (module.value > 100)
                 ? 100
                 : (module.value < 0)
@@ -383,17 +379,15 @@ $.fn.progress = function(parameters) {
             settings.onChange.call(element, percent, module.value, module.total);
           },
           labelInterval: function() {
-            var
-              animationCallback = function() {
+            clearInterval(module.interval);
+            $bar
+              .one(transitionEnd + eventNamespace, function() {
                 module.verbose('Bar finished animating, removing continuous label updates');
                 clearInterval(module.interval);
                 animating = false;
                 module.set.labels();
-              }
+              })
             ;
-            clearInterval(module.interval);
-            $bar.one(transitionEnd + eventNamespace, animationCallback);
-            module.timer = setTimeout(animationCallback, settings.duration + 100);
             animating = true;
             module.interval = setInterval(module.set.labels, settings.framerate);
           },

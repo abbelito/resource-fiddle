@@ -56,7 +56,7 @@ $.fn.rating = function(parameters) {
         initialize: function() {
           module.verbose('Initializing rating module', settings);
 
-          if($icon.length === 0) {
+          if($icon.size() === 0) {
             module.setup.layout();
           }
 
@@ -144,7 +144,7 @@ $.fn.rating = function(parameters) {
               currentRating = module.getRating(),
               rating        = $icon.index($activeIcon) + 1,
               canClear      = (settings.clearable == 'auto')
-               ? ($icon.length === 1)
+               ? ($icon.size() === 1)
                : settings.clearable
             ;
             if(canClear && currentRating == rating) {
@@ -163,7 +163,7 @@ $.fn.rating = function(parameters) {
 
         getRating: function() {
           var
-            currentRating = $icon.filter('.' + className.active).length
+            currentRating = $icon.filter('.' + className.active).size()
           ;
           module.verbose('Current rating retrieved', currentRating);
           return currentRating;
@@ -213,7 +213,7 @@ $.fn.rating = function(parameters) {
                 .addClass(className.active)
             ;
           }
-          settings.onRate.call(element, rating);
+          $.proxy(settings.onRate, element)(rating);
         },
 
         setting: function(name, value) {
@@ -301,8 +301,8 @@ $.fn.rating = function(parameters) {
             if(moduleSelector) {
               title += ' \'' + moduleSelector + '\'';
             }
-            if($allModules.length > 1) {
-              title += ' ' + '(' + $allModules.length + ')';
+            if($allModules.size() > 1) {
+              title += ' ' + '(' + $allModules.size() + ')';
             }
             if( (console.group !== undefined || console.table !== undefined) && performance.length > 0) {
               console.groupCollapsed(title);

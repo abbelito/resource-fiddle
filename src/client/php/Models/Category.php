@@ -106,7 +106,7 @@
 		}
 
 		/**
-		 * 
+		 * Get all resource in this and category and child categories.
 		 */
 		public function getAllResources() {
 			$res=array();
@@ -116,5 +116,40 @@
 				$res=array_merge($res,$category->getAllResources());
 
 			return $res;
+		}
+
+		/**
+		 * Parse xml.
+		 */
+		public function parseXml($xml) {
+			$this->description=strval($xml);
+
+			foreach ($xml->children() as $item) {
+				switch (strtolower($item->getName())) {
+					case "position":
+						$r=new Resource(Resource::POSITIONS, strval($item->attributes()->id));
+						$r->value(strval($item->attributes()->value));
+						$this->addResource($r);
+						break;
+
+					case "image":
+						$r=new Resource(Resource::GRAPHICS, strval($item->attributes()->id));
+						$r->value(strval($item->attributes()->value));
+						$this->addResource($r);
+						break;
+
+					case "color":
+						$r=new Resource(Resource::COLORS, strval($item->attributes()->id));
+						$r->value(strval($item->attributes()->value));
+						$this->addResource($r);
+						break;
+
+					case "category":
+						$c=new Category(strval($item->attributes()->title));
+						$c->parseXml($item);
+						$this->categories[]=$c;
+						break;
+				}
+			}
 		}
 	}

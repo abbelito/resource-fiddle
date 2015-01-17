@@ -1,0 +1,15 @@
+<Skin>
+	<Category title="Some images">
+		<Image id="image_one" value="bunny.png"/>
+		<Image id="image_two" value="cat.png"/>
+
+		<Category title="subcat">
+			This is a subcategory...
+			<Position id="testpos" value="1,2" />
+		</Category>
+	</Category>
+	<Position id="pos_one" value="5,10"/>
+
+	<Color id="color_one" value="0xff0000"/>
+	<Color id="color_two" value="0x00ff00"/>
+</Skin>

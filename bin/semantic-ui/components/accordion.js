@@ -108,7 +108,7 @@ $.fn.accordion = function(parameters) {
 
         event: {
           click: function() {
-            module.toggle.call(this);
+            $.proxy(module.toggle, this)();
           }
         },
 
@@ -125,14 +125,14 @@ $.fn.accordion = function(parameters) {
           module.debug('Toggling visibility of content', $activeTitle);
           if(contentIsOpen) {
             if(settings.collapsible) {
-              module.close.call($activeTitle);
+              $.proxy(module.close, $activeTitle)();
             }
             else {
               module.debug('Cannot close accordion content collapsing is disabled');
             }
           }
           else {
-              module.open.call($activeTitle);
+            $.proxy(module.open, $activeTitle)();
           }
         },
 
@@ -150,43 +150,26 @@ $.fn.accordion = function(parameters) {
           if(!currentlyAnimating && !currentlyActive) {
             module.debug('Opening accordion content', $activeTitle);
             if(settings.exclusive) {
-              module.closeOthers.call($activeTitle);
+              $.proxy(module.closeOthers, $activeTitle)();
             }
             $activeTitle
               .addClass(className.active)
             ;
-            if(settings.animateChildren) {
-              if($.fn.transition !== undefined && $module.transition('is supported')) {
-                $activeContent
-                  .children()
-                    .transition({
-                      animation  : 'fade in',
-                      useFailSafe : true,
-                      debug      : settings.debug,
-                      verbose    : settings.verbose,
-                      duration   : settings.duration
-                    })
-                ;
-              }
-              else {
-                $activeContent
-                  .children()
-                    .stop()
-                    .animate({
-                      opacity: 1
-                    }, settings.duration, module.resetOpacity)
-                ;
-              }
-            }
             $activeContent
               .stop()
+              .children()
+                .stop()
+                .animate({
+                  opacity: 1
+                }, settings.duration, module.reset.display)
+                .end()
               .slideDown(settings.duration, settings.easing, function() {
                 $activeContent
                   .addClass(className.active)
                 ;
-                module.reset.display.call(this);
-                settings.onOpen.call(this);
-                settings.onChange.call(this);
+                $.proxy(module.reset.display, this)();
+                $.proxy(settings.onOpen, this)();
+                $.proxy(settings.onChange, this)();
               })
             ;
           }
@@ -210,36 +193,17 @@ $.fn.accordion = function(parameters) {
             $activeContent
               .removeClass(className.active)
               .show()
-            ;
-            if(settings.animateChildren) {
-              if($.fn.transition !== undefined && $module.transition('is supported')) {
-                $activeContent
-                  .children()
-                    .transition({
-                      animation   : 'fade out',
-                      useFailSafe : true,
-                      debug       : settings.debug,
-                      verbose     : settings.verbose,
-                      duration    : settings.duration
-                    })
-                ;
-              }
-              else {
-                $activeContent
-                  .children()
-                    .stop()
-                    .animate({
-                      opacity: 0
-                    }, settings.duration, module.resetOpacity)
-                ;
-              }
-            }
-            $activeContent
               .stop()
+              .children()
+                .stop()
+                .animate({
+                  opacity: 0
+                }, settings.duration, module.reset.opacity)
+                .end()
               .slideUp(settings.duration, settings.easing, function() {
-                module.reset.display.call(this);
-                settings.onClose.call(this);
-                settings.onChange.call(this);
+                $.proxy(module.reset.display, this)();
+                $.proxy(settings.onClose, this)();
+                $.proxy(settings.onChange, this)();
               })
             ;
           }
@@ -265,42 +229,25 @@ $.fn.accordion = function(parameters) {
           else {
             $openTitles   = $activeAccordion.find(activeSelector).not($parentTitles);
             $nestedTitles = $activeAccordion.find(activeContent).find(activeSelector).not($parentTitles);
-            $openTitles   = $openTitles.not($nestedTitles);
+            $openTitles = $openTitles.not($nestedTitles);
             $openContents = $openTitles.next($content);
           }
-          if( ($openTitles.length > 0) ) {
+          if( ($openTitles.size() > 0) ) {
             module.debug('Exclusive enabled, closing other content', $openTitles);
             $openTitles
               .removeClass(className.active)
             ;
-            if(settings.animateChildren) {
-              if($.fn.transition !== undefined && $module.transition('is supported')) {
-                $openContents
-                  .children()
-                    .transition({
-                      animation   : 'fade out',
-                      useFailSafe : true,
-                      debug       : settings.debug,
-                      verbose     : settings.verbose,
-                      duration    : settings.duration
-                    })
-                ;
-              }
-              else {
-                $openContents
-                  .children()
-                    .stop()
-                    .animate({
-                      opacity: 0
-                    }, settings.duration, module.resetOpacity)
-                ;
-              }
-            }
             $openContents
               .stop()
+              .children()
+                .stop()
+                .animate({
+                  opacity: 0
+                }, settings.duration, module.resetOpacity)
+                .end()
               .slideUp(settings.duration , settings.easing, function() {
                 $(this).removeClass(className.active);
-                module.reset.display.call(this);
+                $.proxy(module.reset.display, this)();
               })
             ;
           }
@@ -512,24 +459,23 @@ $.fn.accordion = function(parameters) {
 
 $.fn.accordion.settings = {
 
-  name            : 'Accordion',
-  namespace       : 'accordion',
+  name        : 'Accordion',
+  namespace   : 'accordion',
 
-  debug           : false,
-  verbose         : true,
-  performance     : true,
+  debug       : false,
+  verbose     : true,
+  performance : true,
 
-  exclusive       : true,
-  collapsible     : true,
-  closeNested     : false,
-  animateChildren : true,
+  exclusive   : true,
+  collapsible : true,
+  closeNested : false,
 
-  duration        : 500,
-  easing          : 'easeOutQuint',
+  duration    : 500,
+  easing      : 'easeInOutQuint',
 
-  onOpen          : function(){},
-  onClose         : function(){},
-  onChange        : function(){},
+  onOpen      : function(){},
+  onClose     : function(){},
+  onChange    : function(){},
 
   error: {
     method : 'The method you called is not defined'
@@ -549,8 +495,9 @@ $.fn.accordion.settings = {
 
 // Adds easing
 $.extend( $.easing, {
-  easeOutQuint: function (x, t, b, c, d) {
-    return c*((t=t/d-1)*t*t*t*t + 1) + b;
+  easeInOutQuint: function (x, t, b, c, d) {
+    if ((t/=d/2) < 1) return c/2*t*t*t*t*t + b;
+    return c/2*((t-=2)*t*t*t*t + 2) + b;
   }
 });
 

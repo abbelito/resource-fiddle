@@ -1,6 +1,6 @@
 /*
  * # Semantic - Popup
- * http://github.com/semantic-org/semantic-ui/
+ * http://github.com/jlukic/semantic-ui/
  *
  *
  * Copyright 2014 Contributor
@@ -70,6 +70,7 @@ $.fn.popup = function(parameters) {
         // binds events
         initialize: function() {
           module.debug('Initializing module', $module);
+          module.refresh();
           if(settings.on == 'click') {
             $module
               .on('click' + eventNamespace, module.toggle)
@@ -87,8 +88,11 @@ $.fn.popup = function(parameters) {
           $window
             .on('resize' + eventNamespace, module.event.resize)
           ;
-          if( !module.exists() && settings.preserve) {
+          if( !module.exists() ) {
             module.create();
+          }
+          else if(settings.hoverable) {
+            module.bind.popup();
           }
           module.instantiate();
         },
@@ -107,31 +111,29 @@ $.fn.popup = function(parameters) {
           }
           else {
             if(settings.inline) {
-              $popup = $target.next(selector.popup);
+              $popup = $target.next(settings.selector.popup);
             }
           }
           if(settings.popup) {
             $popup.addClass(className.loading);
-            $offsetParent = module.get.offsetParent();
-            $popup.removeClass(className.loading);
-            if(module.has.popup() && module.get.offsetParent($popup)[0] !== $offsetParent[0]) {
+            if($popup.offsetParent()[0] !== $module.offsetParent()[0]) {
               module.debug('Moving popup to the same offset parent as activating element');
+              $offsetParent = $module.offsetParent();
               $popup
                 .detach()
                 .appendTo($offsetParent)
               ;
             }
+            $popup.removeClass(className.loading);
           }
           else {
             $offsetParent = (settings.inline)
-              ? module.get.offsetParent($target)
-              : module.has.popup()
-                ? module.get.offsetParent($popup)
-                : $body
+              ? $target.offsetParent()
+              : $body
             ;
           }
           if( $offsetParent.is('html') ) {
-            module.debug('Setting page as offset parent');
+            module.debug('Page is popups offset parent');
             $offsetParent = $body;
           }
         },
@@ -226,23 +228,14 @@ $.fn.popup = function(parameters) {
                 .appendTo( $context )
               ;
             }
-            module.refresh();
             if(settings.hoverable) {
               module.bind.popup();
             }
-            settings.onCreate.call($popup, element);
+            $.proxy(settings.onCreate, $popup)(element);
           }
-          else if($target.next(selector.popup).length !== 0) {
-            module.verbose('Pre-existing popup found');
+          else if($target.next(settings.selector.popup).size() !== 0) {
+            module.verbose('Pre-existing popup found, reverting to inline');
             settings.inline = true;
-            settings.popup  = $target.next(selector.popup);
-            module.refresh();
-            if(settings.hoverable) {
-              module.bind.popup();
-            }
-          }
-          else if(settings.popup) {
-            module.verbose('Used popup specified in settings');
             module.refresh();
             if(settings.hoverable) {
               module.bind.popup();
@@ -271,11 +264,11 @@ $.fn.popup = function(parameters) {
         show: function(callback) {
           callback = $.isFunction(callback) ? callback : function(){};
           module.debug('Showing pop-up', settings.transition);
+          if(!settings.preserve && !settings.popup) {
+            module.refresh();
+          }
           if( !module.exists() ) {
             module.create();
-          }
-          else if(!settings.preserve && !settings.popup) {
-            module.refresh();
           }
           if( $popup && module.set.position() ) {
             module.save.conditions();
@@ -297,13 +290,13 @@ $.fn.popup = function(parameters) {
         hideAll: function() {
           $(selector.popup)
             .filter(':visible')
-              .transition('hide')
+              .popup('hide')
           ;
         },
 
         hideGracefully: function(event) {
           // don't close on clicks inside popup
-          if(event && $(event.target).closest(selector.popup).length === 0) {
+          if(event && $(event.target).closest(selector.popup).size() === 0) {
             module.debug('Click occurred outside popup hiding popup');
             module.hide();
           }
@@ -320,7 +313,7 @@ $.fn.popup = function(parameters) {
             return ( module.has.popup() );
           }
           else {
-            return ( $popup.closest($context).length >= 1 )
+            return ( $popup.closest($context).size() > 1 )
               ? true
               : false
             ;
@@ -329,11 +322,10 @@ $.fn.popup = function(parameters) {
 
         removePopup: function() {
           module.debug('Removing popup', $popup);
-          if( module.has.popup() && !settings.popup) {
+          if( module.has.popup() ) {
             $popup.remove();
-            $popup = undefined;
           }
-          settings.onRemove.call($popup, element);
+          $.proxy(settings.onRemove, $popup)(element);
         },
 
         save: {
@@ -349,6 +341,7 @@ $.fn.popup = function(parameters) {
         },
         restore: {
           conditions: function() {
+            element.blur();
             if(module.cache && module.cache.title) {
               $module.attr('title', module.cache.title);
               module.verbose('Restoring original attributes', module.cache.title);
@@ -370,8 +363,8 @@ $.fn.popup = function(parameters) {
                   duration   : settings.duration,
                   onComplete : function() {
                     module.bind.close();
-                    callback.call($popup, element);
-                    settings.onVisible.call($popup, element);
+                    $.proxy(callback, $popup)(element);
+                    $.proxy(settings.onVisible, $popup)(element);
                   }
                 })
               ;
@@ -382,12 +375,11 @@ $.fn.popup = function(parameters) {
                 .stop()
                 .fadeIn(settings.duration, settings.easing, function() {
                   module.bind.close();
-                  callback.call($popup, element);
-                  settings.onVisible.call($popup, element);
+                  $.proxy(callback, element)();
                 })
               ;
             }
-            settings.onShow.call($popup, element);
+            $.proxy(settings.onShow, $popup)(element);
           },
           hide: function(callback) {
             callback = $.isFunction(callback) ? callback : function(){};
@@ -402,8 +394,8 @@ $.fn.popup = function(parameters) {
                   verbose    : settings.verbose,
                   onComplete : function() {
                     module.reset();
-                    callback.call($popup, element);
-                    settings.onHidden.call($popup, element);
+                    $.proxy(callback, $popup)(element);
+                    $.proxy(settings.onHidden, $popup)(element);
                   }
                 })
               ;
@@ -413,12 +405,11 @@ $.fn.popup = function(parameters) {
                 .stop()
                 .fadeOut(settings.duration, settings.easing, function() {
                   module.reset();
-                  callback.call($popup, element);
-                  settings.onHidden.call($popup, element);
+                  callback();
                 })
               ;
             }
-            settings.onHide.call($popup, element);
+            $.proxy(settings.onHide, $popup)(element);
           }
         },
 
@@ -441,35 +432,9 @@ $.fn.popup = function(parameters) {
             }
             return false;
           },
-          offsetParent: function($target) {
-            var
-              element = ($target !== undefined)
-                ? $target[0]
-                : $module[0],
-              parentNode = element.parentNode,
-              $node    = $(parentNode)
-            ;
-            if(parentNode) {
-              var
-                is2D     = ($node.css('transform') === 'none'),
-                isStatic = ($node.css('position') === 'static'),
-                isHTML   = $node.is('html')
-              ;
-              while(parentNode && !isHTML && isStatic && is2D) {
-                parentNode = parentNode.parentNode;
-                $node    = $(parentNode);
-                is2D     = ($node.css('transform') === 'none');
-                isStatic = ($node.css('position') === 'static');
-                isHTML   = $node.is('html');
-              }
-            }
-            return ($node && $node.length > 0)
-              ? $node
-              : $()
-            ;
-          },
           offstagePosition: function(position) {
             var
+              position = position || false,
               boundary  = {
                 top    : $(window).scrollTop(),
                 bottom : $(window).scrollTop() + $(window).height(),
@@ -484,7 +449,6 @@ $.fn.popup = function(parameters) {
               offstage  = {},
               offstagePositions = []
             ;
-            position = position || false;
             if(popup.offset && position) {
               module.verbose('Checking if outside viewable area', popup.offset);
               offstage = {
@@ -599,14 +563,13 @@ $.fn.popup = function(parameters) {
                 ? parseInt( window.getComputedStyle(targetElement).getPropertyValue('margin-top'), 10)
                 : 0,
               marginLeft    = (settings.inline)
-                ? parseInt( window.getComputedStyle(targetElement).getPropertyValue(module.is.rtl() ? 'margin-right' : 'margin-left'), 10)
+                ? parseInt( window.getComputedStyle(targetElement).getPropertyValue('margin-left'), 10)
                 : 0,
 
               target        = (settings.inline || settings.popup)
                 ? $target.position()
                 : $target.offset(),
 
-              computedPosition,
               positioning,
               offstagePosition
             ;
@@ -634,18 +597,7 @@ $.fn.popup = function(parameters) {
               }
             }
             module.debug('Calculating popup positioning', position);
-
-            computedPosition = position;
-            if (module.is.rtl()) {
-              computedPosition = computedPosition.replace(/left|right/g, function (match) {
-                return (match == 'left')
-                  ? 'right'
-                  : 'left'
-                ;
-              });
-              module.debug('RTL: Popup positioning updated', computedPosition);
-            }
-            switch (computedPosition) {
+            switch(position) {
               case 'top left':
                 positioning = {
                   top    : 'auto',
@@ -807,7 +759,7 @@ $.fn.popup = function(parameters) {
               $document
                 .on('click' + eventNamespace, function(event) {
                   module.verbose('Pop-up clickaway intent detected');
-                  module.hideGracefully.call(element, event);
+                  $.proxy(module.hideGracefully, element)(event);
                 })
               ;
             }
@@ -835,7 +787,7 @@ $.fn.popup = function(parameters) {
 
         has: {
           popup: function() {
-            return ($popup && $popup.length > 0);
+            return ($popup.size() > 0);
           }
         },
 
@@ -854,15 +806,12 @@ $.fn.popup = function(parameters) {
           },
           hidden: function() {
             return !module.is.visible();
-          },
-          rtl: function () {
-            return $module.css('direction') == 'rtl';
           }
         },
 
         reset: function() {
           module.remove.visible();
-          if(settings.preserve) {
+          if(settings.preserve || settings.popup) {
             if($.fn.transition !== undefined) {
               $popup
                 .transition('remove transition')
@@ -1091,7 +1040,7 @@ $.fn.popup.settings = {
   target         : false,
   popup          : false,
   inline         : false,
-  preserve       : false,
+  preserve       : true,
   hoverable      : false,
 
   duration       : 200,

@@ -65,7 +65,7 @@ $.fn.search = function(parameters) {
           ;
           if(settings.automatic) {
             $prompt
-              .on(inputEvent + eventNamespace, module.throttle)
+              .on(inputEvent + eventNamespace, module.search.throttle)
             ;
           }
           $prompt
@@ -74,12 +74,12 @@ $.fn.search = function(parameters) {
             .on('keydown' + eventNamespace, module.handleKeyboard)
           ;
           $searchButton
-            .on('click' + eventNamespace, module.query)
+            .on('click' + eventNamespace, module.search.query)
           ;
           $results
-            .on('mousedown' + eventNamespace, module.event.result.mousedown)
-            .on('mouseup' + eventNamespace, module.event.result.mouseup)
-            .on('click' + eventNamespace, selector.result, module.event.result.click)
+            .on('mousedown' + eventNamespace, module.event.mousedown)
+            .on('mouseup' + eventNamespace, module.event.mouseup)
+            .on('click' + eventNamespace, selector.result, module.results.select)
           ;
           module.instantiate();
         },
@@ -111,57 +111,24 @@ $.fn.search = function(parameters) {
               .addClass(className.focus)
             ;
             clearTimeout(module.timer);
-            module.throttle();
-            if( module.has.minimumCharacters() ) {
-              module.showResults();
+            module.search.throttle();
+            if(module.has.minimum())  {
+              module.results.show();
             }
           },
+          mousedown: function() {
+            module.resultsClicked = true;
+          },
+          mouseup: function() {
+            module.resultsClicked = false;
+          },
           blur: function(event) {
-            module.cancel();
+            module.search.cancel();
             $module
               .removeClass(className.focus)
             ;
             if(!module.resultsClicked) {
-              module.timer = setTimeout(module.hideResults, settings.hideDelay);
-            }
-          },
-          result: {
-            mousedown: function() {
-              module.resultsClicked = true;
-            },
-            mouseup: function() {
-              module.resultsClicked = false;
-            },
-            click: function(event) {
-              module.debug('Search result selected');
-              var
-                $result = $(this),
-                $title  = $result.find('.title'),
-                title   = $title.html()
-              ;
-              if(settings.onSelect == 'default' || settings.onSelect.call(this, event) == 'default') {
-                var
-                  $link  = $result.find('a[href]').eq(0),
-                  $title = $result.find(selector.title).eq(0),
-                  href   = $link.attr('href') || false,
-                  target = $link.attr('target') || false,
-                  name   = ($title.length > 0)
-                    ? $title.text()
-                    : false
-                ;
-                module.hideResults();
-                if(name) {
-                  $prompt.val(name);
-                }
-                if(href) {
-                  if(target == '_blank' || event.ctrlKey) {
-                    window.open(href);
-                  }
-                  else {
-                    window.location.href = (href);
-                  }
-                }
-              }
+              module.timer = setTimeout(module.results.hide, settings.hideDelay);
             }
           }
         },
@@ -180,7 +147,7 @@ $.fn.search = function(parameters) {
             },
             activeClass  = className.active,
             currentIndex = $result.index( $result.filter('.' + activeClass) ),
-            resultSize   = $result.length,
+            resultSize   = $result.size(),
             newIndex
           ;
           // search shortcuts
@@ -191,11 +158,11 @@ $.fn.search = function(parameters) {
             ;
           }
           // result shortcuts
-          if($results.filter(':visible').length > 0) {
+          if($results.filter(':visible').size() > 0) {
             if(keyCode == keys.enter) {
               module.verbose('Enter key pressed, selecting active result');
-              if( $result.filter('.' + activeClass).length > 0 ) {
-                module.event.result.click.call($result.filter('.' + activeClass), event);
+              if( $result.filter('.' + activeClass).size() > 0 ) {
+                $.proxy(module.results.select, $result.filter('.' + activeClass) )(event);
                 event.preventDefault();
                 return false;
               }
@@ -241,7 +208,7 @@ $.fn.search = function(parameters) {
             // query shortcuts
             if(keyCode == keys.enter) {
               module.verbose('Enter key pressed, executing query');
-              module.query();
+              module.search.query();
               $searchButton
                 .addClass(className.down)
               ;
@@ -255,39 +222,64 @@ $.fn.search = function(parameters) {
             }
           }
         },
-
-        query: function() {
-          var
-            searchTerm = $prompt.val(),
-            cachedHTML = module.read.cache(searchTerm)
-          ;
-          if(cachedHTML) {
-            module.debug('Reading result for ' + searchTerm + ' from cache');
-            module.addResults(cachedHTML);
-          }
-          else {
-            module.debug('Querying for ' + searchTerm);
-            if($.isPlainObject(settings.source) || $.isArray(settings.source)) {
-              module.search.local(searchTerm);
-            }
-            else if(settings.apiSettings) {
-              module.search.remote(searchTerm);
-            }
-            else if($.fn.api !== undefined && $.api.settings.api.search !== undefined) {
-              module.debug('Searching with default search API endpoint');
-              settings.apiSettings = {
-                action: 'search'
-              };
-              module.search.remote(searchTerm);
-            }
-            else {
-              module.error(error.source);
-            }
-            settings.onSearchQuery.call(element, searchTerm);
+        has: {
+          minimum: function() {
+            var
+              searchTerm    = $prompt.val(),
+              numCharacters = searchTerm.length
+            ;
+            return (numCharacters >= settings.minCharacters);
           }
         },
-
         search: {
+          cancel: function() {
+            var
+              xhr = $module.data('xhr') || false
+            ;
+            if( xhr && xhr.state() != 'resolved') {
+              module.debug('Cancelling last search');
+              xhr.abort();
+            }
+          },
+          throttle: function() {
+            clearTimeout(module.timer);
+            if(module.has.minimum())  {
+              module.timer = setTimeout(module.search.query, settings.searchDelay);
+            }
+            else {
+              module.results.hide();
+            }
+          },
+          query: function() {
+            var
+              searchTerm = $prompt.val(),
+              cachedHTML = module.search.cache.read(searchTerm)
+            ;
+            if(cachedHTML) {
+              module.debug("Reading result for '" + searchTerm + "' from cache");
+              module.results.add(cachedHTML);
+            }
+            else {
+              module.debug("Querying for '" + searchTerm + "'");
+              if($.isPlainObject(settings.source) || $.isArray(settings.source)) {
+                module.search.local(searchTerm);
+              }
+              else if(settings.apiSettings) {
+                module.search.remote(searchTerm);
+              }
+              else if($.fn.api !== undefined && $.api.settings.api.search !== undefined) {
+                module.debug('Searching with default search API endpoint');
+                settings.apiSettings = {
+                  action: 'search'
+                };
+                module.search.remote(searchTerm);
+              }
+              else {
+                module.error(error.source);
+              }
+              $.proxy(settings.onSearchQuery, $module)(searchTerm);
+            }
+          },
           local: function(searchTerm) {
             var
               results   = [],
@@ -313,20 +305,20 @@ $.fn.search = function(parameters) {
                   if( content[field].match(searchRegExp) ) {
                     results.push(content);
                   }
-                  else if( settings.searchFullText && content[field].match(fullTextRegExp) ) {
+                  else if( settings.searchFullText && content[field].match(content[field]) ) {
                     fullTextResults.push(content);
                   }
                 }
               });
             });
-            searchHTML = module.generateResults({
+            searchHTML = module.results.generate({
               results: $.merge(results, fullTextResults)
             });
             $module
               .removeClass(className.loading)
             ;
-            module.write.cache(searchTerm, searchHTML);
-            module.addResults(searchHTML);
+            module.search.cache.write(searchTerm, searchHTML);
+            module.results.add(searchHTML);
           },
           remote: function(searchTerm) {
             var
@@ -336,163 +328,160 @@ $.fn.search = function(parameters) {
                   query: searchTerm
                 },
                 onSuccess : function(response) {
-                  searchHTML = module.generateResults(response);
-                  module.write.cache(searchTerm, searchHTML);
-                  module.addResults(searchHTML);
+                  searchHTML = module.results.generate(response);
+                  module.search.cache.write(searchTerm, searchHTML);
+                  module.results.add(searchHTML);
                 },
                 onFailure : module.error
               },
               searchHTML
             ;
-            module.cancel();
+            module.search.cancel();
             module.debug('Executing search');
             $.extend(true, apiSettings, settings.apiSettings);
             $.api(apiSettings);
-          }
+          },
 
-        },
-
-        throttle: function() {
-          clearTimeout(module.timer);
-          if(module.has.minimumCharacters())  {
-            module.timer = setTimeout(module.query, settings.searchDelay);
-          }
-          else {
-            module.hideResults();
-          }
-        },
-
-        cancel: function() {
-          var
-            xhr = $module.data('xhr') || false
-          ;
-          if( xhr && xhr.state() != 'resolved') {
-            module.debug('Cancelling last search');
-            xhr.abort();
-          }
-        },
-
-        has: {
-          minimumCharacters: function() {
-            var
-              searchTerm    = $prompt.val(),
-              numCharacters = searchTerm.length
-            ;
-            return (numCharacters >= settings.minCharacters);
-          }
-        },
-
-        read: {
-          cache: function(name) {
-            var
-              cache = $module.data('cache')
-            ;
-            return (settings.cache && (typeof cache == 'object') && (cache[name] !== undefined) )
-              ? cache[name]
-              : false
-            ;
-          }
-        },
-
-        write: {
-          cache: function(name, value) {
-            var
-              cache = ($module.data('cache') !== undefined)
-                ? $module.data('cache')
-                : {}
-            ;
-            cache[name] = value;
-            $module
-              .data('cache', cache)
-            ;
-          }
-        },
-
-        addResults: function(html) {
-          if(settings.onResultsAdd == 'default' || settings.onResultsAdd.call($results, html) == 'default') {
-            $results
-              .html(html)
-            ;
-          }
-          module.showResults();
-        },
-
-        showResults: function() {
-          if( ($results.filter(':visible').length === 0) && ($prompt.filter(':focus').length > 0) && $results.html() !== '') {
-            if(settings.transition && $.fn.transition !== undefined && $module.transition('is supported') && !$results.transition('is inward')) {
-              module.debug('Showing results with css animations');
-              $results
-                .transition({
-                  animation  : settings.transition + ' in',
-                  duration   : settings.duration,
-                  queue      : true
-                })
+          cache: {
+            read: function(name) {
+              var
+                cache = $module.data('cache')
               ;
+              return (settings.cache && (typeof cache == 'object') && (cache[name] !== undefined) )
+                ? cache[name]
+                : false
+              ;
+            },
+            write: function(name, value) {
+              var
+                cache = ($module.data('cache') !== undefined)
+                  ? $module.data('cache')
+                  : {}
+              ;
+              cache[name] = value;
+              $module
+                .data('cache', cache)
+              ;
+            }
+          }
+        },
+
+        results: {
+          generate: function(response) {
+            module.debug('Generating html from response', response);
+            var
+              template = settings.templates[settings.type],
+              html     = ''
+            ;
+            if(($.isPlainObject(response.results) && !$.isEmptyObject(response.results)) || ($.isArray(response.results) && response.results.length > 0) ) {
+              if(settings.maxResults > 0) {
+                response.results = $.isArray(response.results)
+                  ? response.results.slice(0, settings.maxResults)
+                  : response.results
+                ;
+              }
+              if($.isFunction(template)) {
+                html = template(response);
+              }
+              else {
+                module.error(error.noTemplate, false);
+              }
             }
             else {
-              module.debug('Showing results with javascript');
+              html = module.message(error.noResults, 'empty');
+            }
+            $.proxy(settings.onResults, $module)(response);
+            return html;
+          },
+          add: function(html) {
+            if(settings.onResultsAdd == 'default' || $.proxy(settings.onResultsAdd, $results)(html) == 'default') {
               $results
-                .stop()
-                .fadeIn(settings.duration, settings.easing)
+                .html(html)
               ;
             }
-            settings.onResultsOpen.call($results);
-          }
-        },
-        hideResults: function() {
-          if($results.filter(':visible').length > 0) {
-            if(settings.transition && $.fn.transition !== undefined && $module.transition('is supported') && !$results.transition('is outward')) {
-              module.debug('Hiding results with css animations');
-              $results
-                .transition({
-                  animation  : settings.transition + ' out',
-                  duration   : settings.duration,
-                  queue      : true
-                })
-              ;
+            module.results.show();
+          },
+          show: function() {
+            if( ($results.filter(':visible').size() === 0) && ($prompt.filter(':focus').size() > 0) && $results.html() !== '') {
+              if(settings.transition && $.fn.transition !== undefined && $module.transition('is supported') && !$results.transition('is inward')) {
+                module.debug('Showing results with css animations');
+                $results
+                  .transition({
+                    animation  : settings.transition + ' in',
+                    duration   : settings.duration,
+                    queue      : true
+                  })
+                ;
+              }
+              else {
+                module.debug('Showing results with javascript');
+                $results
+                  .stop()
+                  .fadeIn(settings.duration, settings.easing)
+                ;
+              }
+              $.proxy(settings.onResultsOpen, $results)();
             }
-            else {
-              module.debug('Hiding results with javascript');
-              $results
-                .stop()
-                .fadeIn(settings.duration, settings.easing)
-              ;
+          },
+          hide: function() {
+            if($results.filter(':visible').size() > 0) {
+              if(settings.transition && $.fn.transition !== undefined && $module.transition('is supported') && !$results.transition('is outward')) {
+                module.debug('Hiding results with css animations');
+                $results
+                  .transition({
+                    animation  : settings.transition + ' out',
+                    duration   : settings.duration,
+                    queue      : true
+                  })
+                ;
+              }
+              else {
+                module.debug('Hiding results with javascript');
+                $results
+                  .stop()
+                  .fadeIn(settings.duration, settings.easing)
+                ;
+              }
+              $.proxy(settings.onResultsClose, $results)();
             }
-            settings.onResultsClose.call($results);
+          },
+          select: function(event) {
+            module.debug('Search result selected');
+            var
+              $result = $(this),
+              $title  = $result.find('.title'),
+              title   = $title.html()
+            ;
+            if(settings.onSelect == 'default' || $.proxy(settings.onSelect, this)(event) == 'default') {
+              var
+                $link  = $result.find('a[href]').eq(0),
+                $title = $result.find(selector.title).eq(0),
+                href   = $link.attr('href') || false,
+                target = $link.attr('target') || false,
+                name   = ($title.size() > 0)
+                  ? $title.text()
+                  : false
+              ;
+              module.results.hide();
+              if(name) {
+                $prompt.val(name);
+              }
+              if(href) {
+                if(target == '_blank' || event.ctrlKey) {
+                  window.open(href);
+                }
+                else {
+                  window.location.href = (href);
+                }
+              }
+            }
           }
         },
 
-        generateResults: function(response) {
-          module.debug('Generating html from response', response);
-          var
-            template = settings.templates[settings.type],
-            html     = ''
-          ;
-          if(($.isPlainObject(response.results) && !$.isEmptyObject(response.results)) || ($.isArray(response.results) && response.results.length > 0) ) {
-            if(settings.maxResults > 0) {
-              response.results = $.isArray(response.results)
-                ? response.results.slice(0, settings.maxResults)
-                : response.results
-              ;
-            }
-            if($.isFunction(template)) {
-              html = template(response);
-            }
-            else {
-              module.error(error.noTemplate, false);
-            }
-          }
-          else {
-            html = module.displayMessage(error.noResults, 'empty');
-          }
-          settings.onResults.call(element, response);
-          return html;
-        },
-
-        displayMessage: function(text, type) {
+        // displays mesage visibly in search results
+        message: function(text, type) {
           type = type || 'standard';
-          module.debug('Displaying message', text, type);
-          module.addResults( settings.templates.message(text, type) );
+          module.results.add( settings.templates.message(text, type) );
           return settings.templates.message(text, type);
         },
 
@@ -580,8 +569,8 @@ $.fn.search = function(parameters) {
             if(moduleSelector) {
               title += ' \'' + moduleSelector + '\'';
             }
-            if($allModules.length > 1) {
-              title += ' ' + '(' + $allModules.length + ')';
+            if($allModules.size() > 1) {
+              title += ' ' + '(' + $allModules.size() + ')';
             }
             if( (console.group !== undefined || console.table !== undefined) && performance.length > 0) {
               console.groupCollapsed(title);

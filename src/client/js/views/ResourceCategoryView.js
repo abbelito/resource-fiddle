@@ -35,6 +35,10 @@ function ResourceCategoryView() {
 
 	this.itemTableBody = new xnode.Tbody();
 	this.itemTable.appendChild(this.itemTableBody);
+
+	this.accordion = new xnode.Div();
+	this.accordion.className = "ui styled fluid accordion";
+	this.content.appendChild(this.accordion);
 }
 
 inherits(ResourceCategoryView, xnode.Div);
@@ -89,6 +93,38 @@ ResourceCategoryView.prototype.onTitleClick = function() {
  */
 ResourceCategoryView.prototype.getItemHolder = function() {
 	return this.itemTableBody;
+}
+
+/**
+ * Get div holding the categories.
+ * @method getCategoryHolder
+ */
+ResourceCategoryView.prototype.getCategoryHolder = function() {
+	return this.accordion;
+}
+
+/**
+ * Set visibility of the category holder.
+ * @method getCategoryHolder
+ */
+ResourceCategoryView.prototype.setCategoryHolderVisible = function(value) {
+	if (value)
+		this.accordion.style.display = "block";
+
+	else
+		this.accordion.style.display = "none";
+}
+
+/**
+ * Set visibility of the item holder.
+ * @method getItemHolder
+ */
+ResourceCategoryView.prototype.setItemHolderVisible = function(value) {
+	if (value)
+		this.itemTable.style.display = "block";
+
+	else
+		this.itemTable.style.display = "none";
 }
 
 module.exports = ResourceCategoryView;

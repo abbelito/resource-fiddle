@@ -68,7 +68,7 @@ ResourceTabController.prototype.updateVisibilities = function() {
 		return;
 
 	this.tabView.setCategoryHolderVisible(this.categoryModel.getCategoryCollection().getLength() > 0);
-	this.tabView.getItemHolderVisible(this.categoryModel.getItemCollection().getLength() > 0);
+	this.tabView.setItemHolderVisible(this.categoryModel.getItemCollection().getLength() > 0);
 }
 
 module.exports = ResourceTabController;

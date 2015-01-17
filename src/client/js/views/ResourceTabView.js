@@ -21,16 +21,16 @@ function ResourceTabView() {
 	this.descriptionP = new xnode.P();
 	this.inner.appendChild(this.descriptionP);
 
-	this.accordion = new xnode.Div();
-	this.accordion.className = "ui styled fluid accordion";
-	this.inner.appendChild(this.accordion);
-
 	this.itemTable = new xnode.Table();
 	this.itemTable.className = "ui table unstackable definition";
 	this.inner.appendChild(this.itemTable);
 
 	this.itemTableBody = new xnode.Tbody();
 	this.itemTable.appendChild(this.itemTableBody);
+
+	this.accordion = new xnode.Div();
+	this.accordion.className = "ui styled fluid accordion";
+	this.inner.appendChild(this.accordion);
 }
 
 inherits(ResourceTabView, xnode.Div);
@@ -77,7 +77,7 @@ ResourceTabView.prototype.getItemHolder = function() {
 }
 
 /**
- * Get div holding the categories.
+ * Set visibility of the category holder.
  * @method getCategoryHolder
  */
 ResourceTabView.prototype.setCategoryHolderVisible = function(value) {
@@ -89,10 +89,10 @@ ResourceTabView.prototype.setCategoryHolderVisible = function(value) {
 }
 
 /**
- * Get holder for the items.
+ * Set visibility of the item holder.
  * @method getItemHolder
  */
-ResourceTabView.prototype.getItemHolderVisible = function(value) {
+ResourceTabView.prototype.setItemHolderVisible = function(value) {
 	if (value)
 		this.itemTable.style.display = "block";
 

@@ -6,6 +6,9 @@
 		<Category title="subcat">
 			This is a subcategory...
 			<Position id="testpos" value="1,2" />
+			<Category title="sub sub cat">
+				<Position id="testpos2" value="1,2" />
+			</Category>
 		</Category>
 	</Category>
 	<Position id="pos_one" value="5,10"/>

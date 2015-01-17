@@ -6,6 +6,7 @@ var ResourceItemModel = require("./ResourceItemModel");
 var ImageItemModel = require("./ImageItemModel");
 var PositionItemModel = require("./PositionItemModel");
 var ColorItemModel = require("./ColorItemModel");
+var StringItemModel = require("./StringItemModel");
 
 /**
  * Get category model.
@@ -193,6 +194,10 @@ CategoryModel.prototype.initDefinition = function(definitionData) {
 				item = new ColorItemModel(itemDef.name);
 				break;
 
+			case "string":
+				item = new StringItemModel(itemDef.name);
+				break;
+
 			default:
 				throw new Error("unknown resource type: " + itemDef.type);
 				break;
@@ -210,7 +215,7 @@ CategoryModel.prototype.initDefinition = function(definitionData) {
 		}
 	}
 
-	this.description=definitionData.description;
+	this.description = definitionData.description;
 }
 
 module.exports = CategoryModel;

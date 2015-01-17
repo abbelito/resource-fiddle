@@ -144,6 +144,13 @@
 						$this->addResource($r);
 						break;
 
+					case "string":
+					case "value":
+						$r=new Resource(Resource::STRINGS, strval($item->attributes()->id));
+						$r->value(strval($item->attributes()->value));
+						$this->addResource($r);
+						break;
+
 					case "category":
 						$c=new Category(strval($item->attributes()->title));
 						$c->parseXml($item);

@@ -51,7 +51,7 @@ FiddleClientModel.prototype.initDefinition = function(definitionData) {
 
 	for (var i = 0; i < definitionData.categories.length; i++) {
 		var categoryDefinition = definitionData.categories[i];
-		var category=this.createCategory(categoryDefinition.title);
+		var category = this.createCategory(categoryDefinition.title);
 		category.initDefinition(categoryDefinition);
 	}
 
@@ -199,6 +199,7 @@ FiddleClientModel.prototype.save = function() {
 	jsonData.graphics = {};
 	jsonData.positions = {};
 	jsonData.colors = {};
+	jsonData.values = {};
 
 	for (var i = 0; i < allItems.length; i++)
 		allItems[i].prepareSaveData(jsonData);

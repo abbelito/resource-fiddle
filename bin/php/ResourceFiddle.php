@@ -160,7 +160,7 @@
 			$o["graphics"]=array();
 			$o["positions"]=array();
 			$o["colors"]=array();
-			$o["strings"]=array();
+			$o["values"]=array();
 
 			$o["graphics"]["textures"]=array();
 
@@ -181,7 +181,7 @@
 						break;
 
 					case Resource::STRINGS:
-						$o["strings"][$item->name]=$item->value;
+						$o["values"][$item->name]=$item->value;
 						break;
 				}
 			}

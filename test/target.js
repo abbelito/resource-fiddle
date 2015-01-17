@@ -112,7 +112,8 @@ TargetApp.prototype.onResourcesLoaded = function() {
 	var s =
 		"pos_one: " + JSON.stringify(this.resources.getPoint("pos_one")) + "\n" +
 		"color_one: " + JSON.stringify(this.resources.getColor("color_one")) + "\n" +
-		"color_two: " + JSON.stringify(this.resources.getColor("color_two"));
+		"color_two: " + JSON.stringify(this.resources.getColor("color_two"))+ "\n" +
+		"string_one: " + this.resources.getValue("string_one");
 
 	t = new PIXI.Text(s, style);
 	t.position.x = 40;

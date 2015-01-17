@@ -3,6 +3,7 @@ var xnode = require("xnode");
 var ResourcePositionValueView = require("./ResourcePositionValueView");
 var ResourceImageValueView = require("./ResourceImageValueView");
 var ResourceColorValueView = require("./ResourceColorValueView");
+var ResourceStringValueView = require("./ResourceStringValueView");
 var EventDispatcher = require("yaed");
 
 /**
@@ -98,6 +99,10 @@ ResourceItemView.prototype.setItemType = function(itemType) {
 
 		case "color":
 			this.valueView = new ResourceColorValueView();
+			break;
+
+		case "string":
+			this.valueView = new ResourceStringValueView();
 			break;
 	}
 

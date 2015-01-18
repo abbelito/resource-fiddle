@@ -40,6 +40,9 @@ class ResourceImage {
 			default:
 				throw new Exception("unknonw file format.");
 		}
+
+		/*echo imagesx($this->image);
+		echo "loaded\n";*/
 	}
 
 	/**
@@ -77,7 +80,7 @@ class ResourceImage {
 		if ($this->filename)
 			return $this->filename;
 
-		return $this->key.".png";
+		return $this->id.".png";
 	}
 
 	/**

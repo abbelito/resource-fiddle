@@ -126,7 +126,6 @@ class TexturePacker {
 			while((count($images) > 0) && ($fits)) {
 				for($i = 0; $i < count($images); $i++) {
 					$image = $images[$i];
-					
 					if((($x + $image->width) <= $textureWidth) && (($y + $image->height) <= $textureHeight)) {
 						$image->x = $x;
 						$image->y = $y;
@@ -213,7 +212,7 @@ class TexturePacker {
 	 */
 	public function getFrameByFilename($filename) {
 		foreach ($this->json as $k=>$v) {
-			if ($k==$filename)
+			if (pathinfo($k,PATHINFO_BASENAME)==pathinfo($filename,PATHINFO_BASENAME))
 				return $v;
 		}
 

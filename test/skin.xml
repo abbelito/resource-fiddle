@@ -1,6 +1,6 @@
 <Skin>
 	<Category title="Some images">
-		<Image id="image_one" value="bunny.png"/>
+		<Image id="image_one" value="img/bunny.png"/>
 		<Image id="image_two" value="cat.png"/>
 
 		<Category title="subcat">

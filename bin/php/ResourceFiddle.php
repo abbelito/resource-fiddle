@@ -206,11 +206,13 @@
 
 			$path=ResourceFiddle::getPath();
 
+			if (substr($path,0,1)!="/")
+				$path="/".$path;
+
 			if ($path=="/") {
 				$this->showIndex();
 				return;
 			}
-
 
 			$api = new API();
 			$api->setTexturePath($this->texturePath);

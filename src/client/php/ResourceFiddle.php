@@ -265,6 +265,16 @@
 			echo $contents;
 		}
 
+		public function mapSourceImagePath($im) {
+			if (file_exists($im))
+				return $im;
+
+			else if (file_exists($this->sourcePath."/".$im))
+				return $this->sourcePath."/".$im;
+
+			return NULL;
+		}
+
 		public static function getPath()
 		{
 			$pathinfo=pathinfo($_SERVER["SCRIPT_NAME"]);

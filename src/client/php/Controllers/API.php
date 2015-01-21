@@ -38,8 +38,8 @@ class API {
 				if ($v["filename"] && file_exists($path."/".$v["filename"]))
 					$texturePacker->addImage($path."/".$v["filename"]);
 
-				else if ($v["filename"] && file_exists($v["filename"]))
-					$texturePacker->addImage($v["filename"]);
+				else if ($v["filename"] && $this->resourceFiddle->mapSourceImagePath($v["filename"]))
+					$texturePacker->addImage($this->resourceFiddle->mapSourceImagePath($v["filename"]));
 
 				else
 					$texturePacker->addImage(__DIR__."/../../img/no_image.jpeg");

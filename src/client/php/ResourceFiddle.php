@@ -231,6 +231,11 @@
 			else if (file_exists($this->getFullSessionPath()."/".$path))
 				$contents = file_get_contents($this->getFullSessionPath()."/".$path);
 
+			else {
+				header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");
+				return;
+			}
+
 			switch (pathinfo($path,PATHINFO_EXTENSION)) {
 				case "js":
 					header("Content-type: text/javascript");

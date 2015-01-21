@@ -231,7 +231,7 @@
 			else if (file_exists($this->getFullSessionPath()."/".$path))
 				$contents = file_get_contents($this->getFullSessionPath()."/".$path);
 
-			else if (file_exists($this->getSourcePath()."/".$path))
+			else if (file_exists($this->sourcePath."/".$path))
 				$contents = file_get_contents($this->getSourcePath()."/".$path);
 
 			else {

@@ -232,7 +232,7 @@
 				$contents = file_get_contents($this->getFullSessionPath()."/".$path);
 
 			else if (file_exists($this->sourcePath."/".$path))
-				$contents = file_get_contents($this->getSourcePath()."/".$path);
+				$contents = file_get_contents($this->sourcePath."/".$path);
 
 			else {
 				header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");

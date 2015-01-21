@@ -11,11 +11,10 @@
 	*/
 	class ResourceFiddle extends Category
 	{
-		//private $resources;
+		private $path;
 		private $testcases;
 		private $texturePath;
-
-		private $path;
+		private $sourcePath;
 
 		const GRAPHICS = Resource::GRAPHICS;
 		const POSITIONS = Resource::POSITIONS;
@@ -193,6 +192,7 @@
 		 * Load xml definition.
 		 */
 		public function load($filename) {
+			$this->sourcePath=pathinfo($filename,PATHINFO_DIRNAME);
 			$xml=new SimpleXMLElement(file_get_contents($filename));
 			$this->parseXml($xml);
 		}
@@ -230,6 +230,9 @@
 
 			else if (file_exists($this->getFullSessionPath()."/".$path))
 				$contents = file_get_contents($this->getFullSessionPath()."/".$path);
+
+			else if (file_exists($this->getSourcePath()."/".$path))
+				$contents = file_get_contents($this->getSourcePath()."/".$path);
 
 			else {
 				header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");

@@ -62,6 +62,11 @@ class API {
 			}
 		}
 
+		$flags=0;
+
+		if (defined("JSON_PRETTY_PRINT"))
+			$flags|=JSON_PRETTY_PRINT;
+
 		file_put_contents($textureJsonFileName, json_encode($json,JSON_PRETTY_PRINT));
 	}
 

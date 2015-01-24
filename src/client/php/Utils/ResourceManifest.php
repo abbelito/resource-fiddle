@@ -155,6 +155,11 @@ class ResourceManifest {
 			);
 		}
 
-		file_put_contents($filename,json_encode($json,JSON_PRETTY_PRINT));
+		$flags=0;
+
+		if (defined("JSON_PRETTY_PRINT"))
+			$flags|=JSON_PRETTY_PRINT;
+
+		file_put_contents($filename,json_encode($json,$flags));
 	}
 }

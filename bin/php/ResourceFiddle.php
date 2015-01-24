@@ -223,6 +223,8 @@
 			$routes->addRoute("/save", $api, "saveJson");
 			$routes->addRoute("/upload", $api, "uploadImage");
 			$routes->addRoute("/getTexture", $api, "getTexture");
+			$routes->addRoute("/getImage", $api, "getImage");
+
 			if($routes->run($path) != false) {
 				return;
 			}

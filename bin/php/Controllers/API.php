@@ -168,6 +168,18 @@ class API {
 	}
 
 	/**
+	 * Get resulting image.
+	 * @method getImage
+	 */
+	public function getImage() {
+		$num=0;
+
+		$path = $this->texturePath . "/" . $this->session . "/texture$num.png";
+
+		echo file_get_contents($path);
+	}
+
+	/**
 	 * Prepare a json response to send to the browser.
 	 */
 	private function jsonResponse($param)

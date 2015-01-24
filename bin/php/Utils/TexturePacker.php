@@ -130,16 +130,15 @@ class TexturePacker {
 						$image->x = $x;
 						$image->y = $y;
 
-						$ext = pathinfo($files[$i], PATHINFO_EXTENSION);
+						/*$ext = pathinfo($files[$i], PATHINFO_EXTENSION); // $files doesn't exist
 						if($ext == "png") {
 							$background = imagecolorallocate($image->image, 255, 255, 255);
 							// removing the black from the placeholder
 							imagecolortransparent($image->image, $background);
 
 							imagealphablending($image->image, true);
-						}
+						}*/
 						imagecopyresampled($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, $image->width, $image->height);
-						//imagecopymerge($texture, $image->image, $image->x , $image->y, 0 , 0, $image->width, $image->height, 100);
 
 						if(($image->y + $image->height) > $nextY) {
 							$nextY = $image->y + $image->height;

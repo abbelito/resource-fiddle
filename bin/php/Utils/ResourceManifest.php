@@ -84,6 +84,13 @@ class ResourceImage {
 	}
 
 	/**
+	 * Get canonical filename
+	 */
+	public function getCanonicalBaseName() {
+		return pathinfo($this->getCanonicalFileName(),PATHINFO_BASENAME);
+	}
+
+	/**
 	 * Save the image.
 	 */
 	public function save($filename) {
@@ -149,9 +156,9 @@ class ResourceManifest {
 		$json["graphics"]=array();
 
 		foreach ($this->images as $image) {
-			$image->save($destDir."/".$image->getCanonicalFileName());
+			$image->save($destDir."/".$image->getCanonicalBaseName());
 			$json["graphics"][$image->getId()]=array(
-				"filename"=>$image->getCanonicalFileName()
+				"filename"=>$image->getCanonicalBaseName()
 			);
 		}
 

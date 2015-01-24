@@ -112,8 +112,10 @@ TargetApp.prototype.onResourcesLoaded = function() {
 	var s =
 		"pos_one: " + JSON.stringify(this.resources.getPoint("pos_one")) + "\n" +
 		"color_one: " + JSON.stringify(this.resources.getColor("color_one")) + "\n" +
-		"color_two: " + JSON.stringify(this.resources.getColor("color_two"))+ "\n" +
-		"string_one: " + this.resources.getValue("string_one");
+		"color_two: " + JSON.stringify(this.resources.getColor("color_two")) + "\n" +
+		"string_one: " + this.resources.getValue("string_one") + "\n" +
+		"exists(pos_one): " + this.resources.keyExists("pos_one") + "\n" +
+		"exists(blaj): " + this.resources.keyExists("blaj");
 
 	t = new PIXI.Text(s, style);
 	t.position.x = 40;

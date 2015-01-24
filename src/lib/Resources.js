@@ -345,6 +345,29 @@ Resources.prototype.getTexture = function(key) {
 }
 
 /**
+ * Check if a key exists.
+ * @method keyExists
+ */
+Resources.prototype.keyExists = function(key) {
+	if (!this.resources)
+		return false;
+
+	if (this.resources.graphics.hasOwnProperty(key))
+		return true;
+
+	if (this.resources.positions.hasOwnProperty(key))
+		return true;
+
+	if (this.resources.colors.hasOwnProperty(key))
+		return true;
+
+	if (this.resources.values.hasOwnProperty(key))
+		return true;
+
+	return false;
+}
+
+/**
  * Get texture from either loaded resources.
  * @method getDOMTexture
  */

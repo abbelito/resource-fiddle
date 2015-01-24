@@ -352,7 +352,8 @@ Resources.prototype.keyExists = function(key) {
 	if (!this.resources)
 		return false;
 
-	if (this.resources.graphics.hasOwnProperty(key))
+	if (this.resources.graphics.hasOwnProperty(key) && 
+		this.resources.graphics[key].texture)
 		return true;
 
 	if (this.resources.positions.hasOwnProperty(key))

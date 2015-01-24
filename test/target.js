@@ -95,19 +95,25 @@ TargetApp.prototype.onResourcesLoaded = function() {
 	g.position.y = 90;
 	this.addChild(g);
 
-	s = new PIXI.Sprite(this.resources.getTexture("image_one"));
-	s.position.x = 50;
-	s.position.y = 100;
-	s.width = 200;
-	s.height = 200;
-	this.addChild(s);
+	console.log("one exists: " + this.resources.keyExists("image_one"));
 
-	s = new PIXI.Sprite(this.resources.getTexture("image_two"));
-	s.position.x = 300;
-	s.position.y = 100;
-	s.width = 200;
-	s.height = 200;
-	this.addChild(s);
+	if (this.resources.keyExists("image_one")) {
+		s = new PIXI.Sprite(this.resources.getTexture("image_one"));
+		s.position.x = 50;
+		s.position.y = 100;
+		s.width = 200;
+		s.height = 200;
+		this.addChild(s);
+	}
+
+	if (this.resources.keyExists("image_two")) {
+		s = new PIXI.Sprite(this.resources.getTexture("image_two"));
+		s.position.x = 300;
+		s.position.y = 100;
+		s.width = 200;
+		s.height = 200;
+		this.addChild(s);
+	}
 
 	var s =
 		"pos_one: " + JSON.stringify(this.resources.getPoint("pos_one")) + "\n" +

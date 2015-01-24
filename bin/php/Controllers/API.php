@@ -41,8 +41,8 @@ class API {
 				else if ($v["filename"] && $this->resourceFiddle->mapSourceImagePath($v["filename"]))
 					$texturePacker->addImage($this->resourceFiddle->mapSourceImagePath($v["filename"]));
 
-				else
-					$texturePacker->addImage(__DIR__."/../../img/no_image.jpeg");
+				/*else
+					$texturePacker->addImage(__DIR__."/../../img/no_image.jpeg");*/
 			}
 		}
 
@@ -51,14 +51,18 @@ class API {
 
 		foreach ($json["graphics"] as $k=>$v) {
 			if ($k!="textures") {
+				$frame=NULL;
+
 				if ($v["filename"])
 					$frame=$texturePacker->getFrameByFilename($v["filename"]);
 
-				else
-					$frame=$texturePacker->getFrameByFilename("no_image.jpeg");
+				/*else
+					$frame=$texturePacker->getFrameByFilename("no_image.jpeg");*/
 
-				$json["graphics"][$k]["texture"]=$frame["texture"];
-				$json["graphics"][$k]["coords"]=$frame["coords"];
+				if ($frame) {
+					$json["graphics"][$k]["texture"]=$frame["texture"];
+					$json["graphics"][$k]["coords"]=$frame["coords"];
+				}
 			}
 		}
 

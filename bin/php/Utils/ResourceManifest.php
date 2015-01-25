@@ -141,7 +141,7 @@ class ResourceManifest {
 		}
 
 		foreach ($json["graphics"] as $k=>$imageDef) {
-			if ($k!="textures") {
+			if ($k!="textures" && $imageDef["texture"]) {
 				$image=new ResourceImage($k);
 				$image->setFilename($imageDef["filename"]);
 				$texture=$this->texturesById[$imageDef["texture"]];

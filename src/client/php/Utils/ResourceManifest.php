@@ -41,6 +41,10 @@ class ResourceImage {
 				throw new Exception("unknonw file format.");
 		}
 
+		if (!$this->image) {
+			exit("unable to load: $filename\n");
+		}
+
 		/*echo imagesx($this->image);
 		echo "loaded\n";*/
 	}
@@ -124,8 +128,9 @@ class ResourceManifest {
 		$json=json_decode(file_get_contents($filename),TRUE);
 
 		foreach ($json["graphics"]["textures"] as $textureDef) {
+			$fn=pathinfo($textureDef["file"],PATHINFO_BASENAME);
 			$texture=new ResourceImage($textureDef["id"]);
-			$texture->load($sourceDir."/".$textureDef["file"]);
+			$texture->load($sourceDir."/".$fn);
 			$this->texturesById[$texture->getId()]=$texture;
 		}
 

@@ -118,6 +118,8 @@ class ResourceManifest {
 	public function __construct() {
 		$this->texturesById=array();
 		$this->images;
+
+		$this->useTextureBaseName=FALSE;
 	}
 
 	/**
@@ -128,7 +130,11 @@ class ResourceManifest {
 		$json=json_decode(file_get_contents($filename),TRUE);
 
 		foreach ($json["graphics"]["textures"] as $textureDef) {
-			$fn=pathinfo($textureDef["file"],PATHINFO_BASENAME);
+			$fn=$textureDef["file"];
+
+			if ($this->useTextureBaseName)
+				$fn=pathinfo($textureDef["file"],PATHINFO_BASENAME);
+
 			$texture=new ResourceImage($textureDef["id"]);
 			$texture->load($sourceDir."/".$fn);
 			$this->texturesById[$texture->getId()]=$texture;

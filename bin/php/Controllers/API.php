@@ -178,6 +178,9 @@ class API {
 	public function getImage() {
 		$num=0;
 
+		if ($_REQUEST["num"])
+			$num=$_REQUEST["num"];
+
 		$path = $this->texturePath . "/" . $this->session . "/texture$num.png";
 
 		echo file_get_contents($path);
